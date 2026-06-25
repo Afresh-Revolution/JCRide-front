@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Driver Dashboard — JC-Ride{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Driver Dashboard</h2>
+  <p class="subtitle">Go online to receive ride requests.</p>
+  <div class="driver-status">
+    <span class="status-dot {% if online %}online{% endif %}"></span>
+    <span>{% if online %}Online{% else %}Offline{% endif %}</span>
+  </div>
+  <form method="post" class="form">
+    <button type="submit" name="action" value="{% if online %}offline{% else %}online{% endif %}" class="btn btn-primary">
+      {% if online %}Go Offline{% else %}Go Online{% endif %}
+    </button>
+  </form>
+</section>
+{% endblock %}

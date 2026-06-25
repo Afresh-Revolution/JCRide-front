@@ -1,0 +1,18 @@
+# Web framework
+flask==3.1.0
+
+# HTTP client (calls JCRide-back API)
+requests==2.32.3
+
+# Config
+python-dotenv==1.0.1
+
+# Forms & security
+flask-wtf==1.2.2
+wtforms==3.2.1
+
+# Dev server
+watchdog==6.0.0
+
+# Testing
+pytest==8.3.4

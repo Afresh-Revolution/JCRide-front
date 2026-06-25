@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}JC-Ride — Get there faster{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Get there with JC-Ride</h1>
+  <p>Request a ride in seconds or earn by driving on your schedule.</p>
+  <div class="hero-actions">
+    <a href="{{ url_for('main.ride_page') }}" class="btn btn-primary">Book a Ride</a>
+    <a href="{{ url_for('main.driver_page') }}" class="btn btn-secondary">Become a Driver</a>
+  </div>
+</section>
+{% endblock %}

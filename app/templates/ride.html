@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Book a Ride — JC-Ride{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>Book a Ride</h2>
+  <p class="subtitle">Enter your pickup and destination to get started.</p>
+  <form method="post" class="form">
+    <label>Pickup Location <input type="text" name="pickup" placeholder="e.g. 123 Main St" required></label>
+    <label>Drop-off Location <input type="text" name="dropoff" placeholder="e.g. Airport Terminal 1" required></label>
+    <button type="submit" class="btn btn-primary">Request Ride</button>
+  </form>
+</section>
+{% endblock %}
