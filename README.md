@@ -156,7 +156,7 @@ This frontend is a Flask WSGI app. Vercel detects it automatically and runs it a
 | File | Purpose |
 |------|---------|
 | `wsgi.py` | Vercel entry point (`app` instance) |
-| `pyproject.toml` | Python version, Vercel entrypoint, build script |
+| `pyproject.toml` | Python version, dependencies, Vercel entrypoint, build script |
 | `scripts/vercel_build.py` | Copies `app/static/` → `public/static/` at build time |
 | `.python-version` | Python runtime (3.12) |
 
