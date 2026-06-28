@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}JCRide — Nigeria's Premium Ride-hailing Platform{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-loading.css') }}">
+</head>
+<body class="landing">
+  <header class="landing-header" id="top">
+    <div class="landing-header__inner">
+      <a href="{{ url_for('main.home') }}" class="landing-brand">
+        <span class="landing-brand__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
+            <circle cx="7.5" cy="17" r="2"/>
+            <circle cx="16.5" cy="17" r="2"/>
+            <path d="M5 11h14"/>
+          </svg>
+        </span>
+        <span class="landing-brand__text">
+          <span class="landing-brand__name">JCRide</span>
+          <span class="landing-brand__tag">NAIJA</span>
+        </span>
+      </a>
+
+      <nav class="landing-nav" id="landing-nav" aria-label="Main">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#drive-with-us">Drive with us</a>
+        <a href="#cities">Cities</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <div class="landing-header__actions">
+        <a href="{{ url_for('main.portals_page') }}" class="landing-link">Log in</a>
+        <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--primary landing-btn--sm">
+          Get started
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <button type="button" class="landing-menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="landing-nav">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="landing-flashes">
+        {% for category, message in messages %}
+          <div class="landing-flash landing-flash--{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main>{% block content %}{% endblock %}</main>
+
+  <footer class="landing-footer">
+    <div class="landing-container landing-footer__grid">
+      <div class="landing-footer__brand">
+        <a href="{{ url_for('main.home') }}" class="landing-brand">
+          <span class="landing-brand__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
+              <circle cx="7.5" cy="17" r="2"/>
+              <circle cx="16.5" cy="17" r="2"/>
+              <path d="M5 11h14"/>
+            </svg>
+          </span>
+          <span class="landing-brand__text">
+            <span class="landing-brand__name">JCRide</span>
+            <span class="landing-brand__tag">NAIJA</span>
+          </span>
+        </a>
+        <p class="landing-footer__desc">Nigeria's premium ride-hailing platform. Pay-per-km, instant payments, verified drivers — built right here in Lagos.</p>
+        <div class="landing-footer__cta">
+          <a href="{{ url_for('main.portals_page') }}" class="landing-btn landing-btn--primary landing-btn--sm">Log in</a>
+          <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--outline landing-btn--sm">Sign up</a>
+        </div>
+      </div>
+
+      <div class="landing-footer__col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#cities">Cities</a></li>
+          <li><a href="{{ url_for('main.ride_page') }}">Schedule a ride</a></li>
+          <li><a href="#drive-with-us">Safety</a></li>
+        </ul>
+      </div>
+
+      <div class="landing-footer__col">
+        <h4>Drivers</h4>
+        <ul>
+          <li><a href="{{ url_for('main.driver_page') }}">Become a driver</a></li>
+          <li><a href="{{ url_for('main.driver_page') }}">Driver app</a></li>
+          <li><a href="#drive-with-us">Earnings</a></li>
+          <li><a href="#drive-with-us">Requirements</a></li>
+          <li><a href="#faq">Support</a></li>
+        </ul>
+      </div>
+
+      <div class="landing-footer__col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#top">About</a></li>
+          <li><a href="#top">Careers</a></li>
+          <li><a href="#top">Press</a></li>
+          <li><a href="#top">Blog</a></li>
+          <li><a href="#top">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="landing-footer__col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#top">Privacy</a></li>
+          <li><a href="#top">Terms</a></li>
+          <li><a href="#top">Cookies</a></li>
+          <li><a href="#top">NDPR</a></li>
+          <li><a href="#top">Accessibility</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="landing-footer__bar">
+      <div class="landing-container landing-footer__bar-inner">
+        <p>&copy; 2026 JCRide Technologies Ltd &middot; Lagos, Nigeria</p>
+        <p class="landing-footer__status"><span class="landing-footer__dot" aria-hidden="true"></span> All systems operational</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
+</body>
+</html>
