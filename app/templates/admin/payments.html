@@ -1,0 +1,162 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'payments' %}
+
+{% block page_title %}Payments{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-payments.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="payments-page">
+  <div class="payments-kpi-grid">
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Successful (24H)</span>
+        <span class="kpi-card__value" id="kpi-successful-amount">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up" id="kpi-successful-trend">▲ — txns</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Failed (24H)</span>
+        <span class="kpi-card__value" id="kpi-failed-amount">—</span>
+        <span class="kpi-card__trend kpi-card__trend--down" id="kpi-failed-trend">▲ — txns</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Wallet Funding</span>
+        <span class="kpi-card__value" id="kpi-funding-amount">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up" id="kpi-funding-trend">▲ paystack</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+      </div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Refunds</span>
+        <span class="kpi-card__value" id="kpi-refunds-amount">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up" id="kpi-refunds-trend">▲ — txns</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </div>
+    </article>
+  </div>
+
+  <div class="payments-card dash-card">
+    <div class="payments-card__header">
+      <h2 class="payments-card__title">paystack transactions</h2>
+      <div class="payments-card__actions">
+        <div class="payments-filter" id="payments-filter">
+          <button type="button" class="payments-filter__btn" id="payments-filter-toggle" aria-haspopup="listbox" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Filters
+          </button>
+          <div class="payments-filter__panel" id="payments-filter-panel" hidden>
+            <div class="payments-filter__field">
+              <label for="payments-filter-status">Status</label>
+              <select id="payments-filter-status">
+                <option value="">All statuses</option>
+                <option value="success">Success</option>
+                <option value="failed">Failed</option>
+                <option value="pending">Pending</option>
+                <option value="reversed">Reversed</option>
+              </select>
+            </div>
+            <div class="payments-filter__field">
+              <label for="payments-filter-type">Type</label>
+              <select id="payments-filter-type">
+                <option value="">All types</option>
+                <option value="ride_payment">Trip payment</option>
+                <option value="wallet_funding">Wallet funding</option>
+                <option value="refund">Refund</option>
+                <option value="withdrawal">Withdrawal</option>
+              </select>
+            </div>
+            <div class="payments-filter__field">
+              <label for="payments-filter-search">Search</label>
+              <input type="search" id="payments-filter-search" placeholder="Reference or user">
+            </div>
+            <div class="payments-filter__footer">
+              <button type="button" class="payments-btn payments-btn--ghost" id="payments-filter-clear">Clear</button>
+              <button type="button" class="payments-btn payments-btn--primary" id="payments-filter-apply">Apply</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="payments-settle-btn" id="payments-settle-btn">Settle to bank</button>
+      </div>
+    </div>
+
+    <div class="payments-table-wrap">
+      <table class="payments-table" aria-label="paystack transactions">
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">User</th>
+            <th scope="col">Type</th>
+            <th scope="col">Method</th>
+            <th scope="col">Amount</th>
+            <th scope="col">Status</th>
+            <th scope="col">Date</th>
+          </tr>
+        </thead>
+        <tbody id="payments-table-body">
+          <tr class="payments-table__loading"><td colspan="7">Loading transactions…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="payments-pagination" id="payments-pagination" hidden>
+      <span class="payments-pagination__info" id="payments-pagination-info"></span>
+      <div class="payments-pagination__controls">
+        <button type="button" class="payments-pagination__btn" id="payments-prev-btn" disabled>Previous</button>
+        <button type="button" class="payments-pagination__btn" id="payments-next-btn" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="payments-modal-overlay" id="settle-modal" hidden>
+  <div class="payments-modal" role="dialog" aria-labelledby="settle-modal-title" aria-modal="true">
+    <div class="payments-modal__header">
+      <h2 id="settle-modal-title">Settle to bank</h2>
+      <button type="button" class="payments-modal__close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <form id="settle-form" class="payments-modal__body">
+      <p class="payments-modal__hint">Transfer collected platform funds to the corporate settlement account via paystack.</p>
+      <div class="payments-field">
+        <label for="settle-amount">Amount (₦) <span class="payments-field__optional">optional — leave blank for full balance</span></label>
+        <input type="number" id="settle-amount" name="amount_ngn" min="1" step="0.01" placeholder="Full platform balance">
+      </div>
+      <div class="payments-field">
+        <label for="settle-notes">Notes</label>
+        <textarea id="settle-notes" name="notes" rows="3" placeholder="Settlement batch reference or memo"></textarea>
+      </div>
+      <p class="payments-form-error" id="settle-form-error" hidden></p>
+      <div class="payments-modal__footer">
+        <button type="button" class="payments-btn payments-btn--ghost" data-close-modal>Cancel</button>
+        <button type="submit" class="payments-btn payments-btn--primary">Confirm settlement</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="payments-toast" id="payments-toast" hidden role="status"></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-payments.js') }}"></script>
+{% endblock %}

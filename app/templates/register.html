@@ -4,17 +4,14 @@
 <section class="card">
   <h2>Create Account</h2>
   <form method="post" class="form">
+    <input type="hidden" name="role" value="{{ role }}">
     <label>Full Name <input type="text" name="name" required></label>
+    <label>Phone Number <input type="tel" name="phone" required placeholder="+2348000000000"></label>
     <label>Email <input type="email" name="email" required></label>
-    <label>Password <input type="password" name="password" required></label>
-    <label>I want to
-      <select name="role">
-        <option value="rider">Ride as a passenger</option>
-        <option value="driver">Drive and earn</option>
-      </select>
-    </label>
+    <label>Password <input type="password" name="password" required minlength="8"></label>
+    <label>Confirm Password <input type="password" name="confirm_password" required minlength="8"></label>
     <button type="submit" class="btn btn-primary">Register</button>
   </form>
-  <p class="form-footer">Already have an account? <a href="{{ url_for('main.login_page') }}">Sign In</a></p>
+  <p class="form-footer">Already have an account? <a href="{{ url_for('main.portals_page') }}">Sign In</a></p>
 </section>
 {% endblock %}

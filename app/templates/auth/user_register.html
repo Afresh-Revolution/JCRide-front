@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create rider account — JCRide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-login.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-signup.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-loading.css') }}">
+</head>
+<body class="auth-login-page auth-login-page--rider auth-signup-page">
+  <div class="auth-login">
+    <aside class="auth-login__brand" aria-label="JCRide">
+      <div class="auth-login__brand-top">
+        <a href="{{ url_for('main.home') }}" class="auth-login__logo">
+          <span class="auth-login__logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
+              <circle cx="7.5" cy="17" r="2"/>
+              <circle cx="16.5" cy="17" r="2"/>
+              <path d="M5 11h14"/>
+            </svg>
+          </span>
+          <span class="auth-login__logo-text">
+            <strong>JCRide</strong>
+            <span>NAIJA</span>
+          </span>
+        </a>
+        <a href="{{ url_for('main.portals_page') }}" class="auth-login__choose-role">&#8592; Choose role</a>
+      </div>
+
+      <div class="auth-login__brand-content">
+        <p class="auth-login__eyebrow">Naija mobility</p>
+        <h1>Move smarter across Lagos, Abuja &amp; beyond.</h1>
+        <p class="auth-login__brand-copy">
+          Pay per kilometer with live GPS metering. Verified drivers, instant Paystack payouts,
+          and real-time tracking &mdash; built for Nigeria.
+        </p>
+      </div>
+
+      <div class="auth-login__stats">
+        <div class="auth-login__stat">
+          <strong>2.4M+</strong>
+          <span>Riders</span>
+        </div>
+        <div class="auth-login__stat">
+          <strong>180k</strong>
+          <span>Drivers</span>
+        </div>
+        <div class="auth-login__stat">
+          <strong>&#8358;18B+</strong>
+          <span>Paid out</span>
+        </div>
+      </div>
+
+      <p class="auth-login__copyright">&copy; 2026 JCRide Technologies Ltd.</p>
+    </aside>
+
+    <section class="auth-login__panel auth-signup__panel">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="auth-login__flashes">
+            {% for category, message in messages %}
+              <div class="auth-login__flash auth-login__flash--{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% if step > 1 %}
+      <a href="{{ url_for('main.user_register_page', action='back') }}" class="auth-login__back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      </a>
+      {% else %}
+      <a href="{{ url_for('main.portals_page') }}" class="auth-login__back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      </a>
+      {% endif %}
+
+      <div class="auth-login__form-wrap auth-signup__wrap">
+        <h2>Create your rider account</h2>
+        <p class="auth-signup__tagline">Just a few quick steps to start riding.</p>
+
+        <div class="auth-signup__progress" aria-label="Progress">
+          <div class="auth-signup__progress-bar auth-signup__progress-bar--3">
+            {% for i in range(1, total_steps + 1) %}
+            <span class="auth-signup__progress-segment{% if i <= step %} is-complete{% endif %}"></span>
+            {% endfor %}
+          </div>
+          <span class="auth-signup__progress-label">Step {{ step }}/{{ total_steps }}</span>
+        </div>
+
+        {% if step == 1 %}
+        <form method="post" class="auth-login__form" novalidate>
+          <input type="hidden" name="step" value="1">
+          <label class="auth-login__field">
+            <span>Full Name</span>
+            <input type="text" name="full_name" required placeholder="Adaeze Okafor" value="{{ signup.get('full_name', '') }}" autocomplete="name">
+          </label>
+          <label class="auth-login__field">
+            <span>Phone Number</span>
+            <input type="tel" name="phone" required placeholder="+234 800 000 0000" value="{{ signup.get('phone', '') }}" autocomplete="tel">
+          </label>
+          <label class="auth-login__field">
+            <span>Email</span>
+            <input type="email" name="email" required placeholder="you@example.com" value="{{ signup.get('email', '') }}" autocomplete="email">
+          </label>
+          <button type="submit" class="auth-login__submit" data-loading-text="Continuing…">Continue</button>
+        </form>
+
+        {% elif step == 2 %}
+        <form method="post" class="auth-login__form" novalidate>
+          <input type="hidden" name="step" value="2">
+          <label class="auth-login__field">
+            <span>Password</span>
+            <input type="password" name="password" required minlength="8" placeholder="Create a password" autocomplete="new-password">
+            <span class="auth-signup__field-hint">At least 8 characters with one symbol</span>
+          </label>
+          <label class="auth-login__field">
+            <span>Confirm Password</span>
+            <input type="password" name="confirm_password" required minlength="8" placeholder="Repeat password" autocomplete="new-password">
+          </label>
+          <button type="submit" class="auth-login__submit" data-loading-text="Creating account…">Continue</button>
+        </form>
+
+        {% elif step == 3 %}
+        <form method="post" class="auth-login__form auth-signup__otp-form" novalidate>
+          <input type="hidden" name="step" value="3">
+          <p class="auth-signup__otp-hint">
+            We sent a 6-digit code to your email{% if masked_contact %} (<strong>{{ masked_contact }}</strong>){% endif %}.
+          </p>
+          <div class="auth-signup__otp" data-otp-inputs>
+            <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 1" autocomplete="one-time-code">
+            <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 2">
+            <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 3">
+            <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 4">
+            <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 5">
+            <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 6">
+          </div>
+          <input type="hidden" name="otp_code" id="otp_code" value="">
+          <button type="submit" class="auth-login__submit" data-loading-text="Verifying…">Verify &amp; continue</button>
+        </form>
+        <div class="auth-signup__resend-wrap">
+          <span class="auth-signup__resend-timer" data-resend-timer aria-live="polite"></span>
+          <form method="post" class="auth-signup__resend-form">
+            <input type="hidden" name="step" value="3">
+            <input type="hidden" name="action" value="resend">
+            <button type="submit" class="auth-signup__resend-btn" data-resend-btn hidden>Resend code</button>
+          </form>
+        </div>
+        {% endif %}
+
+        <p class="auth-login__footer-text">
+          Already have one?
+          <a href="{{ url_for('main.rider_login_page') }}" class="auth-login__link auth-login__link--strong">Sign in</a>
+        </p>
+      </div>
+    </section>
+  </div>
+  <script src="{{ url_for('static', filename='js/auth-signup.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "wsgi.py": {
+      "excludeFiles": "{tests/**,__tests__/**,**/*.test.py,**/test_*.py,venv/**,.venv/**,JCRide-back/**,app/hero.PNG,**/__pycache__/**,**/*.pyc}"
+    }
+  }
+}

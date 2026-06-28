@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choose your portal — JCRide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/portals.css') }}">
+</head>
+<body class="portal-page">
+  <header class="portal-header">
+    <div class="portal-header__inner">
+      <a href="{{ url_for('main.home') }}" class="portal-brand">
+        <span class="portal-brand__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
+            <circle cx="7.5" cy="17" r="2"/>
+            <circle cx="16.5" cy="17" r="2"/>
+            <path d="M5 11h14"/>
+          </svg>
+        </span>
+        <span class="portal-brand__text">
+          <span class="portal-brand__name">JCRide</span>
+          <span class="portal-brand__tag">NAIJA</span>
+        </span>
+      </a>
+
+      <nav class="portal-nav" aria-label="Site">
+        <a href="{{ url_for('main.home') }}#features">About</a>
+        <a href="{{ url_for('main.home') }}#drive-with-us">Become a Driver</a>
+        <a href="{{ url_for('main.home') }}#faq">Support</a>
+      </nav>
+
+      <span class="portal-live-badge">
+        <span class="portal-live-badge__dot" aria-hidden="true"></span>
+        Live in 14 cities
+      </span>
+    </div>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="portal-flashes">
+        {% for category, message in messages %}
+          <div class="portal-flash portal-flash--{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main class="portal-main">
+    <div class="portal-hero">
+      <span class="portal-welcome-badge">
+        <span aria-hidden="true">&#10022;</span>
+        Welcome to JCRide
+      </span>
+      <h1 class="portal-hero__title">
+        Choose how you want to<br>
+        <span class="portal-hero__accent">access the platform</span>
+      </h1>
+      <p class="portal-hero__subtitle">
+        JCRide is Nigeria&rsquo;s premium ride-hailing network &mdash; pay per kilometer with live GPS metering and instant paystack payments.
+      </p>
+    </div>
+
+    <div class="portal-cards">
+      <a href="{{ url_for('main.rider_login_page') }}" class="portal-card">
+        <span class="portal-card__glow" aria-hidden="true"></span>
+        <span class="portal-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+        <p class="portal-card__eyebrow">For riders</p>
+        <h2 class="portal-card__title">User Portal</h2>
+        <p class="portal-card__desc">Book rides, track trips, manage payments and ride history across Nigeria.</p>
+        <span class="portal-card__footer">
+          <span class="portal-card__cta">Continue as User</span>
+          <span class="portal-card__arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </span>
+      </a>
+
+      <a href="{{ url_for('main.driver_login_page') }}" class="portal-card">
+        <span class="portal-card__glow" aria-hidden="true"></span>
+        <span class="portal-card__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
+            <circle cx="7.5" cy="17" r="2"/>
+            <circle cx="16.5" cy="17" r="2"/>
+            <path d="M5 11h14"/>
+          </svg>
+        </span>
+        <p class="portal-card__eyebrow">For drivers</p>
+        <h2 class="portal-card__title">Driver Portal</h2>
+        <p class="portal-card__desc">Accept ride requests, navigate routes, and grow your earnings.</p>
+        <span class="portal-card__footer">
+          <span class="portal-card__cta">Continue as Driver</span>
+          <span class="portal-card__arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </span>
+      </a>
+    </div>
+
+    <div class="portal-lower">
+      <div class="portal-features" aria-label="Platform highlights">
+        <div class="portal-feature">
+          <span class="portal-feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 21s7-4.5 7-10a7 7 0 1 0-14 0c0 5.5 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
+          </span>
+          <div class="portal-feature__text">
+            <strong>Live GPS metering</strong>
+            <span>Per-km billing</span>
+          </div>
+        </div>
+        <div class="portal-feature">
+          <span class="portal-feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          </span>
+          <div class="portal-feature__text">
+            <strong>Paystack Payments</strong>
+            <span>Bank transfer &amp; cards</span>
+          </div>
+        </div>
+        <div class="portal-feature">
+          <span class="portal-feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </span>
+          <div class="portal-feature__text">
+            <strong>Avg. 4 min</strong>
+            <span>Pickup time</span>
+          </div>
+        </div>
+        <div class="portal-feature">
+          <span class="portal-feature__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+          </span>
+          <div class="portal-feature__text">
+            <strong>NIN verified</strong>
+            <span>Driver vetting</span>
+          </div>
+        </div>
+      </div>
+
+      <footer class="portal-footer portal-footer--in-lower">
+        <p>&copy; 2026 JCRide Technologies &mdash; Lagos, Nigeria.</p>
+        <nav aria-label="Legal">
+          <a href="{{ url_for('main.home') }}#top">Privacy</a>
+          <a href="{{ url_for('main.home') }}#top">Terms</a>
+          <a href="{{ url_for('main.home') }}#top">Contact</a>
+        </nav>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

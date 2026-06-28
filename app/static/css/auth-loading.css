@@ -1,0 +1,63 @@
+@keyframes auth-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+.is-loading {
+  position: relative;
+  pointer-events: none;
+  cursor: wait;
+}
+
+.auth-login__submit.is-loading,
+.landing-btn.is-loading,
+.auth-signup__success-btn.is-loading {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.auth-login__submit.is-loading::after,
+.landing-btn.is-loading::after,
+.auth-signup__success-btn.is-loading::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: -0.575rem 0 0 -0.575rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: auth-loading-spin 0.65s linear infinite;
+}
+
+.landing-btn.is-loading svg {
+  opacity: 0;
+}
+
+.landing-btn--outline.is-loading,
+.landing-btn--ghost.is-loading,
+.landing-btn--primary.is-loading,
+.landing-btn--accent.is-loading {
+  color: transparent;
+}
+
+.landing-btn--outline.is-loading::after,
+.landing-btn--ghost.is-loading::after,
+.landing-btn--primary.is-loading::after,
+.landing-btn--accent.is-loading::after {
+  border-color: rgba(6, 95, 70, 0.25);
+  border-top-color: var(--auth-green-dark, #065f46);
+}
+
+.landing-btn--accent.is-loading::after {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+.auth-loading-link.is-loading {
+  opacity: 0.65;
+}
+
+.auth-loading-link.is-loading::after {
+  content: none;
+}

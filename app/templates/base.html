@@ -17,7 +17,7 @@
           <span class="user">{{ session.email }}</span>
           <a href="{{ url_for('main.logout') }}" class="btn btn-outline">Sign Out</a>
         {% else %}
-          <a href="{{ url_for('main.login_page') }}" class="btn btn-outline">Sign In</a>
+          <a href="{{ url_for('main.portals_page') }}" class="btn btn-outline">Sign In</a>
         {% endif %}
       </nav>
     </header>

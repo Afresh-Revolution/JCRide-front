@@ -1,0 +1,164 @@
+{% extends "admin/base.html" %}
+{% block title %}Admin Portal — JCRide NAIJA{% endblock %}
+{% block body %}
+<div class="admin-split">
+  <aside class="admin-panel-left" aria-label="JCRide NAIJA">
+    <div class="admin-panel-left__top">
+      <div class="admin-brand">
+        <div class="admin-brand__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
+            <circle cx="7.5" cy="17" r="2"/>
+            <circle cx="16.5" cy="17" r="2"/>
+            <path d="M5 11h14"/>
+          </svg>
+        </div>
+        <div class="admin-brand__text">
+          <span class="admin-brand__name">JCRide</span>
+          <span class="admin-brand__tag">NAIJA</span>
+        </div>
+      </div>
+      <a href="{{ url_for('main.home') }}" class="admin-link-muted">← Choose role</a>
+    </div>
+
+    <div class="admin-panel-left__content">
+      <p class="admin-eyebrow">NAIJA MOBILITY</p>
+      <h2 class="admin-headline">Move smarter across Jos, Abuja &amp; beyond.</h2>
+      <p class="admin-description">
+        Pay per kilometer with live GPS metering. Verified drivers, instant Paystack payouts,
+        and real-time tracking — built for Nigeria.
+      </p>
+
+      <div class="admin-stats">
+        <div class="admin-stat-card">
+          <div class="admin-stat-card__value">2.4M+</div>
+          <div class="admin-stat-card__label">Riders</div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card__value">180k</div>
+          <div class="admin-stat-card__label">Drivers</div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-card__value">&#8358;18B+</div>
+          <div class="admin-stat-card__label">Paid Out</div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="admin-panel-left__footer">
+      &copy; 2026 JCRide Technologies Ltd.
+    </footer>
+  </aside>
+
+  <main class="admin-panel-right">
+    <div class="admin-panel-right__wrap">
+      <a href="{{ url_for('main.home') }}" class="admin-back-link">← Back</a>
+      <div class="admin-panel-right__inner">
+      <header class="admin-form-header">
+        <h1>Admin Portal</h1>
+        <p>Secure sign-in with two-factor authentication required.</p>
+      </header>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="admin-flash admin-flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" class="admin-form" id="admin-login-form" novalidate>
+        <div class="admin-field">
+          <label for="email">Admin Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="ops@jcride.ng"
+            value="{{ email or '' }}"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+        <div class="admin-field">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <div class="admin-field">
+          <label for="totp_code">6-digit Authenticator Code</label>
+          <input
+            type="text"
+            id="totp_code"
+            name="totp_code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="000 000"
+            maxlength="7"
+            pattern="[0-9]{3} [0-9]{3}"
+            required
+          >
+          <span class="admin-field__hint">From your authenticator app</span>
+        </div>
+
+        <button type="submit" class="admin-btn-submit">Sign in securely</button>
+      </form>
+
+      <div class="admin-security-cards">
+        <div class="admin-security-card">
+          <div class="admin-security-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div class="admin-security-card__text">
+            <strong>2FA Enforced</strong>
+            <span>TOTP required</span>
+          </div>
+        </div>
+        <div class="admin-security-card">
+          <div class="admin-security-card__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <div class="admin-security-card__text">
+            <strong>Login Activity</strong>
+            <span>All sessions logged</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const input = document.getElementById("totp_code");
+  if (!input) return;
+
+  input.addEventListener("input", function () {
+    const digits = this.value.replace(/\D/g, "").slice(0, 6);
+    this.value = digits.length > 3
+      ? digits.slice(0, 3) + " " + digits.slice(3)
+      : digits;
+  });
+
+  document.getElementById("admin-login-form").addEventListener("submit", function () {
+    const raw = input.value.replace(/\s/g, "");
+    input.value = raw;
+  });
+})();
+</script>
+{% endblock %}
