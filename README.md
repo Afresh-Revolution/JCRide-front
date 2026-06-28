@@ -36,7 +36,6 @@ JCRide-front/
 ├── scripts/vercel_build.py     # Vercel build: app/static → public/static
 ├── wsgi.py                     # Vercel WSGI entry point
 ├── pyproject.toml              # Python + Vercel config
-├── vercel.json                 # Vercel function exclusions
 ├── run.py                      # Local dev entry point
 ├── requirements.txt
 ├── .env.example
@@ -159,7 +158,6 @@ This frontend is a Flask WSGI app. Vercel detects it automatically and runs it a
 | `wsgi.py` | Vercel entry point (`app` instance) |
 | `pyproject.toml` | Python version, Vercel entrypoint, build script |
 | `scripts/vercel_build.py` | Copies `app/static/` → `public/static/` at build time |
-| `vercel.json` | Optional bundle exclusions (tests, venv, local backend folder) |
 | `.python-version` | Python runtime (3.12) |
 
 ### Environment variables (Vercel project settings)
@@ -244,7 +242,7 @@ In the Vercel project: **Settings → Domains → Add**. Update any backend allo
 | Unstyled pages / missing images | Build must run `scripts/vercel_build.py`. Check deploy logs for “Copied app/static”. |
 | Login/API errors | Verify `API_URL` in Vercel env vars (no trailing slash). Confirm JCRide-back is live. |
 | Session/auth issues | Set a strong, unique `SECRET_KEY` in Production env vars. |
-| Deploy bundle too large | Keep `JCRide-back/`, `venv/`, and test files out of Git; `vercel.json` excludes them from the function bundle. |
+| Deploy bundle too large | Keep `JCRide-back/`, `venv/`, and test files out of Git. |
 
 ---
 
