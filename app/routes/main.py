@@ -4,6 +4,7 @@ import re
 from app.services.api_client import (
     ApiError,
     login,
+    login_with_joscity_fallback,
     register,
     register_driver,
     request_ride,
@@ -93,7 +94,10 @@ def _handle_login(portal: str):
             flash("Enter your password.", "error")
         else:
             try:
-                result = login(identifier, password)
+                if portal == "rider":
+                    result = login_with_joscity_fallback(identifier, password)
+                else:
+                    result = login(identifier, password)
                 user = result.get("user") or {}
                 role = user.get("role", "")
                 expected_role = PORTAL_ROLES[portal]
@@ -113,8 +117,17 @@ def _handle_login(portal: str):
                     session["name"] = user.get("full_name")
                     session["role"] = role
                     session["portal"] = portal
+                    session["joscity_user_id"] = user.get("joscity_user_id")
+                    wallet = result.get("wallet") or {}
+                    if wallet.get("balance_ngn") is not None:
+                        session["wallet_balance_ngn"] = wallet.get("balance_ngn")
                     session.permanent = remember
-                    flash("Signed in successfully.", "success")
+                    flash(
+                        "Signed in with JosCity."
+                        if user.get("joscity_user_id")
+                        else "Signed in successfully.",
+                        "success",
+                    )
                     if portal == "driver":
                         return redirect(url_for("main.driver_page"))
                     return redirect(url_for("main.ride_page"))
