@@ -1,0 +1,34 @@
+{# Driver login form (right panel) #}
+{% from "components/auth/input_field.html" import input_field %}
+
+<section class="auth-panel">
+  <a href="{{ url_for('main.home') }}" class="auth-back">← Back</a>
+
+  <div class="auth-panel__content">
+    <h2 class="auth-panel__title">Welcome back, captain</h2>
+    <p class="auth-panel__subtitle">Sign in to go online and start earning.</p>
+
+    <form method="post" class="auth-form">
+      {{ input_field("Email or phone", "email_or_phone", "text", "you@example.com or +234 800 000 0000") }}
+      {{ input_field("Password", "password", "password", "••••••••") }}
+
+      <div class="auth-form__row">
+        <label class="checkbox">
+          <input type="checkbox" name="remember">
+          <span>Remember device</span>
+        </label>
+        <a href="#" class="auth-link auth-link--accent">Forgot password?</a>
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--block">Sign in</button>
+    </form>
+
+    <p class="auth-status">
+      Approval status: <strong class="text-success">{{ profile.approval_status }}</strong>
+    </p>
+
+    <p class="auth-panel__footer">
+      New driver? <a href="{{ url_for('driver_portal.register_page') }}" class="auth-link auth-link--accent">Apply now</a>
+    </p>
+  </div>
+</section>

@@ -1,0 +1,9 @@
+{# Step progress bar for registration #}
+<div class="progress">
+  <div class="progress__bar">
+    {% for i in range(1, total_steps + 1) %}
+      <span class="progress__segment {% if i <= step %}progress__segment--active{% endif %}"></span>
+    {% endfor %}
+  </div>
+  <span class="progress__label">Step {{ step }}/{{ total_steps }}</span>
+</div>
