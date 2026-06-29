@@ -1,0 +1,11 @@
+{# Single KPI card — looped in dashboard page #}
+<article class="metric-card">
+  <div class="metric-card__head">
+    <span class="metric-card__title">{{ metric.title }}</span>
+    <span class="metric-card__icon metric-card__icon--{{ metric.icon }}"></span>
+  </div>
+  <div class="metric-card__value">{{ metric.value }}</div>
+  {% if metric.trend %}
+    <span class="metric-card__trend">{{ metric.trend }}</span>
+  {% endif %}
+</article>

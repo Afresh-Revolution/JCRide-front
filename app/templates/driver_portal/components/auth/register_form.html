@@ -1,0 +1,26 @@
+{# Driver registration form — step 1 (right panel) #}
+{% from "components/auth/input_field.html" import input_field %}
+
+<section class="auth-panel">
+  <a href="{{ url_for('driver_portal.login') }}" class="auth-back">← Back</a>
+
+  <div class="auth-panel__content">
+    <h2 class="auth-panel__title">Drive with JCRide</h2>
+    <p class="auth-panel__subtitle">Personal info</p>
+
+    {% include "components/auth/progress_bar.html" %}
+
+    <form method="post" class="auth-form">
+      {{ input_field("Full Name", "name", "text", "Tunde Bakare") }}
+      {{ input_field("Phone Number", "phone", "tel", "+234 800 000 0000") }}
+      {{ input_field("Email", "email", "email", "driver@example.com", required=false) }}
+
+      <button type="submit" class="btn btn--primary btn--block">Continue</button>
+    </form>
+
+    <p class="auth-panel__footer">
+      Already a driver?
+      <a href="{{ url_for('driver_portal.login') }}" class="auth-link auth-link--accent">Sign in</a>
+    </p>
+  </div>
+</section>

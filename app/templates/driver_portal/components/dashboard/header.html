@@ -1,0 +1,20 @@
+{# Top header with search and profile #}
+<header class="topbar">
+  <div class="topbar__search">
+    <span class="topbar__search-icon">🔍</span>
+    <input type="search" placeholder="Search rides, drivers, places..." class="topbar__search-input">
+  </div>
+
+  <div class="topbar__actions">
+    <button type="button" class="topbar__icon-btn" aria-label="Notifications">🔔</button>
+    <button type="button" class="topbar__icon-btn" aria-label="Settings">⚙️</button>
+
+    <div class="topbar__profile">
+      <div class="avatar">{{ profile.initials }}</div>
+      <div class="topbar__profile-info">
+        <div class="topbar__profile-name">{{ profile.name }}</div>
+        <div class="topbar__profile-meta">★ {{ profile.rating }} · {{ profile.plate }}</div>
+      </div>
+    </div>
+  </div>
+</header>
