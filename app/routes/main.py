@@ -67,18 +67,36 @@ def _resolve_login_identifier(phone: str, email: str) -> str:
     return email or phone
 
 
+def _set_driver_portal_session(result: dict, identifier: str = "") -> None:
+    """Mirror login state into keys used by the driver portal."""
+    user = result.get("user") or {}
+    session["driver_token"] = result.get("access_token", session.get("token", ""))
+    session["driver_name"] = user.get("full_name") or session.get("name")
+    if identifier and "@" in identifier:
+        session["driver_email"] = identifier
+        session["driver_phone"] = user.get("phone") or session.get("phone") or ""
+    elif identifier:
+        session["driver_phone"] = identifier
+        session["driver_email"] = user.get("email") or session.get("email") or ""
+    session.setdefault("driver_online", False)
+
+
 def _handle_login(portal: str):
     if portal not in PORTAL_ROLES:
         portal = "rider"
 
     phone = request.form.get("phone", "").strip() if request.method == "POST" else ""
     email = request.form.get("email", "").strip() if request.method == "POST" else ""
+    email_or_phone = request.form.get("email_or_phone", "").strip() if request.method == "POST" else ""
     remember = request.form.get("remember") == "1" if request.method == "POST" else False
 
     if request.method == "POST":
         get_flashed_messages()
         password = request.form.get("password", "")
-        identifier = _resolve_login_identifier(phone, email)
+        if portal == "driver":
+            identifier = email_or_phone.strip()
+        else:
+            identifier = _resolve_login_identifier(phone, email)
         if not identifier:
             flash(
                 "Enter your email address."
@@ -108,8 +126,8 @@ def _handle_login(portal: str):
                 else:
                     session["token"] = result.get("access_token", "")
                     session["user_id"] = user.get("id")
-                    session["email"] = user.get("email") or email
-                    session["phone"] = user.get("phone") or phone
+                    session["email"] = user.get("email") or (identifier if "@" in identifier else email)
+                    session["phone"] = user.get("phone") or (identifier if "@" not in identifier else phone)
                     session["name"] = user.get("full_name")
                     session["role"] = role
                     session["portal"] = portal
@@ -125,7 +143,8 @@ def _handle_login(portal: str):
                         "success",
                     )
                     if portal == "driver":
-                        return redirect(url_for("main.driver_page"))
+                        _set_driver_portal_session(result, identifier)
+                        return redirect(url_for("driver_portal.dashboard"))
                     return redirect(url_for("main.ride_page"))
             except ApiError as exc:
                 flash(exc.message, "error")
@@ -135,6 +154,7 @@ def _handle_login(portal: str):
         portal=portal,
         phone=phone,
         email=email,
+        email_or_phone=email_or_phone,
         remember=remember,
     )
 
@@ -230,8 +250,19 @@ def driver_register_page():
                 session["name"] = signup.get("full_name")
                 session["role"] = "driver"
                 session["portal"] = "driver"
+                _set_driver_portal_session(
+                    {
+                        "access_token": token,
+                        "user": {
+                            "full_name": signup.get("full_name"),
+                            "email": signup.get("email"),
+                            "phone": signup.get("phone"),
+                        },
+                    },
+                    _driver_login_identifier(signup),
+                )
                 _clear_driver_signup()
-                return redirect(url_for("main.driver_page"))
+                return redirect(url_for("driver_portal.dashboard"))
             flash("Complete verification before continuing.", "error")
             signup["step"] = 3
             _save_driver_signup(signup)
