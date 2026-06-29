@@ -1,0 +1,50 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'support' %}
+
+{% block page_title %}Support{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-support.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="support-page">
+  <div class="support-layout">
+    <div class="support-main dash-card">
+      <div class="support-main__header">
+        <h2 class="support-main__title">Active tickets</h2>
+        <div class="support-filters" role="tablist" aria-label="Ticket status">
+          <button type="button" class="support-filter is-active" data-status="">All</button>
+          <button type="button" class="support-filter" data-status="in_review">Open</button>
+          <button type="button" class="support-filter" data-status="closed">Resolved</button>
+        </div>
+      </div>
+      <div class="support-tickets" id="support-tickets-list" aria-live="polite">
+        <p class="support-loading">Loading tickets…</p>
+      </div>
+    </div>
+
+    <aside class="support-sidebar">
+      <article class="dash-card support-sla">
+        <h3 class="support-sidebar__title">SLA Today</h3>
+        <dl class="support-sla__grid">
+          <div><dt>First reply</dt><dd id="sla-first-reply">—</dd></div>
+          <div><dt>Resolution</dt><dd id="sla-resolution">—</dd></div>
+          <div><dt>CSAT</dt><dd id="sla-csat">—</dd></div>
+        </dl>
+      </article>
+
+      <article class="dash-card support-agents">
+        <h3 class="support-sidebar__title">Agents online</h3>
+        <ul class="support-agents__list" id="support-agents-list"></ul>
+      </article>
+    </aside>
+  </div>
+  <div class="admin-toast" id="support-toast" hidden role="status"></div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-support.js') }}"></script>
+{% endblock %}

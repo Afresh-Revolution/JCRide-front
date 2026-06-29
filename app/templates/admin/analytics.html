@@ -1,0 +1,51 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'analytics' %}
+{% set analytics_charts = true %}
+
+{% block page_title %}Analytics{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-analytics.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="analytics-page">
+  <div class="analytics-grid">
+    <article class="dash-card analytics-card analytics-card--bar">
+      <h2 class="analytics-card__title">Daily rides (last 14 days)</h2>
+      <div class="analytics-chart-wrap">
+        <canvas id="analytics-daily-rides-chart" aria-label="Daily rides chart"></canvas>
+      </div>
+    </article>
+
+    <article class="dash-card analytics-card analytics-card--donut">
+      <h2 class="analytics-card__title">Ride success rate</h2>
+      <div class="analytics-donut-wrap">
+        <canvas id="analytics-success-chart" aria-label="Ride success rate"></canvas>
+        <div class="analytics-donut-center">
+          <span id="analytics-success-percent">—</span>
+          <small>completion</small>
+        </div>
+      </div>
+    </article>
+
+    <article class="dash-card analytics-card analytics-card--wide">
+      <h2 class="analytics-card__title">User &amp; driver growth (monthly, thousands)</h2>
+      <div class="analytics-chart-wrap analytics-chart-wrap--tall">
+        <canvas id="analytics-growth-chart" aria-label="User and driver growth"></canvas>
+      </div>
+    </article>
+
+    <article class="dash-card analytics-card analytics-card--wide">
+      <h2 class="analytics-card__title">Demand heatmap · Lagos</h2>
+      <div class="analytics-heatmap" id="analytics-heatmap" aria-label="Lagos demand heatmap"></div>
+    </article>
+  </div>
+  <div class="admin-toast" id="analytics-toast" hidden role="status"></div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-analytics.js') }}"></script>
+{% endblock %}

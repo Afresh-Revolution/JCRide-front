@@ -1,0 +1,61 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'notifications' %}
+
+{% block page_title %}Notifications{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-notifications.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="notifications-page">
+  <div class="notifications-layout">
+    <div class="notifications-main dash-card">
+      <div class="notifications-main__header">
+        <div>
+          <h2 class="notifications-main__title">Operations inbox</h2>
+          <p class="notifications-main__sub" id="notifications-inbox-sub">Loading…</p>
+        </div>
+        <div class="notifications-main__tools">
+          <label class="notifications-severity">
+            <span class="sr-only">Filter by severity</span>
+            <select id="notifications-severity-select" aria-label="Filter by severity">
+              <option value="">All severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+              <option value="info">Info</option>
+            </select>
+          </label>
+          <button type="button" class="notifications-mark-read" id="notifications-mark-all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Mark all read
+          </button>
+        </div>
+      </div>
+      <div class="notifications-list" id="notifications-list" aria-live="polite">
+        <p class="notifications-loading">Loading notifications…</p>
+      </div>
+    </div>
+
+    <aside class="notifications-settings dash-card">
+      <h3 class="notifications-settings__title">Notification settings</h3>
+      <div class="notifications-settings__group">
+        <p class="notifications-settings__label">Alert categories</p>
+        <ul class="notifications-toggles" id="notifications-alert-toggles"></ul>
+      </div>
+      <div class="notifications-settings__group">
+        <p class="notifications-settings__label">Delivery</p>
+        <ul class="notifications-toggles" id="notifications-delivery-toggles"></ul>
+      </div>
+    </aside>
+  </div>
+  <div class="admin-toast" id="notifications-toast" hidden role="status"></div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-notifications.js') }}"></script>
+{% endblock %}

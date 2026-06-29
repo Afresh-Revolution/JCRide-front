@@ -1,0 +1,17 @@
+[project]
+name = "jcride-front"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "flask==3.1.0",
+    "requests==2.32.3",
+    "python-dotenv==1.0.1",
+    "flask-wtf==1.2.2",
+    "wtforms==3.2.1",
+]
+
+[tool.vercel]
+entrypoint = "wsgi:app"
+
+[tool.vercel.scripts]
+build = "python scripts/vercel_build.py"

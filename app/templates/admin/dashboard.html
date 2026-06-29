@@ -1,0 +1,121 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'dashboard' %}
+{% set dashboard_charts = true %}
+{% set dashboard_map = true %}
+
+{% block dashboard_content %}
+<section class="kpi-grid">
+  <article class="kpi-card">
+    <div class="kpi-card__body">
+      <span class="kpi-card__label">Total Users</span>
+      <span class="kpi-card__value" id="stat-total-users">{{ stats.total_users.value }}</span>
+      <span class="kpi-card__trend kpi-card__trend--up">&#9650; {{ stats.total_users.trend }}</span>
+    </div>
+    <div class="kpi-card__icon kpi-card__icon--green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+  </article>
+
+  <article class="kpi-card">
+    <div class="kpi-card__body">
+      <span class="kpi-card__label">Active Drivers</span>
+      <span class="kpi-card__value" id="stat-active-drivers">{{ stats.active_drivers.value }}</span>
+      <span class="kpi-card__trend kpi-card__trend--up">&#9650; {{ stats.active_drivers.trend }}</span>
+    </div>
+    <div class="kpi-card__icon kpi-card__icon--green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+    </div>
+  </article>
+
+  <article class="kpi-card">
+    <div class="kpi-card__body">
+      <span class="kpi-card__label">Active Trips</span>
+      <span class="kpi-card__value" id="stat-active-trips">{{ stats.active_trips.value }}</span>
+      <span class="kpi-card__trend kpi-card__trend--up">&#9650; {{ stats.active_trips.trend }}</span>
+    </div>
+    <div class="kpi-card__icon kpi-card__icon--green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </div>
+  </article>
+
+  <article class="kpi-card">
+    <div class="kpi-card__body">
+      <span class="kpi-card__label">Revenue (MTD)</span>
+      <span class="kpi-card__value" id="stat-revenue">{{ stats.revenue_mtd.value }}</span>
+      <span class="kpi-card__trend kpi-card__trend--up-double">&#9650;&#9650; {{ stats.revenue_mtd.trend }}</span>
+    </div>
+    <div class="kpi-card__icon kpi-card__icon--amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+    </div>
+  </article>
+
+  <article class="kpi-card">
+    <div class="kpi-card__body">
+      <span class="kpi-card__label">Wallet Funds</span>
+      <span class="kpi-card__value" id="stat-wallet">{{ stats.wallet_funds.value }}</span>
+    </div>
+    <div class="kpi-card__icon kpi-card__icon--teal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+    </div>
+  </article>
+
+  <article class="kpi-card">
+    <div class="kpi-card__body">
+      <span class="kpi-card__label">Completion Rate</span>
+      <span class="kpi-card__value" id="stat-completion">{{ stats.completion_rate.value }}</span>
+      <span class="kpi-card__trend kpi-card__trend--up-double">&#9650;&#9650; {{ stats.completion_rate.trend }}</span>
+    </div>
+    <div class="kpi-card__icon kpi-card__icon--green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+  </article>
+</section>
+
+<section class="charts-row">
+  <article class="dash-card dash-card--wide">
+    <div class="dash-card__header">
+      <div>
+        <h2 class="dash-card__title">Revenue growth</h2>
+        <p class="dash-card__subtitle">Monthly net revenue (&#8358; millions)</p>
+      </div>
+      <div class="period-toggle" role="group" aria-label="Revenue time period">
+        <button type="button" class="period-toggle__btn" data-period="1M">1M</button>
+        <button type="button" class="period-toggle__btn" data-period="3M">3M</button>
+        <button type="button" class="period-toggle__btn is-active" data-period="1Y">1Y</button>
+        <button type="button" class="period-toggle__btn" data-period="All">All</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="revenue-chart" aria-label="Revenue growth chart"></canvas>
+    </div>
+  </article>
+
+  <article class="dash-card dash-card--narrow">
+    <div class="dash-card__header">
+      <h2 class="dash-card__title">Ride split by tier</h2>
+    </div>
+    <div class="donut-wrap">
+      <canvas id="tier-chart" aria-label="Ride split by tier chart"></canvas>
+    </div>
+    <div class="tier-legend" id="tier-legend"></div>
+  </article>
+</section>
+
+<section class="dash-card dash-card--map">
+  <div class="dash-card__header dash-card__header--map">
+    <div>
+      <h2 class="dash-card__title">Live trip monitor</h2>
+      <p class="dash-card__subtitle" id="live-trip-count">{{ live_trips.count | default(1284) | string }} trips in progress nationwide</p>
+    </div>
+    <div class="trip-legend">
+      <span class="trip-legend__item"><span class="trip-legend__dot trip-legend__dot--active"></span> Active</span>
+      <span class="trip-legend__item"><span class="trip-legend__dot trip-legend__dot--delayed"></span> Delayed</span>
+      <span class="trip-legend__item"><span class="trip-legend__dot trip-legend__dot--incident"></span> Incident</span>
+    </div>
+  </div>
+  <div class="map-wrap">
+    <div id="live-trip-map" class="live-trip-map"></div>
+    <span class="map-badge" id="map-city-badge">{{ live_trips.label | default('Nigeria · Live ops') }}</span>
+  </div>
+</section>
+{% endblock %}

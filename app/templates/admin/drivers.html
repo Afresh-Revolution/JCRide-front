@@ -1,0 +1,104 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'drivers' %}
+
+{% block page_title %}Drivers{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-drivers.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="drivers-page">
+  <div class="drivers-kpi-grid">
+    <article class="drivers-kpi-card">
+      <div class="drivers-kpi-card__body">
+        <span class="drivers-kpi-card__label">Pending approval</span>
+        <span class="drivers-kpi-card__value" id="kpi-pending">—</span>
+      </div>
+      <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--amber" data-filter="pending">Review</button>
+    </article>
+    <article class="drivers-kpi-card">
+      <div class="drivers-kpi-card__body">
+        <span class="drivers-kpi-card__label">Active drivers</span>
+        <span class="drivers-kpi-card__value" id="kpi-active">—</span>
+      </div>
+      <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" data-filter="approved">Review</button>
+    </article>
+    <article class="drivers-kpi-card">
+      <div class="drivers-kpi-card__body">
+        <span class="drivers-kpi-card__label">Suspended</span>
+        <span class="drivers-kpi-card__value" id="kpi-suspended">—</span>
+      </div>
+      <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--red" data-filter="suspended">Review</button>
+    </article>
+    <article class="drivers-kpi-card">
+      <div class="drivers-kpi-card__body">
+        <span class="drivers-kpi-card__label">Documents expiring (30d)</span>
+        <span class="drivers-kpi-card__value" id="kpi-expiring">—</span>
+      </div>
+      <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" data-filter="all">Review</button>
+    </article>
+  </div>
+
+  <div class="drivers-toolbar dash-card">
+    <div class="drivers-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="drivers-search-input" placeholder="Search by name or plate" aria-label="Search drivers">
+    </div>
+    <div class="drivers-filter-tabs" role="tablist" aria-label="Filter by status">
+      <button type="button" class="drivers-filter-tab is-active" data-status="all" role="tab">All</button>
+      <button type="button" class="drivers-filter-tab" data-status="pending" role="tab">Pending</button>
+      <button type="button" class="drivers-filter-tab" data-status="approved" role="tab">Approved</button>
+      <button type="button" class="drivers-filter-tab" data-status="suspended" role="tab">Suspended</button>
+    </div>
+  </div>
+
+  <div class="drivers-card dash-card">
+    <div class="drivers-table-wrap">
+      <table class="drivers-table" aria-label="Driver management">
+        <thead>
+          <tr>
+            <th scope="col">Driver</th>
+            <th scope="col">Vehicle</th>
+            <th scope="col">Plate</th>
+            <th scope="col">Trips</th>
+            <th scope="col">Earnings</th>
+            <th scope="col">Rating</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody id="drivers-table-body">
+          <tr class="drivers-table__loading"><td colspan="8">Loading drivers…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="drivers-pagination" id="drivers-pagination" hidden>
+      <span class="drivers-pagination__info" id="drivers-pagination-info"></span>
+      <div class="drivers-pagination__controls">
+        <button type="button" class="drivers-pagination__btn" id="drivers-prev-btn" disabled>Previous</button>
+        <button type="button" class="drivers-pagination__btn" id="drivers-next-btn" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="drivers-modal-overlay" id="driver-detail-modal" hidden>
+  <div class="drivers-modal" role="dialog" aria-labelledby="driver-detail-title" aria-modal="true">
+    <div class="drivers-modal__header">
+      <h2 id="driver-detail-title">Driver details</h2>
+      <button type="button" class="drivers-modal__close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <div class="drivers-modal__body" id="driver-detail-body"></div>
+    <div class="drivers-modal__footer">
+      <button type="button" class="drivers-btn drivers-btn--ghost" data-close-modal>Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="drivers-toast" id="drivers-toast" hidden role="status"></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-drivers.js') }}"></script>
+{% endblock %}

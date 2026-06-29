@@ -1,0 +1,63 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'trips' %}
+{% set admin_leaflet = true %}
+
+{% block page_title %}Trips{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-trips.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="trips-page">
+  <div class="trips-layout">
+    <article class="dash-card trips-map-card">
+      <div class="dash-card__header dash-card__header--map">
+        <div>
+          <h2 class="dash-card__title">
+            Live trip map · <span id="trips-active-count">—</span> active
+          </h2>
+        </div>
+        <div class="trip-legend" id="trips-map-legend" aria-label="Live trip status counts">
+          <span class="trip-legend__item">
+            <span class="trip-legend__dot trip-legend__dot--active"></span>
+            <span id="legend-active-count">0</span>
+          </span>
+          <span class="trip-legend__item">
+            <span class="trip-legend__dot trip-legend__dot--delayed"></span>
+            <span id="legend-delayed-count">0</span>
+          </span>
+          <span class="trip-legend__item">
+            <span class="trip-legend__dot trip-legend__dot--incident"></span>
+            <span id="legend-incident-count">0</span>
+          </span>
+        </div>
+      </div>
+      <div class="map-wrap">
+        <div id="trips-live-map" class="live-trip-map trips-live-map"></div>
+        <span class="map-badge" id="trips-map-badge">Nigeria · Live ops</span>
+      </div>
+    </article>
+
+    <article class="dash-card trips-recent-card">
+      <div class="trips-recent-header">
+        <h2 class="dash-card__title">Recent trips</h2>
+        <div class="trips-filter-tabs" role="tablist" aria-label="Filter trips by status">
+          <button type="button" class="trips-filter-tab is-active" data-status="all" role="tab">All</button>
+          <button type="button" class="trips-filter-tab" data-status="active" role="tab">Active</button>
+          <button type="button" class="trips-filter-tab" data-status="completed" role="tab">Completed</button>
+          <button type="button" class="trips-filter-tab" data-status="cancelled" role="tab">Cancelled</button>
+        </div>
+      </div>
+      <div class="trips-list" id="trips-list" aria-live="polite">
+        <p class="trips-list__loading">Loading trips…</p>
+      </div>
+    </article>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-trips.js') }}"></script>
+{% endblock %}
