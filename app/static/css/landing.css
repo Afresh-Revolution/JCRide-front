@@ -26,7 +26,11 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body.landing {
   font-family: var(--font);
@@ -35,6 +39,7 @@ body.landing {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 img { max-width: 100%; height: auto; display: block; }
@@ -55,6 +60,8 @@ a { color: inherit; text-decoration: none; }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .landing-header__inner {
@@ -285,6 +292,23 @@ a { color: inherit; text-decoration: none; }
   padding: 3.5rem 0 4.5rem;
   background: #ffffff;
   overflow: hidden;
+  overflow-x: clip;
+}
+
+.landing-hero__content {
+  width: 100%;
+  min-width: 0;
+}
+
+.landing-hero__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem 3rem;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .landing-hero::before {
@@ -295,15 +319,6 @@ a { color: inherit; text-decoration: none; }
     radial-gradient(ellipse 110% 95% at 0% 0%, rgba(217, 249, 157, 0.34) 0%, transparent 82%),
     radial-gradient(ellipse 85% 75% at 6% 18%, rgba(200, 243, 167, 0.674) 0%, transparent 78%);
   pointer-events: none;
-}
-
-.landing-hero__grid {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2.5rem 3rem;
-  align-items: center;
 }
 
 .landing-hero__badge {
@@ -398,17 +413,23 @@ a { color: inherit; text-decoration: none; }
 .landing-hero__watch-icon svg { width: 14px; height: 14px; margin-left: 2px; }
 
 /* Hero mockup panel */
-.landing-hero__visual { display: flex; justify-content: flex-start; }
+.landing-hero__visual {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+}
 
 .landing-hero__mockup {
   position: relative;
   width: min(100%, 520px);
   aspect-ratio: 520 / 640;
-  min-height: 480px;
+  min-height: 0;
   border-radius: 32px;
   background: #1a2e24;
   box-shadow: 0 24px 56px rgba(79, 155, 120, 0.28);
   overflow: hidden;
+  max-width: 100%;
 }
 
 .landing-hero__mockup-photo {
@@ -1611,6 +1632,8 @@ a { color: inherit; text-decoration: none; }
   .landing-section { padding: 3.5rem 0; }
   .landing-section__header { margin-bottom: 2rem; }
 
+  .landing-container { width: min(100% - 1.5rem, var(--container)); }
+
   .landing-nav {
     display: none;
     position: absolute;
@@ -1641,23 +1664,26 @@ a { color: inherit; text-decoration: none; }
 
   .landing-link { display: none; }
 
-  .landing-hero__grid { grid-template-columns: 1fr; gap: 2rem; }
+  .landing-hero__grid { grid-template-columns: 1fr; gap: 1.75rem; }
   .landing-hero__visual {
     order: -1;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
+    padding-inline: 0;
   }
   .landing-hero__mockup {
-    min-height: clamp(400px, 118vw, 560px);
-    width: min(100%, 440px);
-    max-width: 440px;
-    margin-inline: auto;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
     aspect-ratio: 520 / 640;
-    --hero-inset: 0.55rem;
-    --hero-gap: 0.42rem;
-    --hero-top-row: calc(0.6rem + 5px);
+    border-radius: clamp(18px, 5vw, 28px);
+    container-type: inline-size;
+    container-name: hero-mockup;
+    --hero-inset: clamp(0.45rem, 3.5cqi, 0.85rem);
+    --hero-gap: clamp(0.3rem, 2cqi, 0.42rem);
+    --hero-top-row: clamp(0.5rem, 4cqi, 0.85rem);
   }
 
   .landing-hero__ui-card {
@@ -1698,6 +1724,21 @@ a { color: inherit; text-decoration: none; }
     flex-direction: column;
     align-items: center;
     text-align: center;
+  }
+
+  .landing-hero__ui-card--pickup span {
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .landing-hero__ui-card--pickup strong,
+  .landing-hero__ui-card--pickup small {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .landing-hero__ui-card--rides {
@@ -1797,19 +1838,42 @@ a { color: inherit; text-decoration: none; }
   .landing-hero__driver-rating { font-size: 0.6rem; }
   .landing-hero__driver-eta { font-size: 0.58rem; }
 
-  .landing-hero { padding: 2.5rem 0 3rem; }
-  .landing-hero__title { font-size: clamp(1.85rem, 7vw, 2.35rem); }
-  .landing-hero__subtitle { font-size: 0.98rem; }
+  .landing-hero { padding: 1.75rem 0 2.75rem; }
+  .landing-hero__badge {
+    font-size: clamp(0.68rem, 3.2vw, 0.78rem);
+    padding: 0.35rem 0.75rem;
+    margin-bottom: 1rem;
+    max-width: 100%;
+    text-wrap: balance;
+  }
+  .landing-hero__title {
+    font-size: clamp(1.75rem, 8.5vw, 2.35rem);
+    text-wrap: balance;
+    hyphens: auto;
+  }
+  .landing-hero__subtitle {
+    font-size: clamp(0.92rem, 4.1vw, 1rem);
+    line-height: 1.65;
+    max-width: none;
+    margin-bottom: 1.5rem;
+    text-wrap: pretty;
+  }
   .landing-hero__actions {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.65rem;
+    margin-bottom: 1.35rem;
   }
-  .landing-hero__actions .landing-btn { width: 100%; }
-  .landing-hero__watch { justify-content: center; }
+  .landing-hero__actions .landing-btn { width: 100%; justify-content: center; }
+  .landing-hero__watch { justify-content: center; width: 100%; }
   .landing-hero__trust {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.65rem;
+    gap: 0.6rem;
+  }
+  .landing-hero__trust-item {
+    font-size: clamp(0.76rem, 3.4vw, 0.82rem);
+    max-width: 100%;
   }
 
   .landing-audience { grid-template-columns: 1fr; }
@@ -1826,102 +1890,128 @@ a { color: inherit; text-decoration: none; }
   .landing-steps,
   .landing-testimonials { grid-template-columns: 1fr; }
 
+  .landing-container { width: min(100% - 1.5rem, var(--container)); }
+
   .landing-hero__mockup {
-    min-height: clamp(380px, 125vw, 520px);
-    width: min(100%, 400px);
-    max-width: 400px;
-    --hero-inset: 0.5rem;
-    --hero-gap: 0.38rem;
+    border-radius: clamp(16px, 4.5vw, 22px);
   }
 
   .landing-hero__ui-card {
-    padding: 0.48rem 0.55rem;
-    border-radius: 12px;
+    padding: clamp(0.4rem, 2.8cqi, 0.55rem) clamp(0.45rem, 3cqi, 0.62rem);
+    border-radius: clamp(10px, 3.5cqi, 14px);
   }
 
   .landing-hero__ui-card--where {
-    width: calc(60% - var(--hero-inset) - var(--hero-gap) * 0.5);
+    width: calc(61% - var(--hero-inset) - var(--hero-gap) * 0.5);
   }
 
   .landing-hero__ui-card--pickup {
-    width: calc(40% - var(--hero-inset) - var(--hero-gap) * 0.5);
-    padding: 0.32rem 0.42rem;
+    width: calc(39% - var(--hero-inset) - var(--hero-gap) * 0.5);
+    padding: clamp(0.28rem, 2cqi, 0.38rem) clamp(0.35rem, 2.5cqi, 0.5rem);
   }
 
   .landing-hero__ui-card--rides {
-    top: calc(35% + 20px);
-    left: calc(50% - var(--hero-gap) * 0.5 - 8px);
-    padding: 0.48rem 0.52rem;
+    top: calc(36% + clamp(12px, 4cqi, 20px));
+    left: calc(50% - var(--hero-gap) * 0.5 - clamp(4px, 2cqi, 10px));
+    right: var(--hero-inset);
+    padding: clamp(0.42rem, 2.8cqi, 0.55rem) clamp(0.45rem, 3cqi, 0.58rem);
   }
 
   .landing-hero__ui-card--driver {
-    right: calc(50% + var(--hero-gap) * 0.5 + 4px);
-    padding: 0.48rem 0.55rem;
+    right: calc(50% + var(--hero-gap) * 0.5 + clamp(2px, 1.5cqi, 6px));
+    padding: clamp(0.42rem, 2.8cqi, 0.55rem) clamp(0.45rem, 3cqi, 0.62rem);
   }
 
-  .landing-hero__ui-step { font-size: 0.46rem; }
-  .landing-hero__ui-field { font-size: 0.54rem; padding: 0.3rem 0.42rem; }
-  .landing-hero__ui-field svg { width: 10px; height: 10px; }
-  .landing-hero__ui-pickup-icon { width: 20px; height: 20px; }
-  .landing-hero__ui-card--pickup strong { font-size: 0.58rem; }
-  .landing-hero__ui-card--pickup small { font-size: 0.48rem; }
-  .landing-hero__ride-opt span { font-size: 0.42rem; }
-  .landing-hero__ride-opt strong { font-size: 0.52rem; }
-  .landing-hero__driver-avatar { width: 24px; height: 24px; font-size: 0.5rem; }
-  .landing-hero__driver-info strong { font-size: 0.58rem; }
-  .landing-hero__driver-info span { font-size: 0.48rem; }
+  .landing-hero__ui-step { font-size: clamp(0.42rem, 2.6cqi, 0.5rem); }
+  .landing-hero__ui-field {
+    font-size: clamp(0.5rem, 3cqi, 0.58rem);
+    padding: clamp(0.28rem, 2cqi, 0.35rem) clamp(0.38rem, 2.5cqi, 0.5rem);
+  }
+  .landing-hero__ui-field svg {
+    width: clamp(9px, 2.8cqi, 11px);
+    height: clamp(9px, 2.8cqi, 11px);
+  }
+  .landing-hero__ui-pickup-icon {
+    width: clamp(18px, 5.5cqi, 22px);
+    height: clamp(18px, 5.5cqi, 22px);
+  }
+  .landing-hero__ui-card--pickup strong { font-size: clamp(0.52rem, 3.2cqi, 0.62rem); }
+  .landing-hero__ui-card--pickup small { font-size: clamp(0.44rem, 2.6cqi, 0.52rem); }
+  .landing-hero__ride-opt span { font-size: clamp(0.4rem, 2.4cqi, 0.46rem); }
+  .landing-hero__ride-opt strong { font-size: clamp(0.48rem, 2.8cqi, 0.56rem); }
+  .landing-hero__driver-avatar {
+    width: clamp(22px, 6.5cqi, 26px);
+    height: clamp(22px, 6.5cqi, 26px);
+    font-size: clamp(0.48rem, 2.8cqi, 0.55rem);
+  }
+  .landing-hero__driver-info strong { font-size: clamp(0.54rem, 3.2cqi, 0.62rem); }
+  .landing-hero__driver-info span { font-size: clamp(0.44rem, 2.6cqi, 0.52rem); }
+  .landing-hero__driver-rating { font-size: clamp(0.52rem, 3cqi, 0.6rem); }
+  .landing-hero__driver-eta { font-size: clamp(0.5rem, 2.8cqi, 0.58rem); }
 
   .landing-stats__grid { grid-template-columns: 1fr; }
   .landing-partners__list { gap: 1.25rem 2rem; }
   .landing-footer__grid { grid-template-columns: 1fr; }
   .landing-cta__stats { grid-template-columns: 1fr; }
   .landing-faq__item summary { padding: 1rem 0.25rem; }
-  .landing-header__inner { gap: 0.75rem; }
+  .landing-header__inner { gap: 0.75rem; width: min(100% - 1.5rem, var(--container)); }
   .landing-header__actions .landing-btn--sm span { display: none; }
   .landing-header__actions .landing-btn--sm { padding: 0.55rem 0.85rem; }
 }
 
-@media (max-width: 380px) {
-  .landing-container { width: min(100% - 1.25rem, var(--container)); }
-  .landing-hero__badge { font-size: 0.72rem; }
-  .landing-btn { font-size: 0.85rem; padding: 0.7rem 1.1rem; }
-
-  .landing-hero__mockup {
-    width: min(100%, 360px);
-    max-width: 360px;
-    --hero-inset: 0.48rem;
-    --hero-gap: 0.35rem;
+@media (max-width: 430px) {
+  .landing-container,
+  .landing-header__inner {
+    width: min(100% - 1.25rem, var(--container));
   }
 
-  .landing-hero__ui-card {
-    padding: 0.42rem 0.48rem;
-    border-radius: 11px;
-  }
+  .landing-hero { padding: 1.35rem 0 2.25rem; }
+  .landing-hero__grid { gap: 1.35rem; }
 
   .landing-hero__ui-card--where {
-    width: calc(58% - var(--hero-inset) - var(--hero-gap) * 0.5);
+    width: calc(63% - var(--hero-inset) - var(--hero-gap) * 0.5);
   }
 
   .landing-hero__ui-card--pickup {
-    width: calc(42% - var(--hero-inset) - var(--hero-gap) * 0.5);
-    padding: 0.28rem 0.38rem;
+    width: calc(37% - var(--hero-inset) - var(--hero-gap) * 0.5);
+  }
+
+  .landing-hero__ui-badge {
+    font-size: clamp(0.44rem, 2.4cqi, 0.5rem);
+    padding: 0.12rem 0.34rem;
+  }
+
+  .landing-hero__ride-options { gap: clamp(0.18rem, 1.5cqi, 0.28rem); }
+
+  .landing-hero__ride-opt {
+    padding: clamp(0.24rem, 1.8cqi, 0.32rem) clamp(0.12rem, 1cqi, 0.18rem);
+  }
+}
+
+@media (max-width: 380px) {
+  .landing-container,
+  .landing-header__inner {
+    width: min(100% - 1rem, var(--container));
+  }
+
+  .landing-hero__badge { font-size: 0.68rem; }
+  .landing-btn { font-size: 0.85rem; padding: 0.7rem 1.1rem; }
+
+  .landing-hero__ui-card--where {
+    width: calc(64% - var(--hero-inset) - var(--hero-gap) * 0.5);
+  }
+
+  .landing-hero__ui-card--pickup {
+    width: calc(36% - var(--hero-inset) - var(--hero-gap) * 0.5);
   }
 
   .landing-hero__ui-card--rides {
-    left: calc(50% - var(--hero-gap) * 0.5 - 6px);
+    left: calc(50% - var(--hero-gap) * 0.5 - 4px);
   }
 
   .landing-hero__ui-card--driver {
-    right: calc(50% + var(--hero-gap) * 0.5 + 2px);
+    right: calc(50% + var(--hero-gap) * 0.5);
   }
-
-  .landing-hero__ui-pickup-icon {
-    width: 18px;
-    height: 18px;
-  }
-
-  .landing-hero__ui-card--pickup strong { font-size: 0.54rem; }
-  .landing-hero__ui-card--pickup small { font-size: 0.44rem; }
 
   .landing-hero__driver-meta { font-size: 0.9em; }
 }

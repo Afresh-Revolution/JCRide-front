@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{% block page_title %}Driver Portal{% endblock %} — JCRide NAIJA{% endblock %}
+
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/driver-portal.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+{% block page_head %}{% endblock %}
+{% endblock %}
+
+{% block body %}
+<div class="admin-app">
+  <div class="admin-sidebar-backdrop" id="driver-sidebar-backdrop" aria-hidden="true"></div>
+
+  {% include "includes/driver_sidebar.html" %}
+
+  <div class="admin-main">
+    {% set menu_toggle_id = 'driver-menu-toggle' %}
+    {% set sidebar_id = 'driver-sidebar' %}
+    {% set profile_name = profile.name %}
+    {% set profile_initials = profile.initials %}
+    {% set profile_meta = '★ ' ~ profile.rating ~ ' · ' ~ profile.plate %}
+    {% include "includes/portal_navbar.html" %}
+
+    <div class="admin-content driver-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="driver-flash driver-flash--{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block portal_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% block page_scripts %}{% endblock %}
+<script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
+{% endblock %}

@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-login.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-loading.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 <body class="auth-login-page auth-login-page--{{ portal }}">
   <div class="auth-login">
@@ -88,12 +90,8 @@
 
           {% if portal == 'driver' %}
           <label class="auth-login__field">
-            <span>Email</span>
-            <input type="email" name="email" autocomplete="email" placeholder="you@example.com" value="{{ email or '' }}">
-          </label>
-          <label class="auth-login__field">
-            <span>Phone number <small>(optional)</small></span>
-            <input type="tel" name="phone" autocomplete="tel" placeholder="+234 800 000 0000" value="{{ phone or '' }}">
+            <span>Email or phone</span>
+            <input type="text" name="email_or_phone" autocomplete="username" placeholder="you@example.com or +234 800 000 0000" value="{{ email_or_phone or '' }}">
           </label>
           {% else %}
           <label class="auth-login__field">
@@ -135,6 +133,7 @@
       </div>
     </section>
   </div>
+  <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
 </body>
 </html>

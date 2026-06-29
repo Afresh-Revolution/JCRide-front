@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-login.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-signup.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-loading.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 <body class="auth-login-page auth-login-page--rider auth-signup-page">
   <div class="auth-login">
@@ -162,6 +164,7 @@
       </div>
     </section>
   </div>
+  <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-signup.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
 </body>

@@ -1,0 +1,94 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'schedule_ride' %}
+
+{% block user_content %}
+<div class="schedule-layout">
+  <section class="rider-panel schedule-main">
+    <div class="schedule-class-grid" id="schedule-classes">
+      {% for vehicle in vehicle_classes %}
+      <label class="schedule-class{% if vehicle.selected %} is-selected{% endif %}">
+        <input type="radio" name="vehicle_class" value="{{ vehicle.id }}"{% if vehicle.selected %} checked{% endif %}>
+        <span class="schedule-class__icon" aria-hidden="true">🚗</span>
+        <span class="schedule-class__name">{{ vehicle.name }}</span>
+        <span class="schedule-class__rate">{{ vehicle.rate }} · {{ vehicle.seats }} seats{% if vehicle.vehicle %} · {{ vehicle.vehicle }}{% endif %}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div class="schedule-options">
+      <label class="schedule-select">
+        <span>Repeat</span>
+        <select>
+          <option selected>Once</option>
+          <option>Weekdays</option>
+          <option>Weekly</option>
+        </select>
+      </label>
+      <label class="schedule-select">
+        <span>Reminder</span>
+        <select>
+          <option>15 min before</option>
+          <option selected>30 min before</option>
+          <option>1 hour before</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="schedule-fare">
+      <p class="schedule-fare__value">₦6,400 – ₦7,900</p>
+      <p class="schedule-fare__note">Final fare based on actual distance &amp; traffic surcharge.</p>
+    </div>
+
+    <button type="button" class="rider-btn rider-btn--request schedule-submit">📅 Schedule ride</button>
+  </section>
+
+  <aside class="rider-panel schedule-aside">
+    <h2 class="rider-panel__title">How scheduling works</h2>
+    <ol class="schedule-steps">
+      <li>Pick your time, route, and vehicle class.</li>
+      <li>JCRide holds a driver and locks the fare estimate.</li>
+      <li>You get a reminder + live tracking link before pickup.</li>
+    </ol>
+  </aside>
+</div>
+
+<section class="rider-panel schedule-upcoming">
+  <div class="rider-panel__header">
+    <div>
+      <h2 class="rider-panel__title">Upcoming scheduled rides</h2>
+      <p class="rider-panel__subtitle">2 active · auto-dispatch enabled</p>
+    </div>
+    <span class="rider-live-pill">● LIVE</span>
+  </div>
+
+  <div class="schedule-list">
+    {% for ride in upcoming_rides %}
+    <article class="schedule-item">
+      <div class="schedule-item__route">
+        <strong>{{ ride.pickup }}</strong>
+        <span class="schedule-item__arrow">→</span>
+        <strong>{{ ride.destination }}</strong>
+      </div>
+      <div class="schedule-item__meta">
+        <span>📅 {{ ride.datetime }}</span>
+        <span>🚗 {{ ride.class }}</span>
+        <span>🔁 {{ ride.repeat }}</span>
+        <span>🔔 {{ ride.reminder }}</span>
+      </div>
+      <div class="schedule-item__footer">
+        <span class="schedule-item__fare">{{ ride.fare }} est. fare</span>
+        <div class="schedule-item__actions">
+          <button type="button" class="rider-btn rider-btn--outline-sm">✏ Edit</button>
+          <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--danger-text">✕ Cancel</button>
+          <button type="button" class="schedule-item__delete" aria-label="Delete">🗑</button>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+{% endblock %}
