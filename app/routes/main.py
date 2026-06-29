@@ -4,6 +4,7 @@ import re
 from app.services.api_client import (
     ApiError,
     login,
+    login_with_joscity_fallback,
     register,
     register_driver,
     request_ride,
@@ -11,6 +12,13 @@ from app.services.api_client import (
     set_availability,
     upload_driver_document,
     verify_otp,
+)
+from app.rider_defaults import (
+    BOOK_RIDE_DEFAULTS,
+    LIVE_AREA,
+    RECENT_TRIPS,
+    RIDE_TIERS,
+    RIDER_STATS,
 )
 from app.services.landing_content import load_landing_page
 
@@ -73,6 +81,44 @@ def _resolve_login_identifier(phone: str, email: str) -> str:
     return email or phone
 
 
+def _login_error_message(exc: ApiError) -> str:
+    message = (exc.message or "").strip()
+    lowered = message.lower()
+    if exc.status_code == 403 and ("not active" in lowered or "verified" in lowered):
+        return (
+            "Your account is not verified yet. Check your email for the 6-digit code, "
+            "or complete verification below."
+        )
+    if exc.status_code == 401 or "invalid credentials" in lowered:
+        return "Invalid email or password. Check your details and try again."
+    return message or "Could not sign in. Please try again."
+
+
+def _rider_initials(name: str) -> str:
+    parts = [part for part in name.split() if part]
+    if not parts:
+        return "JR"
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return f"{parts[0][0]}{parts[-1][0]}".upper()
+
+
+def _rider_context() -> dict:
+    name = session.get("name") or "Adaeze Okafor"
+    return {
+        "rider_name": name,
+        "rider_initials": _rider_initials(name),
+        "rider_location": RIDER_STATS["location"]["value"],
+    }
+
+
+def _require_rider():
+    if not session.get("token"):
+        flash("Please sign in to access your rider dashboard.", "error")
+        return redirect(url_for("main.rider_login_page"))
+    return None
+
+
 def _handle_login(portal: str):
     if portal not in PORTAL_ROLES:
         portal = "rider"
@@ -93,12 +139,12 @@ def _handle_login(portal: str):
             flash("Enter your password.", "error")
         else:
             try:
-                result = login(identifier, password)
+                result = login_with_joscity_fallback(identifier, password)
                 user = result.get("user") or {}
                 role = user.get("role", "")
                 expected_role = PORTAL_ROLES[portal]
 
-                if role != expected_role:
+                if role and role != expected_role:
                     account_name = "driver" if role == "driver" else "rider"
                     flash(
                         f"This account is registered as a {account_name}. "
@@ -117,7 +163,7 @@ def _handle_login(portal: str):
                     flash("Signed in successfully.", "success")
                     if portal == "driver":
                         return redirect(url_for("main.driver_page"))
-                    return redirect(url_for("main.ride_page"))
+                    return redirect(url_for("main.user_dashboard"))
             except ApiError as exc:
                 flash(exc.message, "error")
 
@@ -567,7 +613,7 @@ def user_register_page():
                     session["portal"] = "rider"
                     _clear_rider_signup()
                     flash("Welcome to JCRide! Your account is ready.", "success")
-                    return redirect(url_for("main.ride_page"))
+                    return redirect(url_for("main.user_dashboard"))
                 except ApiError as exc:
                     flash(exc.message, "error")
 
@@ -584,21 +630,48 @@ def user_register_page():
     )
 
 
-@main_bp.route("/ride", methods=["GET", "POST"])
-def ride_page():
+@main_bp.route("/user/dashboard")
+def user_dashboard():
+    guard = _require_rider()
+    if guard:
+        return guard
+    return render_template(
+        "user/dashboard.html",
+        active_page="dashboard",
+        stats=RIDER_STATS,
+        live_area=LIVE_AREA,
+        recent_trips=RECENT_TRIPS,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/book-ride", methods=["GET", "POST"])
+@main_bp.route("/ride", methods=["GET", "POST"], endpoint="ride_page")
+def user_book_ride():
+    guard = _require_rider()
+    if guard:
+        return guard
+
+    booking = dict(BOOK_RIDE_DEFAULTS)
+
     if request.method == "POST":
         pickup = request.form.get("pickup", "").strip()
         dropoff = request.form.get("dropoff", "").strip()
-        token = session.get("token")
-        if not token:
-            flash("Ride booking is coming soon.", "error")
-        else:
-            try:
-                request_ride(token, pickup, dropoff)
-                flash("Ride requested — waiting for a driver.", "success")
-            except ApiError as exc:
-                flash(exc.message, "error")
-    return render_template("ride.html")
+        tier = request.form.get("tier", "economy")
+        booking.update({"pickup": pickup, "dropoff": dropoff})
+        try:
+            request_ride(session["token"], pickup, dropoff)
+            flash(f"Ride requested ({tier}) — waiting for a driver.", "success")
+        except ApiError as exc:
+            flash(exc.message, "error")
+
+    return render_template(
+        "user/book_ride.html",
+        active_page="book_ride",
+        booking=booking,
+        ride_tiers=RIDE_TIERS,
+        **_rider_context(),
+    )
 
 
 @main_bp.route("/driver", methods=["GET", "POST"])
