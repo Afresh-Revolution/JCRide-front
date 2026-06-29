@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, get_flashed_messages, redirect, render_template, request, session, url_for
 import re
 
 from app.services.api_client import (
@@ -21,16 +21,9 @@ DRIVER_SIGNUP_KEY = "driver_signup"
 RIDER_SIGNUP_KEY = "rider_signup"
 DRIVER_SIGNUP_STEPS = {
     1: "Personal info",
-    2: "Vehicle info",
-    3: "Documents",
-    4: "OTP verification",
-    5: "Submitted",
-}
-
-VEHICLE_TIER_MAP = {
-    "economy": ("car", "economy"),
-    "comfort": ("car", "comfort"),
-    "premium": ("car", "premium"),
+    2: "Documents",
+    3: "OTP verification",
+    4: "Submitted",
 }
 
 ALLOWED_DOC_TYPES = {
@@ -83,11 +76,14 @@ def _handle_login(portal: str):
     remember = request.form.get("remember") == "1" if request.method == "POST" else False
 
     if request.method == "POST":
+        get_flashed_messages()
         password = request.form.get("password", "")
         identifier = _resolve_login_identifier(phone, email)
         if not identifier:
             flash(
-                "Enter your email address." if portal == "rider" else "Enter your phone number.",
+                "Enter your email address."
+                if portal == "rider"
+                else "Enter your email or phone number.",
                 "error",
             )
         elif not password:
@@ -188,7 +184,9 @@ def _driver_signup_step() -> int:
         step = int(step)
     except (TypeError, ValueError):
         step = 1
-    return max(1, min(step, 5))
+    if step > 2:
+        step -= 1
+    return max(1, min(step, 4))
 
 
 def _driver_login_identifier(signup: dict) -> str:
@@ -222,7 +220,7 @@ def driver_register_page():
             signup["step"] = step - 1
             _save_driver_signup(signup)
             return redirect(url_for("main.driver_register_page"))
-        if action == "dashboard" and step == 5:
+        if action == "dashboard" and step == 4:
             token = signup.get("access_token")
             if token:
                 session["token"] = token
@@ -235,7 +233,7 @@ def driver_register_page():
                 _clear_driver_signup()
                 return redirect(url_for("main.driver_page"))
             flash("Complete verification before continuing.", "error")
-            signup["step"] = 4
+            signup["step"] = 3
             _save_driver_signup(signup)
             return redirect(url_for("main.driver_register_page"))
 
@@ -243,7 +241,7 @@ def driver_register_page():
         posted_step = request.form.get("step", type=int) or step
         action = request.form.get("action", "continue")
 
-        if action == "resend" and posted_step == 4:
+        if action == "resend" and posted_step == 3:
             identifier = _driver_login_identifier(signup)
             if not identifier:
                 flash("Start your application again.", "error")
@@ -253,7 +251,7 @@ def driver_register_page():
                 flash("A new verification code was sent to your email.", "success")
             except ApiError as exc:
                 flash(exc.message, "error")
-            signup["step"] = 4
+            signup["step"] = 3
             _save_driver_signup(signup)
             return redirect(url_for("main.driver_register_page"))
 
@@ -287,35 +285,6 @@ def driver_register_page():
                 return redirect(url_for("main.driver_register_page"))
 
         elif posted_step == 2:
-            vehicle_tier = request.form.get("vehicle_tier", "economy")
-            vehicle_model = request.form.get("vehicle_model", "").strip()
-            vehicle_color = request.form.get("vehicle_color", "").strip()
-            plate_number = request.form.get("plate_number", "").strip().upper()
-            if vehicle_tier not in VEHICLE_TIER_MAP:
-                flash("Select a vehicle type.", "error")
-            elif len(vehicle_model) < 1:
-                flash("Enter your vehicle model.", "error")
-            elif len(vehicle_color) < 1:
-                flash("Enter your vehicle color.", "error")
-            elif len(plate_number) < 2:
-                flash("Enter your plate number.", "error")
-            else:
-                category, tier = VEHICLE_TIER_MAP[vehicle_tier]
-                signup.update(
-                    {
-                        "step": 3,
-                        "vehicle_tier": vehicle_tier,
-                        "vehicle_category": category,
-                        "service_tier": tier,
-                        "vehicle_model": vehicle_model,
-                        "vehicle_color": vehicle_color,
-                        "plate_number": plate_number,
-                    }
-                )
-                _save_driver_signup(signup)
-                return redirect(url_for("main.driver_register_page"))
-
-        elif posted_step == 3:
             license_file = request.files.get("driver_license")
             papers_file = request.files.get("vehicle_papers")
             nin_file = request.files.get("nin_document")
@@ -370,14 +339,14 @@ def driver_register_page():
                             key: value.get("file_url", "")
                             for key, value in uploads.items()
                         }
-                        signup["step"] = 4
+                        signup["step"] = 3
                         _save_driver_signup(signup)
                         flash("Documents uploaded. Enter the verification code sent to your email.", "success")
                         return redirect(url_for("main.driver_register_page"))
                 except ApiError as exc:
                     flash(exc.message, "error")
 
-        elif posted_step == 4:
+        elif posted_step == 3:
             code = request.form.get("otp_code", "").replace(" ", "").strip()
             identifier = _driver_login_identifier(signup)
             if len(code) < 6:
@@ -407,7 +376,7 @@ def driver_register_page():
                             "nin_document_url": documents.get("nin_document_url", ""),
                         },
                     )
-                    signup["step"] = 5
+                    signup["step"] = 4
                     _save_driver_signup(signup)
                     flash("Application submitted successfully.", "success")
                     return redirect(url_for("main.driver_register_page"))
@@ -420,7 +389,7 @@ def driver_register_page():
     return render_template(
         "auth/driver_register.html",
         step=step,
-        total_steps=5,
+        total_steps=4,
         step_label=DRIVER_SIGNUP_STEPS.get(step, ""),
         signup=signup,
     )
