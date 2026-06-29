@@ -1,0 +1,17 @@
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Ride Requests{% endblock %}
+
+{% block portal_content %}
+  <header class="driver-page-header">
+    <h1 class="driver-page-header__title">Ride Requests</h1>
+    <p class="driver-page-header__sub">{{ ride_requests|length }} nearby requests waiting for you</p>
+  </header>
+
+  <section class="ride-requests-list">
+    {% for request in ride_requests %}
+      {% include "components/requests/ride_request_card.html" %}
+    {% else %}
+      <div class="driver-empty">No ride requests right now. Go online to receive trips.</div>
+    {% endfor %}
+  </section>
+{% endblock %}

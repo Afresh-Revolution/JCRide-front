@@ -1,0 +1,25 @@
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block page_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block portal_content %}
+  {% include "components/dashboard/status_banner.html" %}
+
+  <section class="metrics-grid">
+    {% for metric in metrics %}
+      {% include "components/dashboard/metric_card.html" %}
+    {% endfor %}
+  </section>
+
+  <section class="dashboard-grid">
+    {% include "components/dashboard/weekly_earnings.html" %}
+    {% include "components/dashboard/nearby_demand.html" %}
+  </section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('driver_portal.static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

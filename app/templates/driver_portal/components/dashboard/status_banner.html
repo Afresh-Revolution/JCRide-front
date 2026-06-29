@@ -1,0 +1,28 @@
+{# Online / offline status banner #}
+<section class="status-banner {% if online %}status-banner--online{% endif %}">
+  <div class="status-banner__left">
+    <span class="status-banner__power">⏻</span>
+    <div>
+      <div class="status-banner__title">
+        YOU ARE <strong>{% if online %}Online{% else %}Offline{% endif %}</strong>
+        {% if online %}· accepting rides{% endif %}
+      </div>
+      {% if online %}
+        <div class="status-banner__sub">{{ zone }} · surge {{ surge }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('driver_portal.toggle_online') }}" class="status-banner__toggle" id="onlineForm">
+    <span class="status-banner__toggle-label">Online</span>
+    <label class="switch">
+      <input type="hidden" name="online" id="onlineValue" value="{{ 'true' if online else 'false' }}">
+      <input
+        type="checkbox"
+        {% if online %}checked{% endif %}
+        onchange="document.getElementById('onlineValue').value = this.checked ? 'true' : 'false'; this.form.submit();"
+      >
+      <span class="switch__slider"></span>
+    </label>
+  </form>
+</section>
