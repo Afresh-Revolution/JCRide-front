@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, get_flashed_messages, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 import re
 
 from app.services.api_client import (
@@ -13,6 +13,8 @@ from app.services.api_client import (
     upload_driver_document,
     verify_otp,
 )
+from app.services.auth_utils import apply_driver_session
+from app.services.driver_auth import driver_is_authenticated, handle_driver_login_post
 from app.services.landing_content import load_landing_page
 
 main_bp = Blueprint("main", __name__)
@@ -69,16 +71,7 @@ def _resolve_login_identifier(phone: str, email: str) -> str:
 
 def _set_driver_portal_session(result: dict, identifier: str = "") -> None:
     """Mirror login state into keys used by the driver portal."""
-    user = result.get("user") or {}
-    session["driver_token"] = result.get("access_token", session.get("token", ""))
-    session["driver_name"] = user.get("full_name") or session.get("name")
-    if identifier and "@" in identifier:
-        session["driver_email"] = identifier
-        session["driver_phone"] = user.get("phone") or session.get("phone") or ""
-    elif identifier:
-        session["driver_phone"] = identifier
-        session["driver_email"] = user.get("email") or session.get("email") or ""
-    session.setdefault("driver_online", False)
+    apply_driver_session(result, identifier, remember=session.permanent)
 
 
 def _handle_login(portal: str):
@@ -91,7 +84,6 @@ def _handle_login(portal: str):
     remember = request.form.get("remember") == "1" if request.method == "POST" else False
 
     if request.method == "POST":
-        get_flashed_messages()
         password = request.form.get("password", "")
         if portal == "driver":
             identifier = email_or_phone.strip()
@@ -106,12 +98,13 @@ def _handle_login(portal: str):
             )
         elif not password:
             flash("Enter your password.", "error")
+        elif portal == "driver":
+            redirect_resp = handle_driver_login_post(identifier, password, remember)
+            if redirect_resp:
+                return redirect_resp
         else:
             try:
-                if portal == "rider":
-                    result = login_with_joscity_fallback(identifier, password)
-                else:
-                    result = login(identifier, password)
+                result = login_with_joscity_fallback(identifier, password)
                 user = result.get("user") or {}
                 role = user.get("role", "")
                 expected_role = PORTAL_ROLES[portal]
@@ -142,9 +135,6 @@ def _handle_login(portal: str):
                         else "Signed in successfully.",
                         "success",
                     )
-                    if portal == "driver":
-                        _set_driver_portal_session(result, identifier)
-                        return redirect(url_for("driver_portal.dashboard"))
                     return redirect(url_for("main.ride_page"))
             except ApiError as exc:
                 flash(exc.message, "error")
@@ -182,6 +172,8 @@ def rider_login_page():
 
 @main_bp.route("/auth/driver-login", methods=["GET", "POST"])
 def driver_login_page():
+    if request.method == "GET" and driver_is_authenticated():
+        return redirect(url_for("driver_portal.dashboard"))
     return _handle_login("driver")
 
 
