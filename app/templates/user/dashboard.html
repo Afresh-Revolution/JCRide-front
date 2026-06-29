@@ -1,9 +1,16 @@
 {% extends "user/layout.html" %}
 {% set active_page = 'dashboard' %}
+{% set user_leaflet = true %}
+
+{% block page_scripts %}
+<script type="application/json" id="rider-area-map-data">{{ live_area_map | tojson }}</script>
+<script src="{{ url_for('static', filename='js/user-map.js') }}"></script>
+{% endblock %}
 
 {% block user_content %}
 <section class="rider-kpi-grid">
   <article class="rider-kpi-card">
+    <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Wallet Balance</span>
       <span class="rider-kpi-card__value">{{ stats.wallet_balance.value }}</span>
@@ -15,6 +22,7 @@
   </article>
 
   <article class="rider-kpi-card">
+    <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Total Trips</span>
       <span class="rider-kpi-card__value">{{ stats.total_trips.value }}</span>
@@ -26,6 +34,7 @@
   </article>
 
   <article class="rider-kpi-card">
+    <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Total Spending</span>
       <span class="rider-kpi-card__value">{{ stats.total_spending.value }}</span>
@@ -37,6 +46,7 @@
   </article>
 
   <article class="rider-kpi-card">
+    <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Current Location</span>
       <span class="rider-kpi-card__value rider-kpi-card__value--sm">{{ stats.location.value }}</span>
@@ -56,13 +66,9 @@
       </div>
       <a href="{{ url_for('main.user_book_ride') }}" class="rider-btn rider-btn--dark">Book Now ↗</a>
     </div>
-    <div class="rider-map">
-      <span class="rider-map__badge">Pickup → Destination</span>
-      <div class="rider-map__zoom" aria-hidden="true">
-        <button type="button" disabled>+</button>
-        <button type="button" disabled>−</button>
-      </div>
-      {% include "user/includes/map_placeholder.html" %}
+    <div class="rider-map rider-map--live">
+      <span class="rider-map__badge" id="rider-area-map-badge">{{ live_area_map.location_label }} · Your area</span>
+      <div id="rider-area-map" class="rider-live-map" role="img" aria-label="Live map of drivers near {{ live_area_map.location_label }}"></div>
     </div>
   </article>
 
@@ -82,24 +88,24 @@
           </span>
           <span>Book Ride</span>
         </a>
-        <button type="button" class="rider-quick-action" disabled>
+        <a href="{{ url_for('main.user_schedule_ride') }}" class="rider-quick-action">
           <span class="rider-quick-action__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </span>
           <span>Schedule</span>
-        </button>
-        <button type="button" class="rider-quick-action" disabled>
+        </a>
+        <a href="{{ url_for('main.user_ride_history') }}" class="rider-quick-action">
           <span class="rider-quick-action__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           </span>
           <span>History</span>
-        </button>
-        <button type="button" class="rider-quick-action" disabled>
+        </a>
+        <a href="{{ url_for('main.user_wallet') }}" class="rider-quick-action">
           <span class="rider-quick-action__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
           </span>
           <span>Fund Wallet</span>
-        </button>
+        </a>
       </div>
     </article>
   </div>
@@ -108,7 +114,7 @@
 <section class="rider-panel rider-panel--table">
   <div class="rider-panel__header">
     <h2 class="rider-panel__title">Recent Trips</h2>
-    <a href="#" class="rider-link">View all →</a>
+    <a href="{{ url_for('main.user_ride_history') }}" class="rider-link">View all →</a>
   </div>
   <div class="rider-table-wrap">
     <table class="rider-table">
