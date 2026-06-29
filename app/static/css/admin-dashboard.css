@@ -281,6 +281,25 @@ body.admin-body.admin-nav-open {
   margin-left: auto;
 }
 
+.admin-topbar__quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (min-width: 901px) {
+  .admin-topbar__quick-actions,
+  .admin-topbar__actions > .admin-icon-btn {
+    display: none;
+  }
+
+  .admin-profile {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
+}
+
 .admin-icon-btn {
   width: 40px;
   height: 40px;

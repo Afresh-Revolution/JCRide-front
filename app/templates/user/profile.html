@@ -1,0 +1,62 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'profile' %}
+
+{% block user_content %}
+<div class="profile-layout">
+  <aside class="rider-panel profile-sidebar">
+    <div class="profile-summary">
+      <span class="profile-summary__avatar">{{ rider_initials }}</span>
+      <h2 class="profile-summary__name">{{ profile.full_name }}</h2>
+      <p class="profile-summary__since">Member since {{ profile.member_since }}</p>
+      <span class="profile-summary__badge">★ {{ profile.badge }}</span>
+    </div>
+    <nav class="profile-menu" aria-label="Profile sections">
+      {% for item in profile_menu %}
+      <a href="#" class="profile-menu__item{% if item.active %} is-active{% endif %}">
+        <span>{{ item.label }}</span>
+        <span aria-hidden="true">›</span>
+      </a>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  <section class="rider-panel profile-form-panel">
+    <div class="profile-form-header">
+      <h2 class="rider-panel__title">Personal information</h2>
+      <button type="button" class="rider-btn rider-btn--dark-sm">Save changes</button>
+    </div>
+    <form class="profile-form" method="post">
+      <div class="profile-form__grid">
+        <label>
+          <span>FULL NAME</span>
+          <input type="text" name="full_name" value="{{ profile.full_name }}">
+        </label>
+        <label>
+          <span>PHONE</span>
+          <input type="tel" name="phone" value="{{ profile.phone }}">
+        </label>
+        <label>
+          <span>EMAIL</span>
+          <input type="email" name="email" value="{{ profile.email }}">
+        </label>
+        <label>
+          <span>DATE OF BIRTH</span>
+          <input type="text" name="dob" value="{{ profile.dob }}">
+        </label>
+        <label class="profile-form__full">
+          <span>EMERGENCY CONTACT</span>
+          <input type="text" name="emergency_contact" value="{{ profile.emergency_contact }}">
+        </label>
+        <label>
+          <span>NIN</span>
+          <input type="text" name="nin" value="{{ profile.nin }}" readonly>
+        </label>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+{% endblock %}

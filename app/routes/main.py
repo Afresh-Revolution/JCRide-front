@@ -3,7 +3,6 @@ import re
 
 from app.services.api_client import (
     ApiError,
-    login,
     login_with_joscity_fallback,
     register,
     register_driver,
@@ -12,6 +11,23 @@ from app.services.api_client import (
     set_availability,
     upload_driver_document,
     verify_otp,
+)
+from app.rider_defaults import (
+    BOOK_RIDE_DEFAULTS,
+    LIVE_AREA,
+    LIVE_TRACKING,
+    PROFILE_DEFAULTS,
+    PROFILE_MENU,
+    RECENT_TRIPS,
+    RIDE_HISTORY_TRIPS,
+    RIDE_TIERS,
+    RIDER_STATS,
+    SCHEDULE_VEHICLE_CLASSES,
+    SUPPORT_FAQ,
+    UPCOMING_SCHEDULED_RIDES,
+    WALLET_SUMMARY,
+    WALLET_TRANSACTIONS,
+    build_live_area_map,
 )
 from app.services.landing_content import load_landing_page
 
@@ -81,6 +97,42 @@ def _set_driver_portal_session(result: dict, identifier: str = "") -> None:
     session.setdefault("driver_online", False)
 
 
+def _rider_initials(name: str) -> str:
+    parts = [part for part in name.split() if part]
+    if not parts:
+        return "JR"
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    return f"{parts[0][0]}{parts[-1][0]}".upper()
+
+
+def _rider_context() -> dict:
+    name = session.get("name") or PROFILE_DEFAULTS["full_name"]
+    return {
+        "rider_name": name,
+        "rider_initials": _rider_initials(name),
+        "rider_location": RIDER_STATS["location"]["value"],
+    }
+
+
+def _profile_context() -> dict:
+    profile = dict(PROFILE_DEFAULTS)
+    if session.get("name"):
+        profile["full_name"] = session["name"]
+    if session.get("email"):
+        profile["email"] = session["email"]
+    if session.get("phone"):
+        profile["phone"] = session["phone"]
+    return profile
+
+
+def _require_rider():
+    if not session.get("token"):
+        flash("Please sign in to access your rider dashboard.", "error")
+        return redirect(url_for("main.rider_login_page"))
+    return None
+
+
 def _handle_login(portal: str):
     if portal not in PORTAL_ROLES:
         portal = "rider"
@@ -108,15 +160,18 @@ def _handle_login(portal: str):
             flash("Enter your password.", "error")
         else:
             try:
-                if portal == "rider":
-                    result = login_with_joscity_fallback(identifier, password)
-                else:
-                    result = login(identifier, password)
+                result = login_with_joscity_fallback(identifier, password)
                 user = result.get("user") or {}
                 role = user.get("role", "")
                 expected_role = PORTAL_ROLES[portal]
 
-                if role != expected_role:
+                if portal == "driver" and user.get("joscity_user_id"):
+                    flash(
+                        "JosCity accounts sign in through the rider portal. "
+                        "To drive with JCRide, apply with a driver account first.",
+                        "error",
+                    )
+                elif role != expected_role:
                     account_name = "driver" if role == "driver" else "rider"
                     flash(
                         f"This account is registered as a {account_name}. "
@@ -145,7 +200,7 @@ def _handle_login(portal: str):
                     if portal == "driver":
                         _set_driver_portal_session(result, identifier)
                         return redirect(url_for("driver_portal.dashboard"))
-                    return redirect(url_for("main.ride_page"))
+                    return redirect(url_for("main.user_dashboard"))
             except ApiError as exc:
                 flash(exc.message, "error")
 
@@ -580,7 +635,7 @@ def user_register_page():
                     session["portal"] = "rider"
                     _clear_rider_signup()
                     flash("Welcome to JCRide! Your account is ready.", "success")
-                    return redirect(url_for("main.ride_page"))
+                    return redirect(url_for("main.user_dashboard"))
                 except ApiError as exc:
                     flash(exc.message, "error")
 
@@ -597,21 +652,157 @@ def user_register_page():
     )
 
 
-@main_bp.route("/ride", methods=["GET", "POST"])
-def ride_page():
+@main_bp.route("/user/dashboard")
+def user_dashboard():
+    guard = _require_rider()
+    if guard:
+        return guard
+    rider_ctx = _rider_context()
+    return render_template(
+        "user/dashboard.html",
+        active_page="dashboard",
+        stats=RIDER_STATS,
+        live_area=LIVE_AREA,
+        live_area_map=build_live_area_map(rider_ctx["rider_location"]),
+        recent_trips=RECENT_TRIPS,
+        **rider_ctx,
+    )
+
+
+@main_bp.route("/user/book-ride", methods=["GET", "POST"])
+@main_bp.route("/ride", methods=["GET", "POST"], endpoint="ride_page")
+def user_book_ride():
+    guard = _require_rider()
+    if guard:
+        return guard
+
+    booking = dict(BOOK_RIDE_DEFAULTS)
+
     if request.method == "POST":
         pickup = request.form.get("pickup", "").strip()
         dropoff = request.form.get("dropoff", "").strip()
-        token = session.get("token")
-        if not token:
-            flash("Ride booking is coming soon.", "error")
-        else:
-            try:
-                request_ride(token, pickup, dropoff)
-                flash("Ride requested — waiting for a driver.", "success")
-            except ApiError as exc:
-                flash(exc.message, "error")
-    return render_template("ride.html")
+        tier = request.form.get("tier", "economy")
+        booking.update({"pickup": pickup, "dropoff": dropoff})
+        try:
+            request_ride(session["token"], pickup, dropoff)
+            flash(f"Ride requested ({tier}) — waiting for a driver.", "success")
+        except ApiError as exc:
+            flash(exc.message, "error")
+
+    return render_template(
+        "user/book_ride.html",
+        active_page="book_ride",
+        booking=booking,
+        ride_tiers=RIDE_TIERS,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/schedule-ride")
+def user_schedule_ride():
+    guard = _require_rider()
+    if guard:
+        return guard
+    return render_template(
+        "user/schedule_ride.html",
+        active_page="schedule_ride",
+        vehicle_classes=SCHEDULE_VEHICLE_CLASSES,
+        upcoming_rides=UPCOMING_SCHEDULED_RIDES,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/live-tracking")
+def user_live_tracking():
+    guard = _require_rider()
+    if guard:
+        return guard
+    return render_template(
+        "user/live_tracking.html",
+        active_page="live_tracking",
+        tracking=LIVE_TRACKING,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/ride-history")
+def user_ride_history():
+    guard = _require_rider()
+    if guard:
+        return guard
+    return render_template(
+        "user/ride_history.html",
+        active_page="ride_history",
+        history_trips=RIDE_HISTORY_TRIPS,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/wallet")
+def user_wallet():
+    guard = _require_rider()
+    if guard:
+        return guard
+    wallet = dict(WALLET_SUMMARY)
+    if session.get("wallet_balance_ngn") is not None:
+        balance = session["wallet_balance_ngn"]
+        wallet["balance"] = f"₦{balance:,.2f}"
+    return render_template(
+        "user/wallet.html",
+        active_page="wallet",
+        wallet=wallet,
+        transactions=WALLET_TRANSACTIONS,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/profile", methods=["GET", "POST"])
+def user_profile():
+    guard = _require_rider()
+    if guard:
+        return guard
+    profile = _profile_context()
+    if request.method == "POST":
+        session["name"] = request.form.get("full_name", profile["full_name"]).strip()
+        session["email"] = request.form.get("email", profile["email"]).strip()
+        session["phone"] = request.form.get("phone", profile["phone"]).strip()
+        flash("Profile updated.", "success")
+        return redirect(url_for("main.user_profile"))
+    return render_template(
+        "user/profile.html",
+        active_page="profile",
+        profile=profile,
+        profile_menu=PROFILE_MENU,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/settings")
+def user_settings():
+    guard = _require_rider()
+    if guard:
+        return guard
+    return render_template(
+        "user/settings.html",
+        active_page="settings",
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/support", methods=["GET", "POST"])
+def user_support():
+    guard = _require_rider()
+    if guard:
+        return guard
+    if request.method == "POST":
+        flash("Support ticket submitted. Our team will respond shortly.", "success")
+        return redirect(url_for("main.user_support"))
+    return render_template(
+        "user/support.html",
+        active_page="support",
+        faq_items=SUPPORT_FAQ,
+        **_rider_context(),
+    )
 
 
 @main_bp.route("/driver", methods=["GET", "POST"])

@@ -1,0 +1,107 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'wallet' %}
+
+{% block user_content %}
+<section class="wallet-kpi-grid">
+  <article class="wallet-balance-card">
+    <span class="wallet-balance-card__label">JCRide Wallet</span>
+    <p class="wallet-balance-card__value">{{ wallet.balance }}</p>
+    <p class="wallet-balance-card__sub">{{ wallet.balance_sub }}</p>
+    <div class="wallet-balance-card__actions">
+      <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost">+ Fund wallet</button>
+      <button type="button" class="wallet-balance-card__btn">Withdraw</button>
+    </div>
+  </article>
+  <article class="rider-kpi-card">
+    <div class="rider-kpi-card__body">
+      <span class="rider-kpi-card__label">Total Deposits</span>
+      <span class="rider-kpi-card__value">{{ wallet.total_deposits }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up">▲ {{ wallet.deposits_trend }}</span>
+    </div>
+    <div class="rider-kpi-card__icon rider-kpi-card__icon--credit">↙</div>
+  </article>
+  <article class="rider-kpi-card">
+    <div class="rider-kpi-card__body">
+      <span class="rider-kpi-card__label">Total Spending</span>
+      <span class="rider-kpi-card__value">{{ wallet.total_spending }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up">▲ {{ wallet.spending_trend }}</span>
+    </div>
+    <div class="rider-kpi-card__icon rider-kpi-card__icon--debit">↗</div>
+  </article>
+</section>
+
+<div class="wallet-layout">
+  <section class="rider-panel wallet-fund">
+    <h2 class="rider-panel__title">Fund wallet</h2>
+    <p class="rider-panel__subtitle">Powered by Monnify · Instant credit</p>
+
+    <div class="wallet-methods" id="wallet-methods">
+      <label class="wallet-method">
+        <input type="radio" name="payment_method" value="transfer">
+        <span class="wallet-method__icon">🏦</span>
+        <span class="wallet-method__body">
+          <strong>Monnify Bank Transfer</strong>
+          <span>0% fee · Instant</span>
+        </span>
+      </label>
+      <label class="wallet-method">
+        <input type="radio" name="payment_method" value="virtual">
+        <span class="wallet-method__icon">👛</span>
+        <span class="wallet-method__body">
+          <strong>Monnify Virtual Account</strong>
+          <span>Dedicated account number</span>
+        </span>
+      </label>
+      <label class="wallet-method is-selected">
+        <input type="radio" name="payment_method" value="card" checked>
+        <span class="wallet-method__icon">💳</span>
+        <span class="wallet-method__body">
+          <strong>Debit Card</strong>
+          <span>Visa · Verve · Mastercard</span>
+        </span>
+      </label>
+    </div>
+
+    <div class="wallet-amount">
+      <span class="wallet-amount__label">AMOUNT</span>
+      <p class="wallet-amount__value" id="wallet-amount-display">₦ 20,000</p>
+      <div class="wallet-amount__quick" id="wallet-quick-amounts">
+        <button type="button" data-amount="5000">₦5k</button>
+        <button type="button" data-amount="10000">₦10k</button>
+        <button type="button" data-amount="20000" class="is-active">₦20k</button>
+        <button type="button" data-amount="50000">₦50k</button>
+      </div>
+    </div>
+
+    <button type="button" class="rider-btn rider-btn--request">Continue with Monnify</button>
+  </section>
+
+  <section class="rider-panel wallet-transactions">
+    <div class="rider-panel__header">
+      <h2 class="rider-panel__title">Transactions</h2>
+      <button type="button" class="rider-link">↻ Refresh</button>
+    </div>
+    <ul class="wallet-tx-list">
+      {% for tx in transactions %}
+      <li class="wallet-tx wallet-tx--{{ tx.type }}">
+        <span class="wallet-tx__icon" aria-hidden="true">
+          {% if tx.type == 'credit' %}↙{% elif tx.type == 'refund' %}↺{% else %}↗{% endif %}
+        </span>
+        <div class="wallet-tx__body">
+          <strong>{{ tx.title }}</strong>
+          <span>{{ tx.time }}</span>
+        </div>
+        <div class="wallet-tx__amount">
+          <strong>{{ tx.amount }}</strong>
+          <span>{{ tx.status }}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'ride_history' %}
+
+{% block user_content %}
+<section class="rider-panel history-panel">
+  <div class="history-toolbar">
+    <div class="history-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" placeholder="Search by location or trip ID" aria-label="Search trips">
+    </div>
+    <div class="history-filters" id="history-filters">
+      <button type="button" class="history-filter">Today</button>
+      <button type="button" class="history-filter">Weekly</button>
+      <button type="button" class="history-filter is-active">Monthly</button>
+      <button type="button" class="history-filter">Yearly</button>
+    </div>
+    <div class="history-toolbar__actions">
+      <button type="button" class="rider-btn rider-btn--outline-sm">⏷ Filters</button>
+      <button type="button" class="rider-btn rider-btn--dark-sm">⬇ Export</button>
+    </div>
+  </div>
+
+  <div class="rider-table-wrap">
+    <table class="rider-table rider-table--history">
+      <thead>
+        <tr>
+          <th>Trip ID</th>
+          <th>Date</th>
+          <th>Pickup</th>
+          <th>Destination</th>
+          <th>Distance</th>
+          <th>Duration</th>
+          <th>Fare</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for trip in history_trips %}
+        <tr>
+          <td><span class="history-trip-id">{{ trip.id }}</span></td>
+          <td><span class="rider-table__primary">{{ trip.date }}</span> <span class="rider-table__secondary">· {{ trip.time }}</span></td>
+          <td>{{ trip.pickup }}</td>
+          <td>{{ trip.destination }}</td>
+          <td>{{ trip.distance }}</td>
+          <td>{{ trip.duration }}</td>
+          <td><strong>{{ trip.fare }}</strong></td>
+          <td><span class="rider-status rider-status--{{ trip.status }}">{{ trip.status | capitalize }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="history-pagination">
+    <span class="history-pagination__info">Showing 14 of 148 trips</span>
+    <div class="history-pagination__controls">
+      <button type="button" class="history-page-btn" disabled aria-label="Previous page">‹</button>
+      <button type="button" class="history-page-btn is-active">1</button>
+      <button type="button" class="history-page-btn">2</button>
+      <button type="button" class="history-page-btn">3</button>
+      <button type="button" class="history-page-btn" aria-label="Next page">›</button>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+{% endblock %}
