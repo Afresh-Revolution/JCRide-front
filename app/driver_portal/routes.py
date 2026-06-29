@@ -53,21 +53,23 @@ def index():
 @driver_portal_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        phone = request.form.get("phone", "").strip()
+        email_or_phone = request.form.get("email_or_phone", "").strip()
         password = request.form.get("password", "")
         remember = request.form.get("remember") == "on"
 
         try:
-            result = login(phone, password)
+            result = login(email_or_phone, password)
             session["driver_token"] = result.get("access_token", "demo-token")
-            session["driver_phone"] = phone
+            session["driver_phone"] = email_or_phone if "@" not in email_or_phone else ""
+            session["driver_email"] = email_or_phone if "@" in email_or_phone else ""
             session["driver_online"] = False
             session.permanent = remember
             flash("Welcome back, captain!", "success")
             return redirect(url_for("driver_portal.dashboard"))
         except ApiError:
             session["driver_token"] = "demo-token"
-            session["driver_phone"] = phone
+            session["driver_phone"] = email_or_phone if "@" not in email_or_phone else ""
+            session["driver_email"] = email_or_phone if "@" in email_or_phone else ""
             session["driver_name"] = DRIVER_PROFILE["name"]
             session["driver_online"] = False
             session.permanent = remember
