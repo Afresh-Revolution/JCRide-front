@@ -185,6 +185,32 @@ body.admin-body.admin-nav-open {
   color: #fff;
 }
 
+.admin-sidebar__logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--dash-muted);
+  text-decoration: none;
+  border-radius: var(--dash-radius-sm);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.admin-sidebar__logout svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.admin-sidebar__logout:hover {
+  background: #f3f4f6;
+  color: var(--dash-text);
+}
+
 .admin-sidebar__help {
   margin-top: auto;
   background: var(--dash-green-dark);
@@ -637,11 +663,17 @@ body.admin-body.admin-nav-open {
   border: 1px solid var(--dash-border);
 }
 
-.live-trip-map {
+.live-trip-map,
+.trips-live-map {
   height: 420px;
   width: 100%;
   background: #e8f0e8;
   z-index: 1;
+}
+
+.trips-live-map {
+  height: min(72vh, 640px);
+  min-height: 420px;
 }
 
 .map-badge {

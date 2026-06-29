@@ -11,6 +11,47 @@
 
   const chartGreen = "#0a4f2a";
   const chartGreenLight = "rgba(13, 107, 56, 0.15)";
+  const NIGERIA_BOUNDS = [[4.2, 2.8], [13.9, 14.6]];
+
+  let liveMapTileLayer = null;
+
+  function isDarkTheme() {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+
+  function adminTileLayerUrl() {
+    return isDarkTheme()
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+  }
+
+  function chartGridColor() {
+    return isDarkTheme() ? "#374151" : "#f3f4f6";
+  }
+
+  function bindAdminMapTheme() {
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = function () {
+      if (liveMapTileLayer) liveMapTileLayer.setUrl(adminTileLayerUrl());
+    };
+    if (mq.addEventListener) {
+      mq.addEventListener("change", onChange);
+    } else if (mq.addListener) {
+      mq.addListener(onChange);
+    }
+  }
+
+  function fitMapToNigeria(map, boundsPoints, markerCount) {
+    if (boundsPoints.length > 1) {
+      map.fitBounds(L.latLngBounds(boundsPoints), {
+        padding: [48, 48],
+        maxZoom: markerCount > 3 ? 7 : 10,
+      });
+      return;
+    }
+    map.fitBounds(NIGERIA_BOUNDS, { padding: [24, 24] });
+  }
 
   function formatRevenue(value, period) {
     if (period === "All") {
@@ -91,11 +132,11 @@
           y: {
             beginAtZero: true,
             grid: {
-              color: "#f3f4f6",
+              color: chartGridColor(),
             },
             border: { display: false },
             ticks: {
-              color: "#9ca3af",
+              color: chartTickColor(),
               font: { size: 11 },
               callback: function (value) {
                 return "₦" + value + "M";
@@ -216,9 +257,11 @@
       attributionControl: false,
     }).setView([mapCenter.lat, mapCenter.lng], mapZoom);
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+    liveMapTileLayer = L.tileLayer(adminTileLayerUrl(), {
       maxZoom: 19,
     }).addTo(liveMap);
+
+    bindAdminMapTheme();
 
     L.control.zoom({ position: "topright" }).addTo(liveMap);
 
@@ -277,13 +320,13 @@
     if (route.length >= 2) {
       boundsPoints.push.apply(boundsPoints, route);
     }
-
-    if (boundsPoints.length > 1) {
-      liveMap.fitBounds(L.latLngBounds(boundsPoints), {
-        padding: [48, 48],
-        maxZoom: markers.length > 1 ? 7 : 14,
-      });
+    if (tripData.start) boundsPoints.push([tripData.start.lat, tripData.start.lng]);
+    if (tripData.end) boundsPoints.push([tripData.end.lat, tripData.end.lng]);
+    if (tripData.vehicle_position) {
+      boundsPoints.push([tripData.vehicle_position.lat, tripData.vehicle_position.lng]);
     }
+
+    fitMapToNigeria(liveMap, boundsPoints, markers.length);
 
     const badge = document.getElementById("map-city-badge");
     if (badge) {
