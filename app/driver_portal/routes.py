@@ -10,7 +10,8 @@ from app.driver_portal.data import (
     RIDE_REQUESTS,
     WEEKLY_EARNINGS,
 )
-from app.services.api_client import ApiError, login, register, set_availability
+from app.services.api_client import ApiError, register, set_availability
+from app.services.driver_auth import driver_is_authenticated, handle_driver_login_post
 
 driver_portal_bp = Blueprint(
     "driver_portal",
@@ -22,9 +23,9 @@ driver_portal_bp = Blueprint(
 
 
 def _require_driver():
-    if "driver_token" not in session:
+    if not driver_is_authenticated():
         flash("Please sign in to access the driver portal.", "error")
-        return redirect(url_for("driver_portal.login"))
+        return redirect(url_for("main.driver_login_page"))
     return None
 
 
@@ -45,35 +46,23 @@ def _portal_context(active_nav: str, **extra):
 
 @driver_portal_bp.route("/")
 def index():
-    if session.get("driver_token"):
+    if driver_is_authenticated():
         return redirect(url_for("driver_portal.dashboard"))
-    return redirect(url_for("driver_portal.login"))
+    return redirect(url_for("main.driver_login_page"))
 
 
 @driver_portal_bp.route("/login", methods=["GET", "POST"])
 def login():
+    if driver_is_authenticated():
+        return redirect(url_for("driver_portal.dashboard"))
+
     if request.method == "POST":
         email_or_phone = request.form.get("email_or_phone", "").strip()
         password = request.form.get("password", "")
-        remember = request.form.get("remember") == "on"
-
-        try:
-            result = login(email_or_phone, password)
-            session["driver_token"] = result.get("access_token", "demo-token")
-            session["driver_phone"] = email_or_phone if "@" not in email_or_phone else ""
-            session["driver_email"] = email_or_phone if "@" in email_or_phone else ""
-            session["driver_online"] = False
-            session.permanent = remember
-            flash("Welcome back, captain!", "success")
-            return redirect(url_for("driver_portal.dashboard"))
-        except ApiError:
-            session["driver_token"] = "demo-token"
-            session["driver_phone"] = email_or_phone if "@" not in email_or_phone else ""
-            session["driver_email"] = email_or_phone if "@" in email_or_phone else ""
-            session["driver_name"] = DRIVER_PROFILE["name"]
-            session["driver_online"] = False
-            session.permanent = remember
-            return redirect(url_for("driver_portal.dashboard"))
+        remember = request.form.get("remember") in ("on", "1")
+        redirect_resp = handle_driver_login_post(email_or_phone, password, remember)
+        if redirect_resp:
+            return redirect_resp
 
     return render_template(
         "pages/login.html",
@@ -92,12 +81,12 @@ def register_page():
         try:
             register(name, phone, email or f"{phone}@jcride.local", "driver123")
             flash("Application submitted. Sign in when approved.", "success")
-            return redirect(url_for("driver_portal.login"))
+            return redirect(url_for("main.driver_login_page"))
         except ApiError:
             session["driver_name"] = name
             session["driver_phone"] = phone
             flash("Step 1 saved. Continue to sign in.", "success")
-            return redirect(url_for("driver_portal.login"))
+            return redirect(url_for("main.driver_login_page"))
 
     return render_template(
         "pages/register.html",
@@ -188,8 +177,7 @@ def toggle_online():
     token = session.get("driver_token", "")
 
     try:
-        if token != "demo-token":
-            set_availability(token, online)
+        set_availability(token, online)
     except ApiError:
         pass
 
@@ -200,11 +188,22 @@ def toggle_online():
 
 @driver_portal_bp.route("/logout")
 def logout():
-    session.pop("driver_token", None)
-    session.pop("driver_phone", None)
-    session.pop("driver_name", None)
-    session.pop("driver_online", None)
-    session.pop("pending_ride_requests", None)
-    session.pop("active_trip_id", None)
+    for key in (
+        "driver_token",
+        "driver_phone",
+        "driver_email",
+        "driver_name",
+        "driver_online",
+        "pending_ride_requests",
+        "active_trip_id",
+        "token",
+        "user_id",
+        "name",
+        "email",
+        "phone",
+        "role",
+        "portal",
+    ):
+        session.pop(key, None)
     flash("Signed out.", "success")
-    return redirect(url_for("driver_portal.login"))
+    return redirect(url_for("main.driver_login_page"))
