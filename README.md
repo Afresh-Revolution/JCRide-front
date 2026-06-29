@@ -172,6 +172,20 @@ Browser  →  Flask (this repo)  →  JCRide-back API
 
 ---
 
+## Driver Portal
+
+A dedicated driver UI lives in `app/driver_portal/`. See `app/driver_portal/README.md` for how components connect.
+
+| URL | Page |
+|-----|------|
+| `/driver-portal/login` | Driver sign in |
+| `/driver-portal/register` | Driver registration (step 1) |
+| `/driver-portal/dashboard` | Driver dashboard |
+
+Start the app and open **http://localhost:5000/driver-portal/login**
+
+---
+
 ## Related Repositories
 
 | Repo | Purpose |
