@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, get_flashed_messages, jsonify, redirect, render_template, request, session, url_for
 
 from app.services.api_client import (
     ApiError,
@@ -211,16 +211,12 @@ def login_page():
 
     email = ""
     if request.method == "POST":
+        get_flashed_messages()
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
-        totp_raw = request.form.get("totp_code", "").replace(" ", "")
-
-        if len(totp_raw) != 6 or not totp_raw.isdigit():
-            flash("Enter a valid 6-digit authenticator code.", "error")
-            return render_template("admin/login.html", email=email)
 
         try:
-            result = admin_login(email, password, totp_raw)
+            result = admin_login(email, password)
             session["admin_token"] = result.get("access_token")
             session["admin_email"] = email
             flash("Signed in successfully.", "success")
