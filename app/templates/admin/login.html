@@ -56,7 +56,7 @@
       <div class="admin-panel-right__inner">
       <header class="admin-form-header">
         <h1>Admin Portal</h1>
-        <p>Secure sign-in with two-factor authentication required.</p>
+        <p>Sign in to manage operations.</p>
       </header>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -93,23 +93,7 @@
           >
         </div>
 
-        <div class="admin-field">
-          <label for="totp_code">6-digit Authenticator Code</label>
-          <input
-            type="text"
-            id="totp_code"
-            name="totp_code"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            placeholder="000 000"
-            maxlength="7"
-            pattern="[0-9]{3} [0-9]{3}"
-            required
-          >
-          <span class="admin-field__hint">From your authenticator app</span>
-        </div>
-
-        <button type="submit" class="admin-btn-submit">Sign in securely</button>
+        <button type="submit" class="admin-btn-submit">Sign in</button>
       </form>
 
       <div class="admin-security-cards">
@@ -121,8 +105,8 @@
             </svg>
           </div>
           <div class="admin-security-card__text">
-            <strong>2FA Enforced</strong>
-            <span>TOTP required</span>
+            <strong>Secure access</strong>
+            <span>Admin-only portal</span>
           </div>
         </div>
         <div class="admin-security-card">
@@ -141,24 +125,4 @@
     </div>
   </main>
 </div>
-{% endblock %}
-{% block scripts %}
-<script>
-(function () {
-  const input = document.getElementById("totp_code");
-  if (!input) return;
-
-  input.addEventListener("input", function () {
-    const digits = this.value.replace(/\D/g, "").slice(0, 6);
-    this.value = digits.length > 3
-      ? digits.slice(0, 3) + " " + digits.slice(3)
-      : digits;
-  });
-
-  document.getElementById("admin-login-form").addEventListener("submit", function () {
-    const raw = input.value.replace(/\s/g, "");
-    input.value = raw;
-  });
-})();
-</script>
 {% endblock %}

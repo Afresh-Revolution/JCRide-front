@@ -88,8 +88,12 @@
 
           {% if portal == 'driver' %}
           <label class="auth-login__field">
-            <span>Phone Number</span>
-            <input type="tel" name="phone" autocomplete="tel" required placeholder="+234 800 000 0000" value="{{ phone or '' }}">
+            <span>Email</span>
+            <input type="email" name="email" autocomplete="email" placeholder="you@example.com" value="{{ email or '' }}">
+          </label>
+          <label class="auth-login__field">
+            <span>Phone number <small>(optional)</small></span>
+            <input type="tel" name="phone" autocomplete="tel" placeholder="+234 800 000 0000" value="{{ phone or '' }}">
           </label>
           {% else %}
           <label class="auth-login__field">
