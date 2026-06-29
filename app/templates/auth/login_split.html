@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-login.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-loading.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 <body class="auth-login-page auth-login-page--{{ portal }}">
   <div class="auth-login">
@@ -131,6 +133,7 @@
       </div>
     </section>
   </div>
+  <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
 </body>
 </html>

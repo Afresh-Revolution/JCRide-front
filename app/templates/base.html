@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}JC-Ride{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  {% block head %}{% endblock %}
 </head>
 <body>
   <div class="app">
@@ -33,5 +35,6 @@
     </main>
     <footer class="footer"><p>&copy; 2026 JC-Ride. Ride smarter.</p></footer>
   </div>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

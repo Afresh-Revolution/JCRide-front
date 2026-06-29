@@ -1,0 +1,125 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'settings' %}
+
+{% block user_content %}
+<div class="settings-grid">
+  <article class="rider-panel settings-card">
+    <div class="settings-toggle">
+      <div class="settings-toggle__icon">📱</div>
+      <div class="settings-toggle__body">
+        <strong>Use device location</strong>
+        <span>Improve pickup accuracy</span>
+      </div>
+      <label class="user-toggle">
+        <input type="checkbox" checked>
+        <span class="user-toggle__slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <div class="settings-toggle__icon">🌐</div>
+      <div class="settings-toggle__body">
+        <strong>Show fare estimate in km</strong>
+        <span>Display per-kilometer breakdown</span>
+      </div>
+      <label class="user-toggle">
+        <input type="checkbox" checked>
+        <span class="user-toggle__slider"></span>
+      </label>
+    </div>
+  </article>
+
+  <article class="rider-panel settings-card">
+    <label class="settings-field">
+      <span>Language</span>
+      <select>
+        <option selected>English (Nigeria)</option>
+        <option>Yoruba</option>
+        <option>Igbo</option>
+        <option>Hausa</option>
+      </select>
+    </label>
+    <label class="settings-field">
+      <span>CURRENCY</span>
+      <select>
+        <option selected>₦ Nigerian Naira (NGN)</option>
+      </select>
+    </label>
+    <label class="settings-field">
+      <span>DISTANCE UNITS</span>
+      <select>
+        <option selected>Kilometers (km)</option>
+        <option>Miles (mi)</option>
+      </select>
+    </label>
+    <label class="settings-field">
+      <span>TIME ZONE</span>
+      <select>
+        <option selected>WAT · Africa/Lagos (UTC+1)</option>
+      </select>
+    </label>
+  </article>
+
+  <article class="rider-panel settings-card">
+    <h2 class="rider-panel__title">Privacy</h2>
+    <div class="settings-toggle">
+      <div class="settings-toggle__body">
+        <strong>Share trip data for analytics</strong>
+        <span>Anonymised usage only</span>
+      </div>
+      <label class="user-toggle">
+        <input type="checkbox" checked>
+        <span class="user-toggle__slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <div class="settings-toggle__body">
+        <strong>Personalised offers</strong>
+        <span>Recommendations based on history</span>
+      </div>
+      <label class="user-toggle">
+        <input type="checkbox">
+        <span class="user-toggle__slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <div class="settings-toggle__body">
+        <strong>Allow driver to see saved name</strong>
+        <span>First name only</span>
+      </div>
+      <label class="user-toggle">
+        <input type="checkbox" checked>
+        <span class="user-toggle__slider"></span>
+      </label>
+    </div>
+  </article>
+
+  <article class="rider-panel settings-card">
+    <h2 class="rider-panel__title">Account</h2>
+    <div class="settings-action-row">
+      <div>
+        <strong>Download my data</strong>
+        <span>Receive a copy by email within 24 h</span>
+      </div>
+      <button type="button" class="rider-btn rider-btn--outline-sm">Request</button>
+    </div>
+    <div class="settings-action-row">
+      <div>
+        <strong>Pause my account</strong>
+        <span>Temporarily disable bookings</span>
+      </div>
+      <button type="button" class="rider-btn rider-btn--outline-sm">Pause</button>
+    </div>
+    <div class="settings-action-row">
+      <div>
+        <strong>Delete account</strong>
+        <span>Permanent · cannot be undone</span>
+      </div>
+      <button type="button" class="rider-btn rider-btn--danger-sm">🗑 Delete</button>
+    </div>
+  </article>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+{% endblock %}

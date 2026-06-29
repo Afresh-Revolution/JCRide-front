@@ -9,12 +9,14 @@
 }
 
 .auth-login__submit.is-loading,
+.admin-btn-submit.is-loading,
 .landing-btn.is-loading,
 .auth-signup__success-btn.is-loading {
   color: rgba(255, 255, 255, 0.15);
 }
 
 .auth-login__submit.is-loading::after,
+.admin-btn-submit.is-loading::after,
 .landing-btn.is-loading::after,
 .auth-signup__success-btn.is-loading::after {
   content: "";
