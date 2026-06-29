@@ -1,0 +1,78 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'live_tracking' %}
+
+{% block user_content %}
+<div class="tracking-layout">
+  <section class="rider-panel rider-panel--map tracking-map">
+    <div class="rider-map">
+      <span class="rider-map__badge">{{ tracking.status_label }}</span>
+      <div class="rider-map__zoom" aria-hidden="true">
+        <button type="button" disabled>+</button>
+        <button type="button" disabled>−</button>
+      </div>
+      {% include "user/includes/map_placeholder.html" %}
+    </div>
+  </section>
+
+  <aside class="tracking-sidebar">
+    <div class="tracking-stepper" aria-label="Trip progress">
+      {% for i in range(tracking.steps|length) %}
+      {% set step_num = i + 1 %}
+      <div class="tracking-step{% if step_num < tracking.step %} is-done{% elif step_num == tracking.step %} is-current{% endif %}">
+        <span class="tracking-step__dot">{% if step_num < tracking.step %}✓{% else %}{{ step_num }}{% endif %}</span>
+        <span class="tracking-step__label">{{ tracking.steps[i] }}</span>
+      </div>
+      {% if not loop.last %}<span class="tracking-step__line{% if step_num < tracking.step %} is-done{% endif %}"></span>{% endif %}
+      {% endfor %}
+    </div>
+
+    <article class="rider-panel tracking-driver">
+      <p class="tracking-driver__status">• {{ tracking.driver.status }}</p>
+      <div class="tracking-driver__profile">
+        <span class="tracking-driver__avatar">{{ tracking.driver.initials }}</span>
+        <div>
+          <strong>{{ tracking.driver.name }}</strong>
+          <span>★ {{ tracking.driver.rating }} · {{ tracking.driver.trips }} trips</span>
+        </div>
+      </div>
+      <div class="tracking-driver__vehicle">
+        <span class="tracking-plate">{{ tracking.driver.plate }}</span>
+        <span>{{ tracking.driver.vehicle }}</span>
+      </div>
+      <div class="tracking-driver__actions">
+        <button type="button" class="rider-btn rider-btn--outline-sm">📞 Call</button>
+        <button type="button" class="rider-btn rider-btn--outline-sm">💬 Chat</button>
+        <button type="button" class="rider-btn rider-btn--outline-sm">🧭 Track</button>
+      </div>
+    </article>
+
+    <article class="rider-panel tracking-details">
+      <h2 class="rider-panel__title">Trip details</h2>
+      <div class="tracking-route">
+        <div class="tracking-route__row">
+          <span class="route-input__dot route-input__dot--pickup"></span>
+          <div>
+            <span class="tracking-route__label">PICKUP</span>
+            <span>{{ tracking.pickup }}</span>
+          </div>
+        </div>
+        <div class="tracking-route__line"></div>
+        <div class="tracking-route__row">
+          <span class="route-input__dot route-input__dot--dropoff"></span>
+          <div>
+            <span class="tracking-route__label">DESTINATION</span>
+            <span>{{ tracking.destination }}</span>
+          </div>
+        </div>
+      </div>
+      <p class="tracking-booking-id">Booking ID — {{ tracking.booking_id }} · {{ tracking.tier }}</p>
+    </article>
+
+    <div class="tracking-bottom-actions">
+      <button type="button" class="rider-btn rider-btn--outline-sm tracking-share">↗ Share ride</button>
+      <button type="button" class="rider-btn rider-btn--sos">🆘 SOS</button>
+    </div>
+    <button type="button" class="rider-btn rider-btn--request">Start trip (simulate driver pickup)</button>
+  </aside>
+</div>
+{% endblock %}
