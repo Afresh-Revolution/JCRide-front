@@ -1,0 +1,92 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'settings' %}
+
+{% block page_title %}Platform settings{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-settings.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="settings-page">
+  <div class="settings-header">
+    <div>
+      <h1 class="settings-header__title">Platform settings</h1>
+      <p class="settings-header__sub">Update fares, integrations, operational policies, and landing page content.</p>
+    </div>
+    <button type="button" class="settings-save-btn" id="settings-save-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save changes
+    </button>
+  </div>
+
+  <nav class="settings-tabs" aria-label="Settings sections">
+    <button type="button" class="settings-tab is-active" data-settings-tab="platform">Platform</button>
+    <button type="button" class="settings-tab" data-settings-tab="landing">Landing page</button>
+  </nav>
+
+  <div id="settings-platform-panel">
+  <form class="settings-grid" id="settings-form">
+    <article class="dash-card settings-card">
+      <h2 class="settings-card__title">Fare configuration</h2>
+      <p class="settings-card__sub">Naira values applied platform-wide</p>
+      <div class="settings-fields">
+        <label class="settings-field"><span>Base fare (Economy)</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="economy_base_fare_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Base fare (Comfort)</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="comfort_base_fare_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Base fare (Premium)</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="premium_base_fare_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Per kilometer rate</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="economy_per_km_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Waiting time (per minute)</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="waiting_time_per_minute_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Traffic surcharge multiplier</span><input type="number" name="traffic_surcharge_multiplier" min="1" step="0.01"></label>
+        <label class="settings-field"><span>Cancellation fee</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="cancellation_fee_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Service fee (% of fare)</span><div class="settings-input-suffix"><input type="number" name="service_fee_percent" min="0" max="100" step="0.1"><span>%</span></div></label>
+      </div>
+    </article>
+
+    <article class="dash-card settings-card">
+      <h2 class="settings-card__title">paystack integration</h2>
+      <p class="settings-card__sub">Payment processing &amp; settlements</p>
+      <div class="settings-fields">
+        <label class="settings-field"><span>Merchant code</span><input type="text" name="merchant_code" autocomplete="off"></label>
+        <label class="settings-field"><span>Settlement account</span><input type="text" name="settlement_account" autocomplete="off"></label>
+        <label class="settings-field"><span>Webhook URL</span><input type="url" name="webhook_url" autocomplete="off"></label>
+        <label class="settings-field"><span>Auto-settlement schedule</span><input type="text" name="settlement_schedule" autocomplete="off"></label>
+        <label class="settings-field"><span>API secret key</span><input type="password" name="api_secret" placeholder="sk_live_••••••••••••" autocomplete="new-password"></label>
+      </div>
+    </article>
+
+    <article class="dash-card settings-card">
+      <h2 class="settings-card__title">Driver requirements</h2>
+      <p class="settings-card__sub">Onboarding &amp; compliance</p>
+      <div class="settings-fields">
+        <label class="settings-field"><span>Min vehicle year</span><input type="number" name="min_vehicle_year" min="1980" max="2100" step="1"></label>
+        <label class="settings-field"><span>Required documents</span><input type="text" name="required_documents" placeholder="License, NIN, Vehicle papers, Insurance"></label>
+        <label class="settings-field"><span>Background check provider</span><input type="text" name="background_check_provider"></label>
+        <label class="settings-field"><span>Min driver rating threshold</span><div class="settings-input-suffix"><input type="number" name="min_driver_rating_threshold" min="0" max="5" step="0.01"><span>★</span></div></label>
+      </div>
+    </article>
+
+    <article class="dash-card settings-card">
+      <h2 class="settings-card__title">Operational zones</h2>
+      <p class="settings-card__sub">Cities where JCRide operates</p>
+      <div class="settings-zones" id="settings-zones-tags"></div>
+      <div class="settings-zones-add">
+        <input type="text" id="settings-city-input" placeholder="Add city…" aria-label="Add city">
+        <button type="button" id="settings-add-city-btn">+ Add</button>
+      </div>
+    </article>
+  </form>
+  </div>
+
+  <div id="settings-landing-panel" hidden>
+    <div id="landing-settings-root" class="landing-settings"></div>
+  </div>
+
+  <div class="admin-toast" id="settings-toast" hidden role="status"></div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-settings-landing.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin-settings.js') }}"></script>
+{% endblock %}

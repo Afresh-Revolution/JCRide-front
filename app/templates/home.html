@@ -1,12 +1,360 @@
-{% extends "base.html" %}
-{% block title %}JC-Ride — Get there faster{% endblock %}
+{% extends "landing_base.html" %}
+{% from "includes/landing_icons.html" import feature_icon, step_icon, stat_icon %}
+{% set h = landing.hero %}
+{% set p = landing.partners %}
+{% set fs = landing.features_section %}
+{% set hiw = landing.how_it_works %}
+{% set au = landing.audience %}
+{% set cs = landing.cities_section %}
+{% set ps = landing.pricing_section %}
+{% set ts = landing.testimonials_section %}
+{% set fq = landing.faq_section %}
+{% set cta = landing.cta %}
+{% block title %}JCRide — Nigeria's Premium Ride-hailing Platform{% endblock %}
 {% block content %}
-<section class="hero">
-  <h1>Get there with JC-Ride</h1>
-  <p>Request a ride in seconds or earn by driving on your schedule.</p>
-  <div class="hero-actions">
-    <a href="{{ url_for('main.ride_page') }}" class="btn btn-primary">Book a Ride</a>
-    <a href="{{ url_for('main.driver_page') }}" class="btn btn-secondary">Become a Driver</a>
+
+{# ── Hero ── #}
+<section class="landing-hero" aria-label="Hero">
+  <div class="landing-hero__fx" aria-hidden="true">
+    <span class="landing-hero__orb landing-hero__orb--1"></span>
+    <span class="landing-hero__orb landing-hero__orb--2"></span>
+    <span class="landing-hero__grid-lines"></span>
+  </div>
+  <div class="landing-container landing-hero__grid">
+    <div class="landing-hero__content">
+      <span class="landing-hero__badge">
+        <span aria-hidden="true">&#10022;</span>
+        {{ h.badge }}
+      </span>
+      <h1 class="landing-hero__title">{{ h.title_prefix }} <span class="landing-hero__accent">{{ h.title_accent }}</span></h1>
+      <p class="landing-hero__subtitle">{{ h.subtitle }}</p>
+
+      <div class="landing-hero__actions">
+        <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--primary">
+          {{ h.primary_cta_label }}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--ghost">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+          {{ h.secondary_cta_label }}
+        </a>
+        <a href="{{ h.watch_href }}" class="landing-hero__watch">
+          <span class="landing-hero__watch-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </span>
+          {{ h.watch_label }}
+        </a>
+      </div>
+
+      <div class="landing-hero__trust">
+        <span class="landing-hero__trust-item">
+          <span class="landing-stars" aria-label="4.9 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+          {{ h.trust_reviews }}
+        </span>
+        <span class="landing-hero__trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          {{ h.trust_verified }}
+        </span>
+        <span class="landing-hero__trust-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          {{ h.trust_support }}
+        </span>
+      </div>
+    </div>
+
+    <div class="landing-hero__visual" aria-hidden="true">
+      <div class="landing-hero__mockup">
+        <img
+          src="{{ url_for('static', filename='images/hero.png') }}"
+          alt=""
+          class="landing-hero__mockup-photo"
+          width="520"
+          height="640"
+          loading="eager"
+        >
+
+        <div class="landing-hero__ui-card landing-hero__ui-card--where">
+          <div class="landing-hero__ui-title-row">
+            <span class="landing-hero__ui-step">1 &middot; Where to?</span>
+            <span class="landing-hero__ui-badge">
+              <span class="landing-hero__ui-badge-dot" aria-hidden="true"></span>
+              Booking
+            </span>
+          </div>
+          <div class="landing-hero__ui-fields">
+            <div class="landing-hero__ui-field">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-4.5 7-10a7 7 0 1 0-14 0c0 5.5 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
+              <span>{{ h.mockup_pickup }}</span>
+            </div>
+            <div class="landing-hero__ui-field">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              <span>{{ h.mockup_destination }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="landing-hero__ui-card landing-hero__ui-card--pickup">
+          <span class="landing-hero__ui-pickup-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </span>
+          <span>
+            <strong>{{ h.mockup_pickup_time }}</strong>
+            <small>{{ h.mockup_pickup_sub }}</small>
+          </span>
+        </div>
+
+        <div class="landing-hero__ui-card landing-hero__ui-card--rides">
+          <span class="landing-hero__ui-step">2 &middot; Choose ride</span>
+          <div class="landing-hero__ride-options">
+            {% for ride in h.mockup_rides %}
+            <div class="landing-hero__ride-opt{% if ride.active %} landing-hero__ride-opt--active{% endif %}">
+              <span>{{ ride.tier }}</span>
+              <strong>&#8358;{{ ride.price_ngn | int }}</strong>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="landing-hero__ui-card landing-hero__ui-card--driver">
+          <div class="landing-hero__ui-title-row">
+            <span class="landing-hero__ui-step">3 &middot; Driver found</span>
+            <span class="landing-hero__ui-badge landing-hero__ui-badge--matched">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+              Matched
+            </span>
+          </div>
+          <div class="landing-hero__driver-row">
+            <span class="landing-hero__driver-avatar">{{ h.mockup_driver_initials }}</span>
+            <div class="landing-hero__driver-info">
+              <strong>{{ h.mockup_driver_name }}</strong>
+              <span>{{ h.mockup_driver_vehicle }}</span>
+            </div>
+            <div class="landing-hero__driver-meta">
+              <span class="landing-hero__driver-rating"><span class="landing-hero__driver-star" aria-hidden="true">&#9733;</span> {{ h.mockup_driver_rating }}</span>
+              <span class="landing-hero__driver-eta">{{ h.mockup_driver_eta }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
+
+{# ── Partners ── #}
+<section class="landing-partners" aria-label="Trusted partners">
+  <div class="landing-container">
+    <p class="landing-partners__label">{{ p.label }}</p>
+    <ul class="landing-partners__list">
+      {% for partner in p['items'] %}
+      <li>{{ partner }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+{# ── Features ── #}
+<section class="landing-section landing-animate" id="features" aria-labelledby="features-heading">
+  <div class="landing-container landing-section__header">
+    <p class="landing-eyebrow">{{ fs.eyebrow }}</p>
+    <h2 id="features-heading" class="landing-section__title">{{ fs.title }}</h2>
+    <p class="landing-section__subtitle">{{ fs.subtitle }}</p>
+  </div>
+  <div class="landing-container landing-features">
+    {% for item in fs['items'] %}
+    <article class="landing-feature-card landing-animate landing-animate--child">
+      <span class="landing-feature-card__icon" aria-hidden="true">
+        {{ feature_icon(loop.index0) }}
+      </span>
+      <h3>{{ item.title }}</h3>
+      <p>{{ item.description }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{# ── How it works ── #}
+<section class="landing-section landing-section--muted landing-animate" id="how-it-works" aria-labelledby="how-heading">
+  <div class="landing-container landing-section__header">
+    <p class="landing-eyebrow">{{ hiw.eyebrow }}</p>
+    <h2 id="how-heading" class="landing-section__title">{{ hiw.title }}</h2>
+  </div>
+  <div class="landing-container landing-steps">
+    {% for step in hiw.steps %}
+    <article class="landing-step-card landing-animate landing-animate--child">
+      <span class="landing-step-card__num" aria-hidden="true">{{ "%02d"|format(loop.index) }}</span>
+      <span class="landing-step-card__icon" aria-hidden="true">
+        {{ step_icon(loop.index0) }}
+      </span>
+      <h3>{{ step.title }}</h3>
+      <p>{{ step.description }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{# ── Drive with us ── #}
+<section class="landing-section landing-section--muted" id="drive-with-us" aria-labelledby="drive-heading">
+  <div class="landing-container landing-audience">
+    <article class="landing-audience-card landing-audience-card--rider">
+      <p class="landing-eyebrow">{{ au.rider_eyebrow }}</p>
+      <h2 id="drive-heading" class="landing-audience-card__title">{{ au.rider_title }}</h2>
+      <ul class="landing-checklist">
+        {% for bullet in au.rider_bullets %}
+        <li>{{ bullet }}</li>
+        {% endfor %}
+      </ul>
+      <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--primary">
+        {{ au.rider_cta_label }}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </article>
+    <article class="landing-audience-card landing-audience-card--driver">
+      <p class="landing-eyebrow landing-eyebrow--light">{{ au.driver_eyebrow }}</p>
+      <h2 class="landing-audience-card__title">{{ au.driver_title }}</h2>
+      <p class="landing-audience-card__desc">{{ au.driver_description }}</p>
+      <div class="landing-audience-stats">
+        {% for stat in au.driver_stats %}
+        <div><strong>{{ stat.value }}</strong><span>{{ stat.label }}</span></div>
+        {% endfor %}
+      </div>
+      <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--accent">
+        {{ au.driver_cta_label }}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </article>
+  </div>
+</section>
+
+{# ── Stats ── #}
+<section class="landing-stats landing-animate" aria-label="Platform statistics">
+  <div class="landing-container landing-stats__grid">
+    {% for stat in landing.stats %}
+    <div class="landing-stat landing-animate landing-animate--child">
+      <span class="landing-stat__icon" aria-hidden="true">
+        {{ stat_icon(loop.index0) }}
+      </span>
+      <div>
+        <strong class="landing-stat__value">{{ stat.value }}</strong>
+        <span class="landing-stat__label">{{ stat.label }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ── Cities ── #}
+<section class="landing-section" id="cities" aria-labelledby="cities-heading">
+  <div class="landing-container landing-section__header">
+    <p class="landing-eyebrow">{{ cs.eyebrow }}</p>
+    <h2 id="cities-heading" class="landing-section__title">{{ cs.title }}</h2>
+    <p class="landing-section__subtitle">{{ cs.subtitle }}</p>
+  </div>
+  <div class="landing-container landing-cities">
+    {% for city in cs.cities %}
+    <span class="landing-city-pill">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-4.5 7-10a7 7 0 1 0-14 0c0 5.5 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
+      {{ city }}
+    </span>
+    {% endfor %}
+  </div>
+</section>
+
+{# ── Pricing ── #}
+<section class="landing-section" id="pricing" aria-labelledby="pricing-heading">
+  <div class="landing-container landing-section__header">
+    <p class="landing-eyebrow">{{ ps.eyebrow }}</p>
+    <h2 id="pricing-heading" class="landing-section__title">{{ ps.title }}</h2>
+    <p class="landing-section__subtitle">{{ ps.subtitle }}</p>
+  </div>
+  <div class="landing-container landing-pricing">
+    {% for tier in ps.tiers %}
+    <article class="landing-price-card{% if tier.featured %} landing-price-card--featured{% endif %}">
+      {% if tier.badge %}<span class="landing-price-card__badge">{{ tier.badge }}</span>{% endif %}
+      <p class="landing-price-card__tier">{{ tier.name }}</p>
+      <p class="landing-price-card__price"><span>&#8358;{{ tier.price_per_km }}</span> <small>per km</small></p>
+      <p class="landing-price-card__desc">{{ tier.description }}</p>
+      <ul class="landing-price-card__features">
+        {% for feature in tier.features %}
+        <li>{{ feature }}</li>
+        {% endfor %}
+      </ul>
+      <a href="{{ url_for('main.ride_page') }}" class="landing-btn {% if tier.featured %}landing-btn--accent{% else %}landing-btn--primary{% endif %} landing-btn--block">{{ tier.cta_label }}</a>
+    </article>
+    {% endfor %}
+  </div>
+  <p class="landing-pricing-note">{{ ps.footnote }}</p>
+</section>
+
+{# ── Testimonials ── #}
+<section class="landing-section landing-section--muted" id="testimonials" aria-labelledby="testimonials-heading">
+  <div class="landing-container landing-section__header">
+    <p class="landing-eyebrow">{{ ts.eyebrow }}</p>
+    <h2 id="testimonials-heading" class="landing-section__title">{{ ts.title }}</h2>
+  </div>
+  <div class="landing-container landing-testimonials">
+    {% for item in ts['items'] %}
+    <article class="landing-testimonial">
+      <div class="landing-testimonial__top">
+        <span class="landing-stars" aria-label="5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+        <span class="landing-testimonial__quote-mark" aria-hidden="true">&rdquo;</span>
+      </div>
+      <p>{{ item.quote }}</p>
+      <footer>
+        <span class="landing-testimonial__avatar">{{ item.initials }}</span>
+        <span><strong>{{ item.name }}</strong><small>{{ item.role }}</small></span>
+      </footer>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{# ── FAQ ── #}
+<section class="landing-section" id="faq" aria-labelledby="faq-heading">
+  <div class="landing-container landing-section__header">
+    <p class="landing-eyebrow">{{ fq.eyebrow }}</p>
+    <h2 id="faq-heading" class="landing-section__title">{{ fq.title }}</h2>
+  </div>
+  <div class="landing-container landing-faq">
+    {% for item in fq['items'] %}
+    <details class="landing-faq__item">
+      <summary>
+        <span class="landing-faq__question">{{ item.question }}</span>
+        <span class="landing-faq__expand-icon" aria-hidden="true">+</span>
+        <button type="button" class="landing-faq__close" aria-label="Close answer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </summary>
+      <div class="landing-faq__answer">
+        <p>{{ item.answer }}</p>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+</section>
+
+{# ── CTA Banner ── #}
+<section class="landing-cta landing-animate" aria-label="Get started">
+  <div class="landing-container landing-cta__grid">
+    <div class="landing-cta__content">
+      <h2>{{ cta.title }}</h2>
+      <p>{{ cta.subtitle }}</p>
+      <div class="landing-cta__actions">
+        <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--accent">
+          {{ cta.primary_label }}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="{{ url_for('main.driver_page') }}" class="landing-btn landing-btn--outline-light">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+          {{ cta.secondary_label }}
+        </a>
+      </div>
+    </div>
+    <div class="landing-cta__stats">
+      {% for stat in cta.stats %}
+      <div><strong>{{ stat.value }}</strong><span>{{ stat.label }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
 {% endblock %}

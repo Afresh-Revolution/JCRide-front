@@ -1,0 +1,322 @@
+/* Shared auth signup wizard (rider + driver) */
+.auth-signup__panel {
+  justify-content: flex-start;
+}
+
+.auth-signup__wrap {
+  width: min(100%, 460px);
+}
+
+.auth-signup__tagline {
+  color: var(--auth-muted);
+  font-size: 0.98rem;
+  margin-bottom: 1.75rem;
+}
+
+.auth-signup__progress {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.auth-signup__progress-bar {
+  flex: 1;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.auth-signup__progress-bar--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.auth-signup__progress-bar--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.auth-signup__progress-segment {
+  height: 6px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  transition: background 0.25s ease;
+}
+
+.auth-signup__progress-segment.is-complete {
+  background: var(--auth-green-dark);
+}
+
+.auth-signup__progress-label {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--auth-muted);
+  white-space: nowrap;
+}
+
+.auth-signup__field-hint {
+  font-size: 0.78rem;
+  color: var(--auth-muted);
+  margin-top: -0.2rem;
+}
+
+.auth-signup__select {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--auth-border);
+  border-radius: 12px;
+  background: var(--auth-input-bg);
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--auth-ink);
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% + 2px),
+    calc(100% - 12px) calc(50% + 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.auth-signup__select:focus {
+  outline: none;
+  border-color: #34d399;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.auth-signup__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.auth-signup__upload {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--auth-border);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.auth-signup__upload.is-selected {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.auth-signup__upload-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  border: 1px solid var(--auth-border);
+  color: var(--auth-green-dark);
+}
+
+.auth-signup__upload-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.auth-signup__upload-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.auth-signup__upload-copy strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.auth-signup__upload-copy span {
+  font-size: 0.78rem;
+  color: var(--auth-muted);
+}
+
+.auth-signup__upload-name {
+  font-size: 0.78rem !important;
+  color: var(--auth-green-dark) !important;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-signup__upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.95rem;
+  border-radius: 10px;
+  border: 1px solid var(--auth-border);
+  background: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--auth-ink);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.auth-signup__upload-btn:hover {
+  border-color: #34d399;
+  background: #fff;
+}
+
+.auth-signup__otp-hint {
+  text-align: center;
+  color: var(--auth-muted);
+  font-size: 0.92rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.auth-signup__otp {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.auth-signup__otp input {
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: 56px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border: 1px solid var(--auth-border);
+  border-radius: 12px;
+  background: #f8fafc;
+  color: var(--auth-ink);
+}
+
+.auth-signup__otp input:focus {
+  outline: none;
+  border-color: #34d399;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.auth-signup__resend-wrap {
+  margin-top: 0.85rem;
+  text-align: center;
+}
+
+.auth-signup__resend-timer {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--auth-green-dark);
+}
+
+.auth-signup__resend-form {
+  display: inline;
+}
+
+.auth-signup__resend-btn {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--auth-green-dark);
+  cursor: pointer;
+}
+
+.auth-signup__resend-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.auth-signup__resend-btn:disabled {
+  color: var(--auth-muted);
+  cursor: not-allowed;
+}
+
+.auth-signup__success {
+  text-align: center;
+  padding: 1.5rem 1.25rem 0.5rem;
+  border: 1px solid var(--auth-border);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.auth-signup__success-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #ecfdf5;
+  color: var(--auth-green-dark);
+}
+
+.auth-signup__success-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.auth-signup__success h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 0.65rem;
+}
+
+.auth-signup__success p {
+  color: var(--auth-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin-bottom: 1.25rem;
+}
+
+.auth-signup__success-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+@media (max-width: 520px) {
+  .auth-signup__row {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-signup__upload {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .auth-signup__upload-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .auth-signup__otp {
+    gap: 0.35rem;
+  }
+
+  .auth-signup__otp input {
+    font-size: 1.1rem;
+    max-height: 50px;
+  }
+}
+
+@media (max-width: 380px) {
+  .auth-signup__progress {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .auth-signup__progress-label {
+    text-align: right;
+  }
+}

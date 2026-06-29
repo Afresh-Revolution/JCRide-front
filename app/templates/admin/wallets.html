@@ -1,0 +1,96 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'wallets' %}
+
+{% block page_title %}Wallets{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-wallets.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="wallets-page">
+  <div class="wallets-kpi-grid">
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Total wallet funds</span>
+        <span class="kpi-card__value" id="kpi-total-funds">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+      </div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Inflow (24H)</span>
+        <span class="kpi-card__value" id="kpi-inflow-amount">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up" id="kpi-inflow-trend">▲ — fundings</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+      </div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Outflow (24H)</span>
+        <span class="kpi-card__value" id="kpi-outflow-amount">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up" id="kpi-outflow-trend">▲ Trips + payouts</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+      </div>
+    </article>
+
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Auto-refunds</span>
+        <span class="kpi-card__value" id="kpi-refunds-amount">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up" id="kpi-refunds-trend">▲ Per-km reconciliation</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </div>
+    </article>
+  </div>
+
+  <div class="wallets-card dash-card">
+    <div class="wallets-card__header">
+      <h2 class="wallets-card__title">Top wallet holders</h2>
+      <div class="wallets-card__tools">
+        <div class="wallets-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="wallets-search-input" placeholder="Search holders" aria-label="Search wallet holders">
+        </div>
+        <label class="wallets-sort">
+          <span class="sr-only">Sort by</span>
+          <select id="wallets-sort-select" aria-label="Sort wallet holders">
+            <option value="balance" selected>Highest balance</option>
+            <option value="name">Name A–Z</option>
+            <option value="recent">Recently joined</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="wallets-holders-grid" id="wallets-holders-grid" aria-live="polite">
+      <p class="wallets-holders__loading">Loading wallet holders…</p>
+    </div>
+
+    <div class="wallets-pagination" id="wallets-pagination" hidden>
+      <span class="wallets-pagination__info" id="wallets-pagination-info"></span>
+      <div class="wallets-pagination__controls">
+        <button type="button" class="wallets-pagination__btn" id="wallets-prev-btn" disabled>Previous</button>
+        <button type="button" class="wallets-pagination__btn" id="wallets-next-btn" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wallets-toast" id="wallets-toast" hidden role="status"></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-wallets.js') }}"></script>
+{% endblock %}
