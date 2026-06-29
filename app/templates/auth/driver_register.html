@@ -70,7 +70,7 @@
         {% endif %}
       {% endwith %}
 
-      {% if step > 1 and step < 5 %}
+      {% if step > 1 and step < 4 %}
       <a href="{{ url_for('main.driver_register_page', action='back') }}" class="auth-login__back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         Back
@@ -87,7 +87,7 @@
         <p class="auth-login__subtitle">{{ step_label }}</p>
 
         <div class="auth-signup__progress" aria-label="Progress">
-          <div class="auth-signup__progress-bar auth-signup__progress-bar--5">
+          <div class="auth-signup__progress-bar auth-signup__progress-bar--4">
             {% for i in range(1, total_steps + 1) %}
             <span class="auth-signup__progress-segment{% if i <= step %} is-complete{% endif %}"></span>
             {% endfor %}
@@ -122,36 +122,8 @@
         </form>
 
         {% elif step == 2 %}
-        <form method="post" class="auth-login__form auth-signup__form" novalidate>
-          <input type="hidden" name="step" value="2">
-          <label class="auth-login__field">
-            <span>Vehicle Type</span>
-            <select name="vehicle_tier" class="auth-signup__select" required>
-              <option value="economy"{% if signup.get('vehicle_tier', 'economy') == 'economy' %} selected{% endif %}>Economy (Sedan)</option>
-              <option value="comfort"{% if signup.get('vehicle_tier') == 'comfort' %} selected{% endif %}>Comfort (SUV)</option>
-              <option value="premium"{% if signup.get('vehicle_tier') == 'premium' %} selected{% endif %}>Premium</option>
-            </select>
-          </label>
-          <label class="auth-login__field">
-            <span>Vehicle Model</span>
-            <input type="text" name="vehicle_model" required placeholder="Toyota Corolla 2019" value="{{ signup.get('vehicle_model', '') }}">
-          </label>
-          <div class="auth-signup__row">
-            <label class="auth-login__field">
-              <span>Vehicle Color</span>
-              <input type="text" name="vehicle_color" required placeholder="Silver" value="{{ signup.get('vehicle_color', '') }}">
-            </label>
-            <label class="auth-login__field">
-              <span>Plate Number</span>
-              <input type="text" name="plate_number" required placeholder="ABC-123-XY" value="{{ signup.get('plate_number', '') }}" style="text-transform: uppercase;">
-            </label>
-          </div>
-          <button type="submit" class="auth-login__submit" data-loading-text="Continuing…">Continue</button>
-        </form>
-
-        {% elif step == 3 %}
         <form method="post" enctype="multipart/form-data" class="auth-login__form auth-signup__form" novalidate>
-          <input type="hidden" name="step" value="3">
+          <input type="hidden" name="step" value="2">
           {% set docs = [
             ('driver_license', 'Driver License', 'license'),
             ('vehicle_papers', 'Vehicle Papers', 'papers'),
@@ -179,9 +151,9 @@
           <button type="submit" class="auth-login__submit" data-loading-text="Uploading…">Submit documents</button>
         </form>
 
-        {% elif step == 4 %}
+        {% elif step == 3 %}
         <form method="post" class="auth-login__form auth-signup__form auth-signup__otp-form" novalidate>
-          <input type="hidden" name="step" value="4">
+          <input type="hidden" name="step" value="3">
           <p class="auth-signup__otp-hint">Enter the OTP sent to your email.</p>
           <div class="auth-signup__otp" data-otp-inputs>
             <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" aria-label="Digit 1" autocomplete="one-time-code">
@@ -197,13 +169,13 @@
         <div class="auth-signup__resend-wrap">
           <span class="auth-signup__resend-timer" data-resend-timer aria-live="polite"></span>
           <form method="post" class="auth-signup__resend-form">
-            <input type="hidden" name="step" value="4">
+            <input type="hidden" name="step" value="3">
             <input type="hidden" name="action" value="resend">
             <button type="submit" class="auth-signup__resend-btn" data-resend-btn hidden>Resend code</button>
           </form>
         </div>
 
-        {% elif step == 5 %}
+        {% elif step == 4 %}
         <div class="auth-signup__success">
           <div class="auth-signup__success-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -216,7 +188,7 @@
         </div>
         {% endif %}
 
-        {% if step < 5 %}
+        {% if step < 4 %}
         <p class="auth-login__footer-text">
           Already a driver?
           <a href="{{ url_for('main.driver_login_page') }}" class="auth-login__link auth-login__link--strong">Sign in</a>
