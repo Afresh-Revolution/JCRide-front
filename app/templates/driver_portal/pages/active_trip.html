@@ -1,0 +1,10 @@
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Active Trip{% endblock %}
+
+{% block portal_content %}
+  <header class="driver-page-header">
+    <h1 class="driver-page-header__title">Active Trip</h1>
+    <p class="driver-page-header__sub">Trip screen coming soon — accept a ride from Ride Requests to start.</p>
+  </header>
+  <a href="{{ url_for('driver_portal.ride_requests') }}" class="driver-btn driver-btn--primary">View ride requests</a>
+{% endblock %}

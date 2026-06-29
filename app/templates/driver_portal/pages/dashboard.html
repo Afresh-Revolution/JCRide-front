@@ -1,19 +1,11 @@
-{#
-  MAIN DASHBOARD PAGE
-  This file imports every component — edit components separately,
-  and they will appear here automatically.
-#}
-{% extends "layouts/dashboard_layout.html" %}
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Dashboard{% endblock %}
 
-{% block sidebar %}
-  {% include "components/dashboard/sidebar.html" %}
+{% block page_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 {% endblock %}
 
-{% block header %}
-  {% include "components/dashboard/header.html" %}
-{% endblock %}
-
-{% block content %}
+{% block portal_content %}
   {% include "components/dashboard/status_banner.html" %}
 
   <section class="metrics-grid">
@@ -28,10 +20,6 @@
   </section>
 {% endblock %}
 
-{% block extra_head %}
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-{% endblock %}
-
-{% block scripts %}
-  <script src="{{ url_for('driver_portal.static', filename='js/dashboard.js') }}"></script>
+{% block page_scripts %}
+<script src="{{ url_for('driver_portal.static', filename='js/dashboard.js') }}"></script>
 {% endblock %}
