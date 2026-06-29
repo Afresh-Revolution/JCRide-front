@@ -595,6 +595,100 @@ html {
     opacity: 1;
   }
 
+  /* Admin portal — maps, pagination, form controls */
+  .live-trip-map,
+  .trips-live-map {
+    background: #1a2332;
+  }
+
+  .map-badge {
+    background: #111827;
+    color: var(--dash-text);
+    border-color: var(--dash-border);
+  }
+
+  .map-marker-vehicle {
+    background: #1f2937;
+  }
+
+  .admin-sidebar__logout,
+  .admin-sidebar__logout svg {
+    color: var(--dash-muted);
+  }
+
+  .admin-sidebar__logout:hover {
+    background: #1f2937;
+    color: var(--dash-text);
+  }
+
+  .admin-sidebar__logout:hover svg {
+    color: var(--dash-text);
+  }
+
+  body.admin-body .users-pagination,
+  body.admin-body .drivers-pagination,
+  body.admin-body .payments-pagination,
+  body.admin-body .wallets-pagination,
+  body.admin-body .users-pagination__info,
+  body.admin-body .drivers-pagination__info,
+  body.admin-body .payments-pagination__info,
+  body.admin-body .wallets-pagination__info {
+    background: var(--dash-card);
+    border-color: var(--dash-border);
+  }
+
+  body.admin-body .users-pagination__btn,
+  body.admin-body .drivers-pagination__btn,
+  body.admin-body .payments-pagination__btn,
+  body.admin-body .wallets-pagination__btn {
+    background: #1f2937;
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.admin-body .users-pagination__btn:hover:not(:disabled),
+  body.admin-body .drivers-pagination__btn:hover:not(:disabled),
+  body.admin-body .payments-pagination__btn:hover:not(:disabled),
+  body.admin-body .wallets-pagination__btn:hover:not(:disabled) {
+    background: #374151;
+  }
+
+  body.admin-body .notifications-severity select,
+  body.admin-body .notifications-mark-read {
+    background: var(--dash-card);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.admin-body .settings-input-prefix,
+  body.admin-body .settings-input-suffix,
+  body.admin-body .settings-input-prefix span {
+    background: #1f2937;
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.admin-body .settings-input input {
+    background: var(--dash-card);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.admin-body .trips-filter-tab:not(.is-active) {
+    color: var(--dash-muted);
+  }
+
+  body.admin-body .leaflet-bar a {
+    background: #111827;
+    color: var(--dash-text);
+    border-color: var(--dash-border);
+  }
+
+  body.admin-body .leaflet-bar a:hover {
+    background: #1f2937;
+    color: var(--dash-text);
+  }
+
   .rider-quick-action {
     background: #1f2937;
     color: var(--user-text);
