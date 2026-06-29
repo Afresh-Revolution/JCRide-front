@@ -62,3 +62,30 @@ NEARBY_DEMAND = {
     "zone": "Victoria Island",
     "new_requests": 3,
 }
+
+RIDE_REQUESTS = [
+    {
+        "id": "req-1",
+        "rider_name": "Adaeze Okafor",
+        "rider_initials": "AO",
+        "rating": 4.8,
+        "distance_km": 8.2,
+        "duration_min": 22,
+        "pickup_eta": "Pickup 3 min",
+        "pickup": "Lekki Phase 1",
+        "destination": "Victoria Island",
+        "earnings": "₦2,760",
+    },
+    {
+        "id": "req-2",
+        "rider_name": "Chidi Nwosu",
+        "rider_initials": "CN",
+        "rating": 4.6,
+        "distance_km": 5.4,
+        "duration_min": 15,
+        "pickup_eta": "Pickup 5 min",
+        "pickup": "Yaba",
+        "destination": "Ikeja GRA",
+        "earnings": "₦1,920",
+    },
+]

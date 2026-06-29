@@ -1,0 +1,30 @@
+{# Reusable top navbar — search + profile only (no bell, settings, or logout) #}
+<header class="admin-topbar">
+  <button
+    type="button"
+    class="admin-menu-toggle"
+    id="{{ menu_toggle_id|default('portal-menu-toggle') }}"
+    aria-label="Open navigation menu"
+    aria-expanded="false"
+    aria-controls="{{ sidebar_id|default('portal-sidebar') }}"
+  >
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+
+  <div class="admin-topbar__search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="search" placeholder="{{ search_placeholder|default('Search rides, drivers, places...') }}" aria-label="Search">
+  </div>
+
+  <div class="admin-topbar__actions">
+    <div class="admin-profile">
+      <div class="admin-profile__avatar" aria-hidden="true">{{ profile_initials|default('U') }}</div>
+      <div class="admin-profile__info">
+        <span class="admin-profile__name">{{ profile_name|default('User') }}</span>
+        <span class="admin-profile__meta">{{ profile_meta|default('') }}</span>
+      </div>
+    </div>
+  </div>
+</header>

@@ -9,6 +9,7 @@
 
   <div class="map-preview">
     <div class="map-preview__grid"></div>
+    <div class="map-preview__water"></div>
     <span class="map-preview__badge">Surge zones</span>
     <div class="map-preview__zoom">
       <button type="button">+</button>
@@ -16,7 +17,7 @@
     </div>
   </div>
 
-  <a href="#" class="btn btn--primary btn--block map-preview__cta">
+  <a href="{{ url_for('driver_portal.ride_requests') }}" class="driver-btn driver-btn--primary driver-btn--block map-preview__cta">
     View {{ demand.new_requests }} new requests
   </a>
 </article>

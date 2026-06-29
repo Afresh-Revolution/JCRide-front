@@ -6,8 +6,8 @@ from app.driver_portal.data import (
     DRIVER_PROFILE,
     HERO_STATS,
     METRICS,
-    NAV_ITEMS,
     NEARBY_DEMAND,
+    RIDE_REQUESTS,
     WEEKLY_EARNINGS,
 )
 from app.services.api_client import ApiError, login, register, set_availability
@@ -26,6 +26,21 @@ def _require_driver():
         flash("Please sign in to access the driver portal.", "error")
         return redirect(url_for("driver_portal.login"))
     return None
+
+
+def _driver_profile():
+    return {
+        **DRIVER_PROFILE,
+        "name": session.get("driver_name", DRIVER_PROFILE["name"]),
+    }
+
+
+def _portal_context(active_nav: str, **extra):
+    return {
+        "profile": _driver_profile(),
+        "active_nav": active_nav,
+        **extra,
+    }
 
 
 @driver_portal_bp.route("/")
@@ -51,7 +66,6 @@ def login():
             flash("Welcome back, captain!", "success")
             return redirect(url_for("driver_portal.dashboard"))
         except ApiError:
-            # Allow demo login when backend is offline
             session["driver_token"] = "demo-token"
             session["driver_phone"] = phone
             session["driver_name"] = DRIVER_PROFILE["name"]
@@ -74,7 +88,7 @@ def register_page():
         email = request.form.get("email", "").strip()
 
         try:
-            register(name, email or f"{phone}@jcride.local", "driver123", "driver")
+            register(name, phone, email or f"{phone}@jcride.local", "driver123")
             flash("Application submitted. Sign in when approved.", "success")
             return redirect(url_for("driver_portal.login"))
         except ApiError:
@@ -97,22 +111,68 @@ def dashboard():
     if guard:
         return guard
 
-    profile = {
-        **DRIVER_PROFILE,
-        "name": session.get("driver_name", DRIVER_PROFILE["name"]),
-    }
-
     return render_template(
         "pages/dashboard.html",
-        profile=profile,
-        nav_items=NAV_ITEMS,
-        active_nav="dashboard",
-        metrics=METRICS,
-        weekly=WEEKLY_EARNINGS,
-        demand=NEARBY_DEMAND,
-        online=session.get("driver_online", False),
-        zone="Lekki zone",
-        surge="x1.2",
+        **_portal_context(
+            "dashboard",
+            metrics=METRICS,
+            weekly=WEEKLY_EARNINGS,
+            demand=NEARBY_DEMAND,
+            online=session.get("driver_online", False),
+            zone="Lekki zone",
+            surge="x1.2",
+        ),
+    )
+
+
+@driver_portal_bp.route("/ride-requests")
+def ride_requests():
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    pending = session.get("pending_ride_requests", RIDE_REQUESTS)
+
+    return render_template(
+        "pages/ride_requests.html",
+        **_portal_context("requests", ride_requests=pending),
+    )
+
+
+@driver_portal_bp.route("/ride-requests/<request_id>/accept", methods=["POST"])
+def accept_ride(request_id):
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    pending = session.get("pending_ride_requests", list(RIDE_REQUESTS))
+    session["pending_ride_requests"] = [r for r in pending if r["id"] != request_id]
+    session["active_trip_id"] = request_id
+    flash("Ride accepted! Head to pickup.", "success")
+    return redirect(url_for("driver_portal.active_trip"))
+
+
+@driver_portal_bp.route("/ride-requests/<request_id>/reject", methods=["POST"])
+def reject_ride(request_id):
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    pending = session.get("pending_ride_requests", list(RIDE_REQUESTS))
+    session["pending_ride_requests"] = [r for r in pending if r["id"] != request_id]
+    flash("Ride request declined.", "success")
+    return redirect(url_for("driver_portal.ride_requests"))
+
+
+@driver_portal_bp.route("/active-trip")
+def active_trip():
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    return render_template(
+        "pages/active_trip.html",
+        **_portal_context("active_trip"),
     )
 
 
@@ -142,5 +202,7 @@ def logout():
     session.pop("driver_phone", None)
     session.pop("driver_name", None)
     session.pop("driver_online", None)
+    session.pop("pending_ride_requests", None)
+    session.pop("active_trip_id", None)
     flash("Signed out.", "success")
     return redirect(url_for("driver_portal.login"))

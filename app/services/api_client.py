@@ -1,5 +1,6 @@
 import requests
-from app.config import API_URL
+
+from app.config import get_api_url
 
 API_PREFIX = "/api/v1"
 
@@ -31,15 +32,20 @@ def _parse_error(response: requests.Response) -> str:
 
 
 def _request(method, endpoint, token=None, **kwargs):
+    api_url = get_api_url()
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     try:
         response = requests.request(
-            method, f"{API_URL}{endpoint}", headers=headers, timeout=30, **kwargs
+            method, f"{api_url}{endpoint}", headers=headers, timeout=30, **kwargs
         )
     except requests.RequestException as exc:
-        raise ApiError(f"Could not reach API: {exc}") from exc
+        raise ApiError(
+            f"Could not reach API at {api_url}. "
+            f"Set API_URL in .env to your backend (e.g. https://jcride-back.onrender.com) "
+            f"and restart the app. Details: {exc}"
+        ) from exc
     if not response.ok:
         raise ApiError(_parse_error(response), response.status_code)
     return response.json() if response.content else {}
@@ -136,15 +142,19 @@ def upload_driver_document(token, document_type, file_storage):
     }
     data = {"document_type": document_type}
     try:
+        api_url = get_api_url()
         response = requests.post(
-            f"{API_URL}{API_PREFIX}/drivers/documents/upload",
+            f"{api_url}{API_PREFIX}/drivers/documents/upload",
             headers=headers,
             files=files,
             data=data,
             timeout=60,
         )
     except requests.RequestException as exc:
-        raise ApiError(f"Could not reach API: {exc}") from exc
+        raise ApiError(
+            f"Could not reach API at {get_api_url()}. "
+            f"Set API_URL in .env and restart the app. Details: {exc}"
+        ) from exc
     if not response.ok:
         raise ApiError(_parse_error(response), response.status_code)
     return response.json() if response.content else {}

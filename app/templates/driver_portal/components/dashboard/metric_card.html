@@ -1,8 +1,18 @@
-{# Single KPI card — looped in dashboard page #}
+{# Single KPI card #}
 <article class="metric-card">
   <div class="metric-card__head">
     <span class="metric-card__title">{{ metric.title }}</span>
-    <span class="metric-card__icon metric-card__icon--{{ metric.icon }}"></span>
+    <span class="metric-card__icon" aria-hidden="true">
+      {% if metric.icon == 'wallet' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      {% elif metric.icon == 'route' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h5a4 4 0 0 0 4-4V9"/></svg>
+      {% elif metric.icon == 'clock' %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      {% else %}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      {% endif %}
+    </span>
   </div>
   <div class="metric-card__value">{{ metric.value }}</div>
   {% if metric.trend %}
