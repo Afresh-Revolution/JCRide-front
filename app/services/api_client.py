@@ -62,12 +62,26 @@ def joscity_login(email_or_phone, password):
 
 
 def login_with_joscity_fallback(email_or_phone, password):
+    """Try JC-Ride login first; on invalid credentials, try JosCity login."""
     try:
         return login(email_or_phone, password)
     except ApiError as exc:
         if exc.status_code in (401, 403):
             return joscity_login(email_or_phone, password)
         raise
+
+
+def update_profile(token, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/auth/me",
+        token=token,
+        json=payload,
+    )
+
+
+def get_profile(token):
+    return _request("GET", f"{API_PREFIX}/auth/me", token=token)
 
 
 def admin_login(email, password, totp_code):
