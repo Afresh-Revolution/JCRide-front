@@ -1,0 +1,24 @@
+{# Reusable settings toggle row #}
+<li class="driver-settings-row{% if row.icon %} driver-settings-row--{{ row.icon }}{% endif %}">
+  <div class="driver-settings-row__text">
+    <span class="driver-settings-row__label">
+      {% if row.icon == 'moon' %}
+        <svg class="driver-settings-row__inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      {% elif row.icon == 'speaker' %}
+        <svg class="driver-settings-row__inline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      {% endif %}
+      {{ row.label }}
+    </span>
+    {% if row.hint %}
+      <span class="driver-settings-row__hint">{{ row.hint }}</span>
+    {% endif %}
+  </div>
+  <form method="post" action="{{ url_for('driver_portal.update_settings_toggle') }}" class="driver-settings-row__form">
+    <input type="hidden" name="setting_id" value="{{ row.id }}">
+    <input type="hidden" name="group" value="{{ group }}">
+    <label class="driver-toggle">
+      <input type="checkbox" name="enabled" value="1"{% if row.enabled %} checked{% endif %} onchange="this.form.submit()">
+      <span class="driver-toggle__track" aria-hidden="true"></span>
+    </label>
+  </form>
+</li>

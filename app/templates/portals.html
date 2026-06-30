@@ -41,15 +41,8 @@
     </div>
   </header>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="portal-flashes">
-        {% for category, message in messages %}
-          <div class="portal-flash portal-flash--{{ category }}">{{ message }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
+  {% from "includes/flashes.html" import dismissible_flashes %}
+  {{ dismissible_flashes('portal-flashes', 'portal-flash', 'portal-flash--') }}
 
   <main class="portal-main">
     <a href="{{ url_for('main.home') }}" class="portal-back">
@@ -163,5 +156,6 @@
       </footer>
     </div>
   </main>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 </body>
 </html>

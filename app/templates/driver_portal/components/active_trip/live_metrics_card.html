@@ -1,0 +1,22 @@
+{# Live metrics grid #}
+<section class="active-trip-card active-trip-card--metrics">
+  <h2 class="active-trip-card__title">Live metrics</h2>
+  <dl class="active-trip-metrics">
+    <div class="active-trip-metrics__item">
+      <dt>Distance left</dt>
+      <dd data-metric="distance">{{ trip.distance_left_km }} km</dd>
+    </div>
+    <div class="active-trip-metrics__item">
+      <dt>Earnings (live)</dt>
+      <dd data-metric="earnings">{{ trip.earnings_live }}</dd>
+    </div>
+    <div class="active-trip-metrics__item">
+      <dt>Trip time</dt>
+      <dd data-metric="time">{{ trip.trip_time }}</dd>
+    </div>
+    <div class="active-trip-metrics__item">
+      <dt>Speed</dt>
+      <dd data-metric="speed">{{ trip.speed_kmh }} km/h</dd>
+    </div>
+  </dl>
+</section>

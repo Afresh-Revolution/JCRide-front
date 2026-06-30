@@ -61,15 +61,8 @@
     </aside>
 
     <section class="auth-login__panel">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="auth-login__flashes">
-            {% for category, message in messages %}
-              <div class="auth-login__flash auth-login__flash--{{ category }}">{{ message }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('auth-login__flashes', 'auth-login__flash', 'auth-login__flash--') }}
 
       <a href="{{ url_for('main.portals_page') }}" class="auth-login__back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
@@ -135,5 +128,6 @@
   </div>
   <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 </body>
 </html>

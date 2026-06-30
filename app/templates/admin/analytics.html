@@ -11,9 +11,55 @@
 
 {% block dashboard_content %}
 <section class="analytics-page">
+  <div class="analytics-kpi-grid kpi-grid">
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Total users</span>
+        <span class="kpi-card__value" id="analytics-kpi-users">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up" id="analytics-kpi-users-trend">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Active drivers</span>
+        <span class="kpi-card__value" id="analytics-kpi-drivers">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up" id="analytics-kpi-drivers-trend">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Total trips</span>
+        <span class="kpi-card__value" id="analytics-kpi-trips">—</span>
+        <span class="kpi-card__trend kpi-card__trend--live" id="analytics-kpi-trips-trend">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Revenue (MTD)</span>
+        <span class="kpi-card__value" id="analytics-kpi-revenue">—</span>
+        <span class="kpi-card__trend kpi-card__trend--up-double" id="analytics-kpi-revenue-trend">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+    </article>
+  </div>
+
   <div class="analytics-grid">
     <article class="dash-card analytics-card analytics-card--bar">
-      <h2 class="analytics-card__title">Daily rides (last 14 days)</h2>
+      <div class="analytics-card__header">
+        <h2 class="analytics-card__title">Daily rides (last 14 days)</h2>
+        <span class="analytics-card__meta" id="analytics-daily-total">—</span>
+      </div>
       <div class="analytics-chart-wrap">
         <canvas id="analytics-daily-rides-chart" aria-label="Daily rides chart"></canvas>
       </div>
@@ -28,20 +74,56 @@
           <small>completion</small>
         </div>
       </div>
+      <p class="analytics-card__footnote" id="analytics-success-footnote">—</p>
+    </article>
+
+    <article class="dash-card analytics-card analytics-card--donut">
+      <h2 class="analytics-card__title">Ride split by tier</h2>
+      <div class="analytics-donut-wrap">
+        <canvas id="analytics-tier-chart" aria-label="Ride tier split chart"></canvas>
+      </div>
+      <div class="analytics-tier-legend" id="analytics-tier-legend"></div>
     </article>
 
     <article class="dash-card analytics-card analytics-card--wide">
-      <h2 class="analytics-card__title">User &amp; driver growth (monthly, thousands)</h2>
+      <h2 class="analytics-card__title">User &amp; driver growth (monthly)</h2>
       <div class="analytics-chart-wrap analytics-chart-wrap--tall">
         <canvas id="analytics-growth-chart" aria-label="User and driver growth"></canvas>
       </div>
     </article>
 
     <article class="dash-card analytics-card analytics-card--wide">
-      <h2 class="analytics-card__title" id="analytics-heatmap-title">Demand heatmap · Nigeria</h2>
+      <div class="analytics-card__header">
+        <h2 class="analytics-card__title" id="analytics-heatmap-title">Demand heatmap</h2>
+        <label class="analytics-city-select">
+          <span class="sr-only">City</span>
+          <select id="analytics-city-select" aria-label="Select city for demand heatmap">
+            <option value="Lagos">Lagos</option>
+          </select>
+        </label>
+      </div>
       <div class="analytics-heatmap-panel">
-        <ul class="analytics-heatmap__rows" id="analytics-heatmap-rows" aria-label="Cities"></ul>
-        <div class="analytics-heatmap" id="analytics-heatmap" aria-label="Nigeria demand heatmap"></div>
+        <ul class="analytics-heatmap__rows" id="analytics-heatmap-rows" aria-label="Heatmap zones"></ul>
+        <div class="analytics-heatmap" id="analytics-heatmap" aria-label="Demand heatmap"></div>
+      </div>
+    </article>
+
+    <article class="dash-card analytics-card analytics-card--wide">
+      <h2 class="analytics-card__title">City performance</h2>
+      <div class="analytics-table-wrap">
+        <table class="analytics-table" aria-label="City performance">
+          <thead>
+            <tr>
+              <th scope="col">City</th>
+              <th scope="col">Total trips</th>
+              <th scope="col">Completed</th>
+              <th scope="col">Active drivers</th>
+            </tr>
+          </thead>
+          <tbody id="analytics-cities-body">
+            <tr><td colspan="4">Loading…</td></tr>
+          </tbody>
+        </table>
       </div>
     </article>
   </div>

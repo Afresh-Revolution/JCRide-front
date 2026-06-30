@@ -3,6 +3,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-confirm.css') }}">
 {% block page_head %}{% endblock %}
 {% if dashboard_map or admin_leaflet %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -16,13 +17,17 @@
   <div class="admin-main">
     {% include "admin/includes/header.html" %}
     <div class="admin-content">
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('admin-flash-stack', 'admin-flash', 'admin-flash-', 'status', 'polite') }}
       {% block dashboard_content %}{% endblock %}
     </div>
   </div>
 </div>
+{% include "admin/includes/confirm-dialog.html" %}
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/admin-confirm.js') }}"></script>
 {% if dashboard_charts or analytics_charts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 {% endif %}
@@ -34,4 +39,5 @@
 {% endif %}
 {% block page_scripts %}{% endblock %}
 <script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
+<script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 {% endblock %}

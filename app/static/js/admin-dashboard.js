@@ -4,10 +4,13 @@
   const revenueCanvas = document.getElementById("revenue-chart");
   const tierCanvas = document.getElementById("tier-chart");
   const mapEl = document.getElementById("live-trip-map");
+  const revenueSubtitleEl = document.getElementById("revenue-chart-subtitle");
+  const revenueEmptyEl = document.getElementById("revenue-chart-empty");
 
   let revenueChart = null;
   let tierChart = null;
   let liveMap = null;
+  let revenueUnit = "raw";
 
   const chartGreen = "#0a4f2a";
   const chartGreenLight = "rgba(13, 107, 56, 0.15)";
@@ -53,15 +56,42 @@
     map.fitBounds(NIGERIA_BOUNDS, { padding: [24, 24] });
   }
 
-  function formatRevenue(value, period) {
-    if (period === "All") {
-      return `₦${value}M`;
-    }
-    return `₦${value}M`;
+  function formatRevenueAxis(value, unit) {
+    const amount = Number(value || 0);
+    if (unit === "m") return "₦" + amount + "M";
+    if (unit === "k") return "₦" + amount + "k";
+    return "₦" + amount.toLocaleString();
   }
 
-  function buildRevenueChart(labels, values, period) {
+  function formatRevenueTooltip(value, unit) {
+    const amount = Number(value || 0);
+    if (unit === "m") return "₦" + amount + "M";
+    if (unit === "k") return "₦" + amount + "k";
+    return "₦" + amount.toLocaleString();
+  }
+
+  function formatRevenueTotal(ngn) {
+    return "₦" + Number(ngn || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+
+  function buildRevenueChart(labels, values, period, meta) {
     if (!revenueCanvas || typeof Chart === "undefined") return;
+
+    revenueUnit = (meta && meta.unit) || "raw";
+    const totalNgn = meta && meta.total_ngn != null ? meta.total_ngn : 0;
+    const unitLabel = (meta && meta.unit_label) || "naira";
+    const hasData = labels.length > 0 && values.some(function (v) { return Number(v) > 0; });
+
+    if (revenueSubtitleEl) {
+      revenueSubtitleEl.textContent =
+        "Net revenue (" + unitLabel + ") · " + formatRevenueTotal(totalNgn) + " total";
+    }
+    if (revenueEmptyEl) {
+      revenueEmptyEl.hidden = hasData;
+    }
+    if (revenueCanvas) {
+      revenueCanvas.style.opacity = hasData ? "1" : "0.35";
+    }
 
     const ctx = revenueCanvas.getContext("2d");
     const gradient = ctx.createLinearGradient(0, 0, 0, 280);
@@ -72,19 +102,25 @@
       revenueChart.destroy();
     }
 
+    const nonZeroCount = values.filter(function (v) { return Number(v) > 0; }).length;
+    const showPoints = nonZeroCount > 0 && (nonZeroCount <= 6 || values.length <= 4);
+    const pointRadii = showPoints
+      ? values.map(function (v) { return Number(v) > 0 ? 5 : 0; })
+      : 0;
+
     revenueChart = new Chart(ctx, {
       type: "line",
       data: {
-        labels,
+        labels: labels.length ? labels : ["—"],
         datasets: [{
           label: "Revenue",
-          data: values,
+          data: values.length ? values : [0],
           borderColor: chartGreen,
           backgroundColor: gradient,
           borderWidth: 2.5,
           fill: true,
           tension: 0.42,
-          pointRadius: 0,
+          pointRadius: pointRadii,
           pointHoverRadius: 6,
           pointHoverBackgroundColor: chartGreen,
           pointHoverBorderColor: "#fff",
@@ -113,9 +149,7 @@
                 return items[0]?.label || "";
               },
               label: function (context) {
-                const value = context.parsed.y;
-                const unit = period === "All" ? "₦ millions (annual)" : "₦ millions";
-                return `${formatRevenue(value, period)} · ${unit}`;
+                return formatRevenueTooltip(context.parsed.y, revenueUnit);
               },
             },
           },
@@ -125,8 +159,9 @@
             grid: { display: false },
             border: { display: false },
             ticks: {
-              color: "#9ca3af",
+              color: chartTickColor(),
               font: { size: 11 },
+              maxRotation: 45,
             },
           },
           y: {
@@ -139,7 +174,7 @@
               color: chartTickColor(),
               font: { size: 11 },
               callback: function (value) {
-                return "₦" + value + "M";
+                return formatRevenueAxis(value, revenueUnit);
               },
             },
           },
@@ -151,9 +186,13 @@
   function buildTierChart(tiers) {
     if (!tierCanvas || typeof Chart === "undefined") return;
 
+    const safeTiers = tiers && tiers.length
+      ? tiers
+      : [{ label: "No rides yet", value: 100, color: "#d1d5db" }];
+
     const legendEl = document.getElementById("tier-legend");
     if (legendEl) {
-      legendEl.innerHTML = tiers.map(function (tier) {
+      legendEl.innerHTML = safeTiers.map(function (tier) {
         return (
           '<span class="tier-legend__item">' +
           '<span class="tier-legend__dot" style="background:' + tier.color + '"></span>' +
@@ -170,10 +209,10 @@
     tierChart = new Chart(tierCanvas.getContext("2d"), {
       type: "doughnut",
       data: {
-        labels: tiers.map(function (t) { return t.label; }),
+        labels: safeTiers.map(function (t) { return t.label; }),
         datasets: [{
-          data: tiers.map(function (t) { return t.value; }),
-          backgroundColor: tiers.map(function (t) { return t.color; }),
+          data: safeTiers.map(function (t) { return t.value; }),
+          backgroundColor: safeTiers.map(function (t) { return t.color; }),
           borderWidth: 0,
           hoverOffset: 6,
         }],
@@ -199,6 +238,38 @@
     });
   }
 
+  function renderStats(stats) {
+    const mapping = [
+      ["stat-total-users", stats.total_users],
+      ["stat-active-drivers", stats.active_drivers],
+      ["stat-active-trips", stats.active_trips],
+      ["stat-revenue", stats.revenue_mtd],
+      ["stat-wallet", stats.wallet_funds],
+      ["stat-completion", stats.completion_rate],
+    ];
+    mapping.forEach(function (entry) {
+      const el = document.getElementById(entry[0]);
+      const card = entry[1];
+      if (!el || !card) return;
+      el.textContent = card.value || "0";
+      const trendEl = el.parentElement && el.parentElement.querySelector(".kpi-card__trend");
+      if (trendEl && card.trend) {
+        const prefix = trendEl.classList.contains("kpi-card__trend--live") ? "" : "▲ ";
+        trendEl.innerHTML = prefix + card.trend;
+      }
+    });
+  }
+
+  function fetchStats() {
+    return fetch("/admin/api/stats")
+      .then(function (res) {
+        if (!res.ok) throw new Error("Failed to load stats");
+        return res.json();
+      })
+      .then(renderStats)
+      .catch(function () {});
+  }
+
   function fetchRevenue(period) {
     return fetch("/admin/api/revenue?period=" + encodeURIComponent(period))
       .then(function (res) {
@@ -206,7 +277,10 @@
         return res.json();
       })
       .then(function (data) {
-        buildRevenueChart(data.labels || [], data.values || [], period);
+        buildRevenueChart(data.labels || [], data.values || [], period, data);
+      })
+      .catch(function () {
+        buildRevenueChart([], [], period, { unit: "raw", unit_label: "naira", total_ngn: 0 });
       });
   }
 
@@ -364,11 +438,13 @@
     if (!hasDashboard) return;
 
     bindPeriodToggle();
+    fetchStats();
     fetchRevenue("1Y");
     fetchTiers();
     fetchLiveTrips();
 
     setInterval(fetchLiveTrips, 30000);
+    setInterval(fetchStats, 60000);
   }
 
   if (document.readyState === "loading") {
