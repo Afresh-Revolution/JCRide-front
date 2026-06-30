@@ -12,16 +12,11 @@
   {% block head %}{% endblock %}
 </head>
 <body class="user-body">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="user-flash-container">
-        {% for category, message in messages %}
-          <div class="user-flash user-flash--{{ category }}">{{ message }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
+  {% from "includes/flashes.html" import dismissible_flashes %}
+  {{ dismissible_flashes('user-flash-container', 'user-flash', 'user-flash--') }}
   {% block body %}{% endblock %}
-  {% block scripts %}{% endblock %}
+  {% block scripts %}
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
+  {% endblock %}
 </body>
 </html>

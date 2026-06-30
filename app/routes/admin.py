@@ -19,6 +19,7 @@ from app.services.api_client import (
     get_admin_driver,
     get_admin_driver_stats,
     update_admin_driver_status,
+    delete_admin_driver,
     get_admin_trips_map,
     get_admin_trips,
     get_admin_payment_stats,
@@ -30,6 +31,7 @@ from app.services.api_client import (
     get_admin_analytics_success_rate,
     get_admin_analytics_growth,
     get_admin_analytics_heatmap,
+    get_admin_analytics_cities,
     get_admin_support_tickets,
     get_admin_support_sla,
     get_admin_support_agents,
@@ -44,25 +46,51 @@ from app.services.api_client import (
     update_admin_landing_page,
 )
 from app.services.landing_content import merge_landing_page
-from app.admin_defaults import (
-    build_nationwide_demand_heatmap,
-    build_nationwide_live_map,
-    ensure_nationwide_live_map,
-    ensure_nationwide_trips_map,
+from app.admin_api_transforms import (
+    live_trips_to_map,
+    normalize_admin_trips_list,
+    normalize_dashboard_stats,
+    normalize_daily_rides,
+    normalize_city_performance,
+    normalize_growth,
+    normalize_heatmap,
+    normalize_revenue,
+    normalize_ride_tiers,
+    normalize_success_rate,
 )
+from app.admin_defaults import build_empty_admin_stats
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-EMPTY_STATS = {
-    "total_users": {"value": "0", "trend": "0 this week", "trend_type": "up"},
-    "active_drivers": {"value": "0", "trend": "0 online now", "trend_type": "up"},
-    "active_trips": {"value": "0", "trend": "Live", "trend_type": "live"},
-    "revenue_mtd": {"value": "₦0", "trend": "0.0%", "trend_type": "up-double"},
-    "wallet_funds": {"value": "₦0", "trend": None, "trend_type": None},
-    "completion_rate": {"value": "0.0%", "trend": "0.0%", "trend_type": "up-double"},
-}
+EMPTY_STATS = build_empty_admin_stats()
 
-EMPTY_LIVE_TRIPS = build_nationwide_live_map()
+
+def _normalize_live_trips_payload(raw):
+    if isinstance(raw, list):
+        return live_trips_to_map(raw)
+    if isinstance(raw, dict):
+        markers = raw.get("markers") or []
+        if markers:
+            return raw
+    return live_trips_to_map([])
+
+
+def _load_dashboard_stats(token):
+    try:
+        return normalize_dashboard_stats(get_admin_stats(token))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            raise
+        return EMPTY_STATS
+
+
+def _load_live_trips_map(token):
+    try:
+        return _normalize_live_trips_payload(get_admin_live_trips(token))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            raise
+        return live_trips_to_map([])
 
 
 def _payment_stat_card(amount_ngn, transaction_count, provider_label=None):
@@ -191,13 +219,22 @@ def _admin_token():
 
 
 def _handle_api_error(exc: ApiError):
+    """Only auth failures should interrupt the admin session."""
     if exc.status_code in {401, 403}:
         session.pop("admin_token", None)
         session.pop("admin_email", None)
         flash("Session expired. Please sign in again.", "error")
         return redirect(url_for("admin.login_page"))
-    flash(exc.message, "error")
     return None
+
+
+def _login_flash_messages():
+    """Keep a single, most-recent banner on the login page."""
+    messages = get_flashed_messages(with_categories=True)
+    if not messages:
+        return
+    category, message = messages[-1]
+    flash(message, category)
 
 
 @admin_bp.route("/login", methods=["GET", "POST"])
@@ -206,6 +243,9 @@ def login_page():
         return redirect(url_for("admin.dashboard"))
 
     email = ""
+    if request.method == "GET":
+        _login_flash_messages()
+
     if request.method == "POST":
         get_flashed_messages()
         email = request.form.get("email", "").strip()
@@ -228,14 +268,14 @@ def login_page():
 def dashboard():
     token = _admin_token()
     try:
-        stats = get_admin_stats(token)
-        live_trips = ensure_nationwide_live_map(get_admin_live_trips(token))
+        stats = _load_dashboard_stats(token)
+        live_trips = _load_live_trips_map(token)
     except ApiError as exc:
         redirect_response = _handle_api_error(exc)
         if redirect_response:
             return redirect_response
         stats = EMPTY_STATS
-        live_trips = EMPTY_LIVE_TRIPS
+        live_trips = live_trips_to_map([])
 
     return render_template(
         "admin/dashboard.html",
@@ -355,8 +395,20 @@ def api_payment_stats():
 def api_payment_transactions():
     search = request.args.get("search", "")
     status = request.args.get("status")
-    category = request.args.get("category")
-    transaction_type = request.args.get("type")
+    category = request.args.get("category") or request.args.get("type")
+    transaction_type = None
+    category_values = {
+        "ride_payment",
+        "wallet_funding",
+        "refund",
+        "withdrawal",
+        "driver_earning",
+        "admin_commission",
+        "adjustment",
+    }
+    if category not in category_values:
+        transaction_type = category
+        category = request.args.get("category")
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
     page = request.args.get("page", 1, type=int)
@@ -399,9 +451,11 @@ def api_payment_settle():
 @admin_required
 def api_trips_map():
     try:
-        return jsonify(ensure_nationwide_trips_map(get_admin_trips_map(_admin_token())))
-    except ApiError:
-        return jsonify(ensure_nationwide_trips_map({}))
+        return jsonify(_normalize_live_trips_payload(get_admin_live_trips(_admin_token())))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(live_trips_to_map([]))
 
 
 @admin_bp.route("/api/trips")
@@ -410,8 +464,14 @@ def api_trips():
     status = request.args.get("status", "all")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 20, type=int)
+    fetch_status = "all" if status == "active" else status
+    fetch_limit = max(limit, 100) if status == "active" else limit
     try:
-        return jsonify(get_admin_trips(_admin_token(), status=status, page=page, limit=limit))
+        data = get_admin_trips(_admin_token(), status=fetch_status, page=page, limit=fetch_limit)
+        normalized = normalize_admin_trips_list(data, status_filter=status)
+        if status == "active":
+            normalized["trips"] = normalized["trips"][:limit]
+        return jsonify(normalized)
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
@@ -455,6 +515,16 @@ def api_driver_status(driver_id):
     payload = request.get_json(silent=True) or {}
     try:
         return jsonify(update_admin_driver_status(_admin_token(), driver_id, payload.get("status")))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/drivers/<driver_id>", methods=["DELETE"])
+@admin_required
+def api_delete_driver(driver_id):
+    try:
+        delete_admin_driver(_admin_token(), driver_id)
+        return "", 204
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
@@ -523,35 +593,45 @@ def api_delete_user(user_id):
 def api_revenue():
     period = request.args.get("period", "1Y")
     try:
-        return jsonify(get_admin_revenue(_admin_token(), period))
+        return jsonify(normalize_revenue(get_admin_revenue(_admin_token(), period), period))
     except ApiError as exc:
-        return jsonify({"message": exc.message}), exc.status_code
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_revenue([], period))
 
 
 @admin_bp.route("/api/ride-tiers")
 @admin_required
 def api_ride_tiers():
     try:
-        return jsonify(get_admin_ride_tiers(_admin_token()))
+        return jsonify(normalize_ride_tiers(get_admin_ride_tiers(_admin_token())))
     except ApiError as exc:
-        return jsonify({"message": exc.message}), exc.status_code
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_ride_tiers({}))
 
 
 @admin_bp.route("/api/live-trips")
 @admin_required
 def api_live_trips():
     try:
-        return jsonify(ensure_nationwide_live_map(get_admin_live_trips(_admin_token())))
-    except ApiError:
-        return jsonify(ensure_nationwide_live_map({}))
+        return jsonify(_normalize_live_trips_payload(get_admin_live_trips(_admin_token())))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(live_trips_to_map([]))
 
 
 @admin_bp.route("/api/stats")
 @admin_required
 def api_stats():
     try:
-        return jsonify(get_admin_stats(_admin_token()))
+        return jsonify(normalize_dashboard_stats(get_admin_stats(_admin_token())))
     except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        if exc.status_code == 404:
+            return jsonify(EMPTY_STATS)
         return jsonify({"message": exc.message}), exc.status_code
 
 
@@ -645,46 +725,68 @@ def api_ops_notification_settings_update():
 def api_analytics_daily_rides():
     days = request.args.get("days", 14, type=int)
     try:
-        return jsonify(get_admin_analytics_daily_rides(_admin_token(), days=days))
+        return jsonify(normalize_daily_rides(get_admin_analytics_daily_rides(_admin_token(), days=days)))
     except ApiError as exc:
-        return jsonify({"message": exc.message}), exc.status_code
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_daily_rides({}))
 
 
 @admin_bp.route("/api/analytics/success-rate")
 @admin_required
 def api_analytics_success_rate():
     try:
-        return jsonify(get_admin_analytics_success_rate(_admin_token()))
+        return jsonify(normalize_success_rate(get_admin_analytics_success_rate(_admin_token())))
     except ApiError as exc:
-        return jsonify({"message": exc.message}), exc.status_code
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_success_rate({}))
 
 
 @admin_bp.route("/api/analytics/growth")
 @admin_required
 def api_analytics_growth():
     try:
-        return jsonify(get_admin_analytics_growth(_admin_token()))
+        return jsonify(normalize_growth(get_admin_analytics_growth(_admin_token())))
     except ApiError as exc:
-        return jsonify({"message": exc.message}), exc.status_code
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_growth({}))
+
+
+@admin_bp.route("/api/analytics/cities")
+@admin_required
+def api_analytics_cities():
+    try:
+        return jsonify(normalize_city_performance(get_admin_analytics_cities(_admin_token())))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_city_performance([]))
+
+
+@admin_bp.route("/api/analytics/tier-split")
+@admin_required
+def api_analytics_tier_split():
+    try:
+        return jsonify(normalize_ride_tiers(get_admin_ride_tiers(_admin_token())))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_ride_tiers({}))
 
 
 @admin_bp.route("/api/analytics/heatmap")
 @admin_required
 def api_analytics_heatmap():
-    scope = request.args.get("scope", "nigeria")
-    city = request.args.get("city")
+    city = request.args.get("city") or "Lagos"
     try:
-        if scope == "nigeria" and not city:
-            data = get_admin_analytics_heatmap(_admin_token(), city="nigeria")
-        else:
-            data = get_admin_analytics_heatmap(_admin_token(), city=city or "Lagos")
-        if not (data.get("cells") or []):
-            return jsonify(build_nationwide_demand_heatmap())
-        if scope == "nigeria" and not data.get("rows"):
-            return jsonify(build_nationwide_demand_heatmap())
-        return jsonify(data)
-    except ApiError:
-        return jsonify(build_nationwide_demand_heatmap())
+        data = get_admin_analytics_heatmap(_admin_token(), city=city)
+        return jsonify(normalize_heatmap(data))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_heatmap({"city": city, "cols": 11, "cells": [], "max_value": 0}))
 
 
 @admin_bp.route("/api/settings/platform")

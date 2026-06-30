@@ -63,13 +63,8 @@
         <p>Sign in to manage operations.</p>
       </header>
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="admin-flash admin-flash-{{ category }}">{{ message }}</div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('', 'admin-flash', 'admin-flash-') }}
 
       <form method="post" class="admin-form" id="admin-login-form" novalidate>
         <div class="admin-field">
@@ -133,4 +128,5 @@
 {% block scripts %}
   <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 {% endblock %}

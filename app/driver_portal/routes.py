@@ -10,7 +10,7 @@ from app.driver_portal.data import (
     RIDE_REQUESTS,
     WEEKLY_EARNINGS,
 )
-from app.services.api_client import ApiError, login, register, set_availability
+from app.services.api_client import ApiError, get_driver_profile, login, register, set_availability, update_driver_profile
 
 driver_portal_bp = Blueprint(
     "driver_portal",
@@ -21,14 +21,45 @@ driver_portal_bp = Blueprint(
 )
 
 
+SERVICE_TIERS = ("economy", "comfort", "premium")
+VEHICLE_CATEGORIES = ("car", "bike")
+
+
 def _require_driver():
-    if "driver_token" not in session:
+    if not (session.get("driver_token") or session.get("token")):
         flash("Please sign in to access the driver portal.", "error")
-        return redirect(url_for("driver_portal.login"))
+        return redirect(url_for("main.driver_login_page"))
     return None
 
 
+def _driver_token():
+    token = session.get("driver_token") or session.get("token")
+    if token and token != "demo-token":
+        return token
+    return None
+
+
+def _load_driver_profile():
+    token = _driver_token()
+    if not token:
+        return None
+    try:
+        return get_driver_profile(token)
+    except ApiError:
+        return None
+
+
 def _driver_profile():
+    driver = _load_driver_profile()
+    if driver:
+        name = driver.get("full_name") or session.get("driver_name", DRIVER_PROFILE["name"])
+        plate = driver.get("plate_number") or DRIVER_PROFILE["plate"]
+        return {
+            **DRIVER_PROFILE,
+            "name": name,
+            "plate": plate,
+            "initials": "".join(part[0] for part in name.split()[:2]).upper() or "DR",
+        }
     return {
         **DRIVER_PROFILE,
         "name": session.get("driver_name", DRIVER_PROFILE["name"]),
@@ -59,9 +90,18 @@ def login():
 
         try:
             result = login(email_or_phone, password)
-            session["driver_token"] = result.get("access_token", "demo-token")
-            session["driver_phone"] = email_or_phone if "@" not in email_or_phone else ""
-            session["driver_email"] = email_or_phone if "@" in email_or_phone else ""
+            user = result.get("user") or {}
+            session["token"] = result.get("access_token", "")
+            session["driver_token"] = session["token"]
+            session["user_id"] = user.get("id")
+            session["email"] = user.get("email") or (email_or_phone if "@" in email_or_phone else "")
+            session["phone"] = user.get("phone") or (email_or_phone if "@" not in email_or_phone else "")
+            session["name"] = user.get("full_name")
+            session["role"] = user.get("role", "driver")
+            session["portal"] = "driver"
+            session["driver_name"] = user.get("full_name") or DRIVER_PROFILE["name"]
+            session["driver_email"] = session["email"]
+            session["driver_phone"] = session["phone"]
             session["driver_online"] = False
             session.permanent = remember
             flash("Welcome back, captain!", "success")
@@ -123,8 +163,53 @@ def dashboard():
             online=session.get("driver_online", False),
             zone="Lekki zone",
             surge="x1.2",
+            driver=_load_driver_profile(),
+            service_tiers=SERVICE_TIERS,
+            vehicle_categories=VEHICLE_CATEGORIES,
         ),
     )
+
+
+@driver_portal_bp.route("/dashboard/vehicle-profile", methods=["POST"])
+def update_vehicle_profile():
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    token = _driver_token()
+    if not token:
+        flash("Please sign in again.", "error")
+        return redirect(url_for("driver_portal.login"))
+
+    service_tier = request.form.get("service_tier", "").strip().lower()
+    vehicle_category = request.form.get("vehicle_category", "").strip().lower()
+    vehicle_make = request.form.get("vehicle_make", "").strip()
+    vehicle_color = request.form.get("vehicle_color", "").strip()
+    plate_number = request.form.get("plate_number", "").strip()
+
+    payload = {}
+    if service_tier in SERVICE_TIERS:
+        payload["service_tier"] = service_tier
+    if vehicle_category in VEHICLE_CATEGORIES:
+        payload["vehicle_category"] = vehicle_category
+    if vehicle_make:
+        payload["vehicle_make"] = vehicle_make
+    if vehicle_color:
+        payload["vehicle_color"] = vehicle_color
+    if plate_number:
+        payload["plate_number"] = plate_number
+
+    if not payload:
+        flash("Fill in at least one field.", "error")
+        return redirect(url_for("driver_portal.dashboard"))
+
+    try:
+        update_driver_profile(token, payload)
+        flash("Vehicle profile saved.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+
+    return redirect(url_for("driver_portal.dashboard"))
 
 
 @driver_portal_bp.route("/ride-requests")
@@ -202,9 +287,17 @@ def toggle_online():
 def logout():
     session.pop("driver_token", None)
     session.pop("driver_phone", None)
+    session.pop("driver_email", None)
     session.pop("driver_name", None)
     session.pop("driver_online", None)
     session.pop("pending_ride_requests", None)
     session.pop("active_trip_id", None)
+    session.pop("token", None)
+    session.pop("user_id", None)
+    session.pop("email", None)
+    session.pop("phone", None)
+    session.pop("name", None)
+    session.pop("role", None)
+    session.pop("portal", None)
     flash("Signed out.", "success")
-    return redirect(url_for("driver_portal.login"))
+    return redirect(url_for("main.driver_login_page"))
