@@ -37,6 +37,8 @@ html {
     --auth-muted: #cbd5e1;
     --auth-border: #334155;
     --auth-input-bg: #1e293b;
+    --auth-card-bg: #1e293b;
+    --auth-success-icon-bg: rgba(6, 95, 70, 0.35);
     --auth-green: #059669;
     --auth-green-dark: #065f46;
     --auth-green-deep: #064e3b;
@@ -579,7 +581,39 @@ html {
     background: #243044;
   }
 
+  .auth-signup__success {
+    background: var(--auth-card-bg);
+    border-color: var(--auth-border);
+  }
+
+  .auth-signup__success h3 {
+    color: var(--auth-ink);
+  }
+
+  .auth-signup__success-icon {
+    background: var(--auth-success-icon-bg);
+    color: #6ee7b7;
+  }
+
   .auth-signup__success p {
+    color: var(--auth-muted);
+  }
+
+  .driver-register__success {
+    background: var(--auth-card-bg);
+    border-color: var(--auth-border);
+  }
+
+  .driver-register__success h3 {
+    color: var(--auth-ink);
+  }
+
+  .driver-register__success-icon {
+    background: var(--auth-success-icon-bg);
+    color: #6ee7b7;
+  }
+
+  .driver-register__success p {
     color: var(--auth-muted);
   }
 
