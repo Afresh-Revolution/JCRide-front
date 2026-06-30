@@ -1,0 +1,102 @@
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Settings{% endblock %}
+
+{% block portal_content %}
+<section class="driver-settings-page" aria-label="Driver settings">
+  <div class="driver-settings-grid">
+    <article class="driver-settings-card">
+      <h2 class="driver-settings-card__title">Driving preferences</h2>
+      <ul class="driver-settings-list">
+        {% for row in settings.preferences %}
+          {% set group = 'preferences' %}
+          {% include "components/settings/toggle_row.html" %}
+        {% endfor %}
+      </ul>
+    </article>
+
+    <article class="driver-settings-card">
+      <h2 class="driver-settings-card__title">Language &amp; region</h2>
+      <form method="post" action="{{ url_for('driver_portal.update_settings_locale') }}" class="driver-settings-locale">
+        <label class="driver-settings-field">
+          <span>Language</span>
+          <select name="language" onchange="this.form.submit()">
+            {% for option in settings.locale_options.language %}
+              <option value="{{ option }}"{% if settings.locale.language == option %} selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="driver-settings-field">
+          <span>Navigation voice</span>
+          <select name="nav_voice" onchange="this.form.submit()">
+            {% for option in settings.locale_options.nav_voice %}
+              <option value="{{ option }}"{% if settings.locale.nav_voice == option %} selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="driver-settings-field">
+          <span>Distance units</span>
+          <select name="distance_units" onchange="this.form.submit()">
+            {% for option in settings.locale_options.distance_units %}
+              <option value="{{ option }}"{% if settings.locale.distance_units == option %} selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="driver-settings-field">
+          <span>Time zone</span>
+          <select name="timezone" onchange="this.form.submit()">
+            {% for option in settings.locale_options.timezone %}
+              <option value="{{ option }}"{% if settings.locale.timezone == option %} selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </form>
+    </article>
+
+    <article class="driver-settings-card">
+      <h2 class="driver-settings-card__title">Audio &amp; alerts</h2>
+      <ul class="driver-settings-list">
+        {% for row in settings.audio %}
+          {% set group = 'audio' %}
+          {% include "components/settings/toggle_row.html" %}
+        {% endfor %}
+      </ul>
+    </article>
+
+    <article class="driver-settings-card">
+      <h2 class="driver-settings-card__title">Account</h2>
+      <ul class="driver-settings-account">
+        <li class="driver-settings-account__row">
+          <div>
+            <span class="driver-settings-account__label">Switch to offline</span>
+            <span class="driver-settings-account__hint">Stop receiving requests</span>
+          </div>
+          <form method="post" action="{{ url_for('driver_portal.settings_go_offline') }}">
+            <button type="submit" class="driver-settings-account__btn">Go offline</button>
+          </form>
+        </li>
+        <li class="driver-settings-account__row">
+          <div>
+            <span class="driver-settings-account__label">Take a break</span>
+            <span class="driver-settings-account__hint">Pause for up to 7 days</span>
+          </div>
+          <form method="post" action="{{ url_for('driver_portal.settings_pause') }}">
+            <button type="submit" class="driver-settings-account__btn">Pause</button>
+          </form>
+        </li>
+        <li class="driver-settings-account__row">
+          <div>
+            <span class="driver-settings-account__label">Deactivate account</span>
+            <span class="driver-settings-account__hint">Permanent — contact support to restore</span>
+          </div>
+          <form method="post" action="{{ url_for('driver_portal.settings_deactivate') }}" onsubmit="return confirm('Request account deactivation? Support must restore your account.');">
+            <button type="submit" class="driver-settings-account__btn driver-settings-account__btn--danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              Deactivate
+            </button>
+          </form>
+        </li>
+      </ul>
+    </article>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,855 @@
+/* Admin — Bike Delivery */
+
+.bike-delivery-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bike-delivery-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.bike-delivery-header > div:not(.bike-delivery-header__lead) {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.bike-delivery-header__lead {
+  flex: 1 1 280px;
+}
+
+.bike-delivery-header__title {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  font-weight: 800;
+  color: var(--dash-text);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-header__subtitle {
+  margin: 0.35rem 0 0;
+  font-size: clamp(0.8125rem, 2vw, 0.9375rem);
+  color: var(--dash-muted);
+  line-height: 1.45;
+}
+
+.bike-delivery-onboard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 42px;
+  padding: 0.5rem 1.125rem;
+  border: none;
+  border-radius: var(--dash-radius-sm);
+  background: var(--dash-green-dark);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.bike-delivery-onboard-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.bike-delivery-onboard-btn:hover {
+  background: var(--dash-green-active, #047857);
+}
+
+.bike-delivery-kpi-grid.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.bike-delivery-details-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+.bike-delivery-pricing,
+.bike-delivery-zones {
+  min-width: 0;
+}
+
+.bike-delivery-pricing .dash-card__subtitle {
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.bike-delivery-link {
+  color: var(--dash-green-dark);
+  text-decoration: none;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-link:hover {
+  text-decoration: underline;
+}
+
+.bike-delivery-pricing__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.bike-delivery-pricing__list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--dash-border);
+  font-size: 0.9375rem;
+  min-width: 0;
+}
+
+.bike-delivery-pricing__list li:last-child {
+  border-bottom: none;
+}
+
+.bike-delivery-pricing__list li span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--dash-muted);
+}
+
+.bike-delivery-pricing__list li span:last-child {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--dash-text);
+  text-align: right;
+}
+
+.bike-delivery-pricing__loading,
+.bike-delivery-zones__loading {
+  color: var(--dash-muted);
+  font-size: 0.875rem;
+}
+
+.bike-delivery-zones__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 1.25rem 1rem;
+}
+
+.bike-delivery-zone-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(13, 107, 56, 0.1);
+  color: var(--dash-green-dark);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid rgba(13, 107, 56, 0.18);
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0 1.25rem 1.25rem;
+}
+
+.bike-delivery-stat {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius-sm);
+  background: var(--dash-input-bg, #fafafa);
+  min-width: 0;
+}
+
+.bike-delivery-stat__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--dash-muted);
+  margin-bottom: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-stat__value {
+  font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+  font-weight: 700;
+  color: var(--dash-text);
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+}
+
+.bike-delivery-search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 360px;
+}
+
+.bike-delivery-search svg {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--dash-muted);
+  pointer-events: none;
+}
+
+.bike-delivery-search input {
+  width: 100%;
+  height: 42px;
+  padding: 0 1rem 0 2.5rem;
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  background: var(--dash-input-bg, #fafafa);
+  font-size: 0.875rem;
+  color: var(--dash-text);
+  outline: none;
+}
+
+.bike-delivery-search input:focus {
+  border-color: var(--dash-green);
+}
+
+.bike-delivery-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.bike-delivery-filter-tab {
+  padding: 0.4375rem 0.875rem;
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  background: var(--dash-card);
+  color: var(--dash-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.bike-delivery-filter-tab.is-active {
+  background: var(--dash-green-dark);
+  border-color: var(--dash-green-dark);
+  color: #fff;
+}
+
+.bike-delivery-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bike-delivery-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.bike-delivery-table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.bike-delivery-table thead th {
+  padding: 0.875rem 1.25rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dash-muted);
+  border-bottom: 1px solid var(--dash-border);
+  white-space: nowrap;
+}
+
+.bike-delivery-table tbody td {
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--dash-border);
+  vertical-align: middle;
+  color: var(--dash-text);
+}
+
+.bike-delivery-table__loading td,
+.bike-delivery-table__empty td {
+  text-align: center;
+  color: var(--dash-muted);
+  padding: 2rem 1.25rem;
+}
+
+.bike-delivery-cell-rider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.bike-delivery-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(13, 107, 56, 0.12);
+  color: var(--dash-green-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.bike-delivery-cell-rider__name {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-cell-rider__id {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--dash-muted);
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-cell-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bike-delivery-cell-rating svg {
+  width: 14px;
+  height: 14px;
+  fill: #eab308;
+  stroke: none;
+  flex-shrink: 0;
+}
+
+.bike-delivery-status {
+  display: inline-flex;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bike-delivery-status--approved {
+  background: rgba(13, 107, 56, 0.14);
+  color: var(--dash-green-dark);
+}
+
+.bike-delivery-status--pending {
+  background: rgba(234, 179, 8, 0.18);
+  color: #92400e;
+}
+
+.bike-delivery-status--suspended {
+  background: rgba(239, 68, 68, 0.14);
+  color: #991b1b;
+}
+
+.bike-delivery-status--rejected {
+  background: rgba(239, 68, 68, 0.14);
+  color: #991b1b;
+}
+
+.bike-delivery-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.bike-delivery-action-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--dash-border);
+  border-radius: 50%;
+  background: var(--dash-card);
+  color: var(--dash-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.bike-delivery-action-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.bike-delivery-action-btn--approve {
+  color: var(--dash-green-dark);
+  border-color: rgba(13, 107, 56, 0.25);
+}
+
+.bike-delivery-action-btn--approve:hover {
+  background: rgba(13, 107, 56, 0.1);
+}
+
+.bike-delivery-action-btn--reject {
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.bike-delivery-action-btn--reject:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.bike-delivery-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.bike-delivery-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid var(--dash-border);
+  flex-wrap: wrap;
+}
+
+.bike-delivery-pagination__info {
+  font-size: 0.8125rem;
+  color: var(--dash-muted);
+  min-width: 0;
+}
+
+.bike-delivery-pagination__controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.bike-delivery-pagination__btn {
+  padding: 0.4375rem 0.875rem;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius-sm);
+  background: var(--dash-card);
+  color: var(--dash-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bike-delivery-pagination__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.bike-delivery-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.bike-delivery-modal-overlay[hidden] {
+  display: none;
+}
+
+.bike-delivery-modal {
+  width: 100%;
+  max-width: min(520px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  background: var(--dash-card);
+  border-radius: var(--dash-radius);
+  box-shadow: var(--dash-shadow-hover);
+  border: 1px solid var(--dash-border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bike-delivery-modal--form {
+  max-width: min(440px, calc(100vw - 2rem));
+}
+
+.bike-delivery-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--dash-border);
+  flex-shrink: 0;
+}
+
+.bike-delivery-modal__header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-modal__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 1.5rem;
+  color: var(--dash-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.bike-delivery-modal__body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bike-delivery-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 1.5rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.bike-delivery-modal__footer--inline {
+  padding: 0;
+  margin-top: 0.5rem;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.bike-delivery-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.bike-delivery-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.bike-delivery-field span {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dash-muted);
+}
+
+.bike-delivery-field input,
+.bike-delivery-field select {
+  width: 100%;
+  height: 42px;
+  padding: 0 0.875rem;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius-sm);
+  background: var(--dash-input-bg, #fafafa);
+  color: var(--dash-text);
+  font-size: 0.875rem;
+}
+
+.bike-delivery-form-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--dash-muted);
+  line-height: 1.45;
+}
+
+.bike-delivery-form-error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+}
+
+.bike-delivery-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.5rem 1.125rem;
+  border: none;
+  border-radius: var(--dash-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bike-delivery-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--dash-border);
+  color: var(--dash-muted);
+}
+
+.bike-delivery-btn--primary {
+  background: var(--dash-green-dark);
+  color: #fff;
+}
+
+.bike-delivery-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+}
+
+.bike-delivery-detail-grid dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dash-muted);
+  margin-bottom: 0.25rem;
+}
+
+.bike-delivery-detail-grid dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--dash-text);
+  overflow-wrap: anywhere;
+}
+
+.bike-delivery-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  left: auto;
+  z-index: 600;
+  max-width: min(360px, calc(100vw - 2rem));
+  padding: 0.875rem 1.125rem;
+  background: var(--dash-green-dark);
+  color: #fff;
+  border-radius: var(--dash-radius-sm);
+  font-size: 0.875rem;
+  box-shadow: var(--dash-shadow-hover);
+}
+
+.bike-delivery-toast.is-error {
+  background: #b91c1c;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 1200px) {
+  .bike-delivery-kpi-grid.kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bike-delivery-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .bike-delivery-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bike-delivery-search {
+    flex: 1 1 auto;
+    max-width: none;
+    width: 100%;
+  }
+
+  .bike-delivery-filter-tabs {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .bike-delivery-onboard-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .bike-delivery-page {
+    gap: 0.875rem;
+  }
+
+  .bike-delivery-kpi-grid.kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .bike-delivery-kpi-grid .kpi-card {
+    padding: 1rem 1.125rem;
+  }
+
+  .bike-delivery-kpi-grid .kpi-card__value {
+    font-size: 1.375rem;
+  }
+
+  .bike-delivery-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bike-delivery-pricing__list,
+  .bike-delivery-zones__tags,
+  .bike-delivery-stats-grid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .bike-delivery-toolbar {
+    padding: 0.875rem 1rem;
+  }
+
+  .bike-delivery-table-wrap {
+    margin: 0 -0.25rem;
+  }
+
+  .bike-delivery-table thead th,
+  .bike-delivery-table tbody td {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .bike-delivery-pagination {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.875rem 1rem;
+  }
+
+  .bike-delivery-pagination__controls {
+    width: 100%;
+  }
+
+  .bike-delivery-pagination__btn {
+    flex: 1 1 0;
+    text-align: center;
+  }
+
+  .bike-delivery-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .bike-delivery-modal,
+  .bike-delivery-modal--form {
+    max-width: none;
+    width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: var(--dash-radius) var(--dash-radius) 0 0;
+  }
+
+  .bike-delivery-modal__header,
+  .bike-delivery-modal__body,
+  .bike-delivery-modal__footer {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .bike-delivery-modal__footer--inline {
+    flex-direction: column;
+  }
+
+  .bike-delivery-modal__footer--inline .bike-delivery-btn {
+    width: 100%;
+  }
+
+  .bike-delivery-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bike-delivery-toast {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .bike-delivery-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bike-delivery-header > div:not(.bike-delivery-header__lead) {
+    flex-basis: auto;
+  }
+
+  .bike-delivery-header__lead {
+    flex-basis: auto;
+  }
+
+  .bike-delivery-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bike-delivery-filter-tab {
+    flex: 1 1 calc(50% - 0.375rem);
+    text-align: center;
+    padding-inline: 0.625rem;
+  }
+
+  .bike-delivery-pricing__list li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .bike-delivery-pricing__list li span:last-child {
+    text-align: left;
+  }
+}

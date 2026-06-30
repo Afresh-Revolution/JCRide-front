@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% if portal == 'driver' %}Driver sign in{% else %}Rider sign in{% endif %} — JCRide</title>
+  <title>{% if portal == 'driver' %}Driver sign in{% else %}Rider sign in{% endif %} — JosRide</title>
+  {% from "includes/brand_assets.html" import favicon_links, brand_stylesheet, brand_mark, brand_hero %}
+  {{ favicon_links() }}
+  {{ brand_stylesheet() }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,19 +17,15 @@
 </head>
 <body class="auth-login-page auth-login-page--{{ portal }}">
   <div class="auth-login">
-    <aside class="auth-login__brand" aria-label="JCRide">
+    <aside class="auth-login__brand" aria-label="JosRide">
+      {{ brand_hero() }}
       <div class="auth-login__brand-top">
         <a href="{{ url_for('main.home') }}" class="auth-login__logo">
           <span class="auth-login__logo-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
-              <circle cx="7.5" cy="17" r="2"/>
-              <circle cx="16.5" cy="17" r="2"/>
-              <path d="M5 11h14"/>
-            </svg>
+            {{ brand_mark('auth-login__logo-img', 40) }}
           </span>
           <span class="auth-login__logo-text">
-            <strong>JCRide</strong>
+            <strong>JosRide</strong>
             <span>NAIJA</span>
           </span>
         </a>
@@ -57,7 +56,7 @@
         </div>
       </div>
 
-      <p class="auth-login__copyright">&copy; 2026 JCRide Technologies Ltd.</p>
+      <p class="auth-login__copyright">&copy; 2026 JosRide Technologies Ltd.</p>
     </aside>
 
     <section class="auth-login__panel">
@@ -111,13 +110,10 @@
 
         {% if portal != 'driver' %}
         <p class="auth-login__footer-text">
-          New to JCRide?
+          New to JosRide?
           <a href="{{ url_for('main.user_register_page') }}" class="auth-login__link auth-login__link--strong auth-loading-trigger auth-loading-link" data-loading-text="Loading…">Create account</a>
         </p>
         {% else %}
-        <p class="auth-login__status">
-          Approval status: <strong class="auth-login__status-verified">Verified</strong>
-        </p>
         <p class="auth-login__footer-text">
           New driver?
           <a href="{{ url_for('main.driver_register_page') }}" class="auth-login__link auth-login__link--strong auth-loading-trigger auth-loading-link" data-loading-text="Loading…">Apply now</a>

@@ -32,7 +32,7 @@ body.admin-body.admin-nav-open {
 }
 
 body.admin-body a {
-  color: inherit;
+  /* color: inherit; */
   text-decoration: none;
 }
 
@@ -148,6 +148,8 @@ body.admin-body a {
 
 .admin-sidebar__badge {
   display: inline-block;
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
   width: fit-content;
   font-size: 0.5625rem;
   font-weight: 700;
@@ -223,51 +225,6 @@ body.admin-body a {
   color: var(--dash-text);
 }
 
-.admin-sidebar__help {
-  margin-top: auto;
-  background: var(--dash-green, #0d6b38);
-  color: #fff;
-  border-radius: 24px;
-  padding: 1.375rem 1.25rem 1.25rem;
-}
-
-.admin-sidebar__help-title {
-  font-size: 0.875rem;
-  font-weight: 400;
-  line-height: 1.35;
-  color: #fff;
-  margin: 0 0 0.125rem;
-}
-
-.admin-sidebar__help-sub {
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  color: #fff;
-  margin: 0 0 1.125rem;
-}
-
-.admin-sidebar__help-btn {
-  display: block;
-  width: 100%;
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.18);
-  border: none;
-  padding: 0.75rem 1rem;
-  border-radius: 999px;
-  text-align: center;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.admin-sidebar__help-btn:hover {
-  background: rgba(255, 255, 255, 0.26);
-}
-
 /* ── Main area ── */
 
 .admin-main {
@@ -285,6 +242,7 @@ body.admin-body a {
   padding: 1rem 1.75rem;
   background: var(--dash-card);
   border-bottom: 1px solid var(--dash-border);
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 50;
@@ -316,6 +274,22 @@ body.admin-body a {
   font-family: inherit;
   color: var(--dash-text);
   outline: none;
+}
+
+.admin-topbar__search input::-webkit-input-placeholder {
+  color: #9ca3af;
+}
+
+.admin-topbar__search input::-moz-placeholder {
+  color: #9ca3af;
+}
+
+.admin-topbar__search input:-ms-input-placeholder {
+  color: #9ca3af;
+}
+
+.admin-topbar__search input::-ms-input-placeholder {
+  color: #9ca3af;
 }
 
 .admin-topbar__search input::placeholder {
@@ -837,7 +811,8 @@ body.admin-body a {
     height: 100vh;
     height: 100dvh;
     overflow-y: auto;
-    overscroll-behavior: contain;
+    -ms-scroll-chaining: none;
+        overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
 

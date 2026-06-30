@@ -98,7 +98,7 @@ def joscity_login(email_or_phone, password):
 
 
 def login_with_joscity_fallback(email_or_phone, password):
-    """Try JC-Ride login first; on missing/invalid credentials, try JosCity login."""
+    """Try JosRide login first; on missing/invalid credentials, try JosCity login."""
     try:
         return login(email_or_phone, password)
     except ApiError as exc:
@@ -128,6 +128,112 @@ def update_driver_profile(token, payload):
     return _request(
         "PATCH",
         f"{API_PREFIX}/drivers/me",
+        token=token,
+        json=payload,
+    )
+
+
+def get_driver_ride_requests(token):
+    return _request("GET", f"{API_PREFIX}/drivers/ride-requests", token=token)
+
+
+def get_driver_active_ride(token):
+    return _request("GET", f"{API_PREFIX}/drivers/rides/active", token=token)
+
+
+def accept_driver_ride(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/rides/{ride_id}/accept",
+        token=token,
+    )
+
+
+def reject_driver_ride(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/rides/{ride_id}/reject",
+        token=token,
+    )
+
+
+def driver_ride_arrived(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/rides/{ride_id}/arrived",
+        token=token,
+    )
+
+
+def complete_driver_ride(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/rides/{ride_id}/complete",
+        token=token,
+    )
+
+
+def cancel_driver_ride(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/rides/{ride_id}/cancel",
+        token=token,
+    )
+
+
+def get_driver_dashboard(token):
+    return _request("GET", f"{API_PREFIX}/drivers/dashboard", token=token)
+
+
+def get_driver_earnings(token):
+    return _request("GET", f"{API_PREFIX}/drivers/earnings", token=token)
+
+
+def get_driver_earnings_transactions(token, page=1, limit=20):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/drivers/earnings/transactions",
+        token=token,
+        params={"page": page, "limit": limit},
+    )
+
+
+def get_driver_settings(token):
+    return _request("GET", f"{API_PREFIX}/drivers/settings", token=token)
+
+
+def update_driver_settings(token, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/drivers/settings",
+        token=token,
+        json=payload,
+    )
+
+
+def driver_settings_go_offline(token):
+    return _request("POST", f"{API_PREFIX}/drivers/settings/go-offline", token=token)
+
+
+def driver_settings_pause(token):
+    return _request("POST", f"{API_PREFIX}/drivers/settings/pause", token=token)
+
+
+def driver_settings_deactivate_request(token):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/settings/deactivate-request",
+        token=token,
+    )
+
+
+def submit_driver_support_ticket(token, category, description, trip_id=None):
+    payload = {"category": category, "description": description}
+    if trip_id:
+        payload["trip_id"] = trip_id
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/support/tickets",
         token=token,
         json=payload,
     )
@@ -341,6 +447,49 @@ def delete_admin_driver(token, driver_id):
     return _request("DELETE", f"{API_PREFIX}/admin/drivers/{driver_id}", token=token)
 
 
+def get_admin_bike_delivery_stats(token):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/stats", token=token)
+
+
+def get_admin_bike_delivery_pricing(token):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/pricing", token=token)
+
+
+def get_admin_bike_delivery_zones(token):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/zones", token=token)
+
+
+def get_admin_bike_delivery_riders(token, search="", status=None, page=1, limit=20):
+    params = {"page": page, "limit": limit}
+    if search:
+        params["search"] = search
+    if status:
+        params["status"] = status
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/riders", token=token, params=params)
+
+
+def get_admin_bike_delivery_rider(token, rider_id):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/riders/{rider_id}", token=token)
+
+
+def onboard_admin_bike_rider(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/bike-delivery/riders",
+        token=token,
+        json=payload,
+    )
+
+
+def update_admin_bike_rider_status(token, rider_id, status):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/admin/bike-delivery/riders/{rider_id}/status",
+        token=token,
+        json={"status": status},
+    )
+
+
 def get_admin_trips_map(token):
     return get_admin_live_trips(token)
 
@@ -503,6 +652,19 @@ def update_admin_platform_settings(token, payload):
     return _request(
         "PATCH",
         f"{API_PREFIX}/admin/settings/platform",
+        token=token,
+        json=payload,
+    )
+
+
+def get_admin_bike_delivery_settings(token):
+    return _request("GET", f"{API_PREFIX}/admin/settings/bike-delivery", token=token)
+
+
+def update_admin_bike_delivery_settings(token, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/admin/settings/bike-delivery",
         token=token,
         json=payload,
     )

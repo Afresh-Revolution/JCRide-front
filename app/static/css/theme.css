@@ -327,24 +327,6 @@ html {
     background: rgba(6, 95, 70, 0.35);
   }
 
-  .admin-sidebar__help {
-    background: var(--dash-green-active, #047857);
-  }
-
-  .admin-sidebar__help-title,
-  .admin-sidebar__help-sub {
-    color: #fff;
-  }
-
-  .admin-sidebar__help-btn {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.18);
-  }
-
-  .admin-sidebar__help-btn:hover {
-    background: rgba(255, 255, 255, 0.26);
-  }
-
   .admin-topbar__search svg {
     color: #94a3b8;
   }
@@ -579,6 +561,35 @@ html {
 
   .auth-signup__upload-btn:hover {
     background: #243044;
+  }
+
+  .auth-signup__vehicle-label,
+  .auth-signup__vehicle-copy strong {
+    color: var(--auth-ink);
+  }
+
+  .auth-signup__vehicle-card {
+    background: var(--auth-input-bg);
+    border-color: var(--auth-border);
+  }
+
+  .auth-signup__vehicle-card.is-selected {
+    background: rgba(6, 95, 70, 0.14);
+    border-color: #34d399;
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.12);
+  }
+
+  .auth-signup__vehicle-card.is-selected .auth-signup__vehicle-icon {
+    background: var(--auth-green-dark);
+    color: #ecfdf5;
+  }
+
+  .auth-signup__vehicle-icon {
+    color: #34d399;
+  }
+
+  .auth-signup__vehicle-copy span:last-child {
+    color: var(--auth-muted);
   }
 
   .auth-signup__success {
@@ -1869,6 +1880,207 @@ html {
   }
 
   .landing-link {
+    color: #6ee7b7;
+  }
+
+  /* Driver portal auth (split layout in driver_portal/css/auth.css) */
+  body.auth-page .progress__segment {
+    background: #374151;
+  }
+
+  body.auth-page .progress__segment--active {
+    background: #6ee7b7;
+  }
+
+  body.auth-page .flash:not(.flash--error) {
+    background: rgba(6, 95, 70, 0.25);
+    color: #a7f3d0;
+  }
+
+  body.auth-page .auth-link--accent {
+    color: #6ee7b7;
+  }
+
+  body.auth-page .btn--primary {
+    background: #065f46;
+    color: #ecfdf5;
+  }
+
+  body.auth-page .btn--primary:hover {
+    background: #047857;
+  }
+
+  body.auth-page .field__input:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+  }
+
+  .auth-signup__progress-segment {
+    background: #374151;
+  }
+
+  .auth-signup__progress-segment.is-complete {
+    background: #6ee7b7;
+  }
+
+  .auth-signup__progress-label {
+    color: var(--auth-muted, var(--muted));
+  }
+
+  .auth-login__subtitle {
+    color: var(--auth-muted, var(--muted));
+  }
+
+  .auth-login__form-wrap h2,
+  .auth-signup__vehicle-label {
+    color: var(--auth-ink, var(--text));
+  }
+
+  /* Driver portal — in-app pages */
+  body.driver-portal .driver-btn--primary {
+    background: var(--dash-green-dark);
+    color: #ecfdf5;
+  }
+
+  body.driver-portal .driver-btn--ghost {
+    background: var(--dash-input-bg);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .driver-btn--ghost:hover {
+    background: #374151;
+  }
+
+  body.driver-portal .driver-settings-account__btn {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .driver-settings-account__btn--danger {
+    background: rgba(127, 29, 29, 0.25);
+    border-color: rgba(248, 113, 113, 0.35);
+    color: #fca5a5;
+  }
+
+  body.driver-portal .driver-settings-account__btn--danger:hover {
+    background: rgba(127, 29, 29, 0.35);
+  }
+
+  body.driver-portal .driver-active-trip-map {
+    background: #1f2937;
+  }
+
+  body.driver-portal .active-trip-card,
+  body.driver-portal .active-trip-empty,
+  body.driver-portal .earnings-summary-card,
+  body.driver-portal .earnings-chart-card,
+  body.driver-portal .earnings-withdraw-banner,
+  body.driver-portal .notifications-inbox,
+  body.driver-portal .notifications-settings-card,
+  body.driver-portal .driver-profile-summary,
+  body.driver-portal .driver-profile-card,
+  body.driver-portal .driver-settings-card,
+  body.driver-portal .driver-support-quick-card,
+  body.driver-portal .driver-support-dedicated,
+  body.driver-portal .driver-support-safety,
+  body.driver-portal .panel {
+    background: var(--dash-card);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .active-trip-maneuver {
+    background: rgba(17, 24, 39, 0.96);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+    box-shadow: var(--dash-shadow-hover);
+  }
+
+  body.driver-portal .active-trip-maneuver__label {
+    color: #4ade80;
+  }
+
+  body.driver-portal .active-trip-maneuver__text {
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .active-trip-maneuver__distance {
+    color: var(--dash-muted);
+  }
+
+  body.driver-portal .active-trip-status {
+    color: #4ade80;
+  }
+
+  body.driver-portal .active-trip-status__dot {
+    background: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
+  }
+
+  body.driver-portal .active-trip-comms__btn {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .active-trip-comms__btn svg {
+    color: currentColor;
+  }
+
+  body.driver-portal .active-trip-comms__btn:hover {
+    background: #374151;
+  }
+
+  body.driver-portal .map-preview__grid {
+    background:
+      linear-gradient(#374151 1px, transparent 1px) 0 0 / 36px 36px,
+      linear-gradient(90deg, #374151 1px, transparent 1px) 0 0 / 36px 36px;
+  }
+
+  body.driver-portal .map-preview__water {
+    background: #1e3a5f;
+  }
+
+  body.driver-portal .notifications-mark-read {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .notifications-mark-read:hover {
+    background: #374151;
+  }
+
+  body.driver-portal .notifications-item {
+    border-bottom-color: var(--dash-border);
+  }
+
+  body.driver-portal .driver-support-quick-card:hover {
+    border-color: #4b5563;
+  }
+
+  body.driver-portal .driver-toggle__track {
+    background: #374151;
+  }
+
+  body.driver-portal .driver-toggle input:checked + .driver-toggle__track {
+    background: var(--dash-green-active);
+  }
+
+  body.driver-portal .driver-settings-field select,
+  body.driver-portal .driver-profile-stat {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .ride-request-card__actions .driver-btn--outline {
+    background: transparent;
+    color: var(--dash-muted);
+  }
+
+  body.driver-portal .text-success {
     color: #6ee7b7;
   }
 }

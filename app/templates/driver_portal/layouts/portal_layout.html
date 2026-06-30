@@ -1,5 +1,5 @@
 {% extends "portal_shell.html" %}
-{% block title %}{% block page_title %}Driver Portal{% endblock %} — JCRide NAIJA{% endblock %}
+{% block title %}{% block page_title %}Driver Portal{% endblock %} — JosRide NAIJA{% endblock %}
 
 {% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/driver-portal.css') }}">
@@ -20,8 +20,8 @@
     {% set profile_initials = profile.initials %}
     {% set profile_meta = '★ ' ~ profile.rating ~ ' · ' ~ profile.plate %}
     {% set show_topbar_quick_actions = true %}
-    {% set quick_notifications_url = '#' %}
-    {% set quick_settings_url = '#' %}
+    {% set quick_notifications_url = url_for('driver_portal.notifications') %}
+    {% set quick_settings_url = url_for('driver_portal.settings') %}
     {% include "includes/portal_navbar.html" %}
 
     <div class="admin-content driver-content">

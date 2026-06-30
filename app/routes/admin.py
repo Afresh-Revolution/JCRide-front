@@ -1,3 +1,14 @@
+from app.admin_bike_delivery_transforms import (
+    normalize_bike_pricing,
+    normalize_bike_rider,
+    normalize_bike_riders_list,
+)
+from app.admin_bike_delivery_defaults import (
+    EMPTY_BIKE_DELIVERY_PRICING,
+    EMPTY_BIKE_DELIVERY_RIDERS,
+    EMPTY_BIKE_DELIVERY_STATS,
+    EMPTY_BIKE_DELIVERY_ZONES,
+)
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
@@ -20,6 +31,13 @@ from app.services.api_client import (
     get_admin_driver_stats,
     update_admin_driver_status,
     delete_admin_driver,
+    get_admin_bike_delivery_stats,
+    get_admin_bike_delivery_pricing,
+    get_admin_bike_delivery_zones,
+    get_admin_bike_delivery_riders,
+    get_admin_bike_delivery_rider,
+    onboard_admin_bike_rider,
+    update_admin_bike_rider_status,
     get_admin_trips_map,
     get_admin_trips,
     get_admin_payment_stats,
@@ -42,6 +60,8 @@ from app.services.api_client import (
     update_admin_ops_notification_settings,
     get_admin_platform_settings,
     update_admin_platform_settings,
+    get_admin_bike_delivery_settings,
+    update_admin_bike_delivery_settings,
     get_admin_landing_page,
     update_admin_landing_page,
 )
@@ -297,6 +317,12 @@ def drivers():
     return render_template("admin/drivers.html", active_page="drivers")
 
 
+@admin_bp.route("/bike-delivery")
+@admin_required
+def bike_delivery():
+    return render_template("admin/bike_delivery.html", active_page="bike_delivery")
+
+
 @admin_bp.route("/trips")
 @admin_required
 def trips():
@@ -525,6 +551,96 @@ def api_delete_driver(driver_id):
     try:
         delete_admin_driver(_admin_token(), driver_id)
         return "", 204
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/stats")
+@admin_required
+def api_bike_delivery_stats():
+    try:
+        return jsonify(get_admin_bike_delivery_stats(_admin_token()))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(EMPTY_BIKE_DELIVERY_STATS)
+
+
+@admin_bp.route("/api/bike-delivery/pricing")
+@admin_required
+def api_bike_delivery_pricing():
+    try:
+        return jsonify(normalize_bike_pricing(get_admin_bike_delivery_pricing(_admin_token())))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(normalize_bike_pricing(EMPTY_BIKE_DELIVERY_PRICING))
+
+
+@admin_bp.route("/api/bike-delivery/zones")
+@admin_required
+def api_bike_delivery_zones():
+    try:
+        return jsonify(get_admin_bike_delivery_zones(_admin_token()))
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(EMPTY_BIKE_DELIVERY_ZONES)
+
+
+@admin_bp.route("/api/bike-delivery/riders", methods=["GET"])
+@admin_required
+def api_bike_delivery_riders():
+    search = request.args.get("search", "")
+    status = request.args.get("status")
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 20, type=int)
+    try:
+        return jsonify(
+            normalize_bike_riders_list(
+                get_admin_bike_delivery_riders(
+                    _admin_token(), search=search, status=status, page=page, limit=limit
+                )
+            )
+        )
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            return jsonify({"message": exc.message}), exc.status_code
+        payload = dict(EMPTY_BIKE_DELIVERY_RIDERS)
+        payload["page"] = page
+        payload["limit"] = limit
+        return jsonify(normalize_bike_riders_list(payload))
+
+
+@admin_bp.route("/api/bike-delivery/riders", methods=["POST"])
+@admin_required
+def api_bike_delivery_onboard():
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(normalize_bike_rider(onboard_admin_bike_rider(_admin_token(), payload))), 201
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/riders/<rider_id>")
+@admin_required
+def api_bike_delivery_rider_detail(rider_id):
+    try:
+        return jsonify(normalize_bike_rider(get_admin_bike_delivery_rider(_admin_token(), rider_id)))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/riders/<rider_id>/status", methods=["PATCH"])
+@admin_required
+def api_bike_delivery_rider_status(rider_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            normalize_bike_rider(
+                update_admin_bike_rider_status(_admin_token(), rider_id, payload.get("status"))
+            )
+        )
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
@@ -804,6 +920,25 @@ def api_platform_settings_update():
     payload = request.get_json(silent=True) or {}
     try:
         return jsonify(update_admin_platform_settings(_admin_token(), payload))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/settings/bike-delivery")
+@admin_required
+def api_bike_delivery_settings():
+    try:
+        return jsonify(get_admin_bike_delivery_settings(_admin_token()))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/settings/bike-delivery", methods=["PATCH"])
+@admin_required
+def api_bike_delivery_settings_update():
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(update_admin_bike_delivery_settings(_admin_token(), payload))
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
