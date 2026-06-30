@@ -1,5 +1,26 @@
 /* Driver portal content styles (layout uses admin-dashboard.css) */
 
+body.driver-portal .admin-content,
+body.driver-portal .driver-content {
+  max-width: 100%;
+  min-width: 0;
+}
+
+body.driver-portal .dashboard-grid,
+body.driver-portal .metrics-grid,
+body.driver-portal .earnings-summary-grid,
+body.driver-portal .earnings-charts-grid,
+body.driver-portal .notifications-layout,
+body.driver-portal .driver-profile-layout,
+body.driver-portal .driver-settings-grid,
+body.driver-portal .driver-support-layout,
+body.driver-portal .active-trip-layout,
+body.driver-portal .panel,
+body.driver-portal .metric-card,
+body.driver-portal .ride-request-card {
+  min-width: 0;
+}
+
 .driver-content {
   display: flex;
   flex-direction: column;
@@ -1605,6 +1626,28 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .driver-profile-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .status-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1.125rem 1.25rem;
+  }
+
+  .status-banner__toggle {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .driver-support-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1649,6 +1692,29 @@
     grid-template-columns: 1fr;
   }
 
+  .driver-vehicle-card {
+    padding: 1.125rem 1rem;
+  }
+
+  .driver-vehicle-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .panel__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .panel--chart .panel__body {
+    height: 200px;
+  }
+
+  .map-preview {
+    height: 180px;
+  }
+
   .earnings-chart-card__canvas-wrap {
     height: 220px;
   }
@@ -1667,12 +1733,67 @@
     grid-template-columns: 1fr;
   }
 
+  .driver-settings-row,
+  .driver-settings-account__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .driver-settings-row__form,
+  .driver-settings-account__row form {
+    width: 100%;
+  }
+
+  .driver-settings-account__btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .driver-profile-doc {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
   .driver-profile-summary__stats {
     grid-template-columns: 1fr;
   }
 
   .driver-profile-vehicle-grid {
     grid-template-columns: 1fr;
+  }
+
+  .driver-support-quick-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .status-banner__left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .status-banner__title {
+    font-size: 1rem;
+  }
+
+  .ride-request-card {
+    padding: 1rem;
+  }
+
+  .active-trip-card {
+    padding: 1rem;
+  }
+
+  .earnings-summary-card {
+    padding: 1rem;
+  }
+
+  .driver-page-header__title {
+    font-size: 1.25rem;
   }
 }
 

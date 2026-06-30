@@ -1,6 +1,6 @@
 {% set menu_toggle_id = 'admin-menu-toggle' %}
 {% set sidebar_id = 'admin-sidebar' %}
-{% set admin_email = session.get('admin_email', 'ops@jcride.ng') %}
+{% set admin_email = session.get('admin_email', 'ops@josride.ng') %}
 {% set profile_name = admin_email.split('@')[0].replace('.', ' ').replace('_', ' ').title() %}
 {% set profile_initials = profile_name[:1] ~ (profile_name.split()[1][:1] if profile_name.split()|length > 1 else profile_name[1:2] if profile_name|length > 1 else 'A') %}
 {% set profile_meta = admin_email ~ ' · Super Admin' %}

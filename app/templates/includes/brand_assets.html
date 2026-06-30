@@ -1,0 +1,48 @@
+{# JosRide brand images — logo-main (icon), logo-secondary (wordmark), hero #}
+
+{% macro favicon_links() -%}
+<link rel="icon" href="{{ static_url('images/logo-main.png') }}" type="image/png" sizes="any">
+<link rel="apple-touch-icon" href="{{ static_url('images/logo-main.png') }}">
+<meta name="theme-color" content="#065f46">
+{%- endmacro %}
+
+{% macro brand_stylesheet() -%}
+<link rel="stylesheet" href="{{ static_url('css/brand-assets.css') }}">
+{%- endmacro %}
+
+{% macro brand_mark(class_name='brand-mark', size=36, alt='JosRide') -%}
+<img
+  src="{{ static_url('images/logo-main.png') }}"
+  alt="{{ alt }}"
+  class="{{ class_name }}"
+  width="{{ size }}"
+  height="{{ size }}"
+  decoding="async"
+>
+{%- endmacro %}
+
+{% macro brand_wordmark(class_name='brand-wordmark', alt='JosRide', loading='lazy') -%}
+<img
+  src="{{ static_url('images/logo-secondary.png') }}"
+  alt="{{ alt }}"
+  class="{{ class_name }}"
+  decoding="async"
+  loading="{{ loading }}"
+>
+{%- endmacro %}
+
+{% macro brand_image(filename, class_name='', alt='', width=None, height=None, loading='lazy') -%}
+<img
+  src="{{ static_url('images/' ~ filename) }}"
+  {% if class_name %}class="{{ class_name }}"{% endif %}
+  {% if alt %}alt="{{ alt }}"{% else %}alt=""{% endif %}
+  {% if width %}width="{{ width }}"{% endif %}
+  {% if height %}height="{{ height }}"{% endif %}
+  loading="{{ loading }}"
+  decoding="async"
+>
+{%- endmacro %}
+
+{% macro brand_hero(class_name='auth-login__brand-mascot', alt='JosRide in Jos, Plateau State') -%}
+{{ brand_image('hero.png', class_name, alt, loading='lazy') }}
+{%- endmacro %}

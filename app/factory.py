@@ -10,6 +10,7 @@ from app.config import SECRET_KEY, get_api_url
 from app.driver_portal.routes import driver_portal_bp
 from app.routes.admin import admin_bp
 from app.routes.main import main_bp
+from app.static_utils import static_url
 
 
 def create_app() -> Flask:
@@ -19,6 +20,12 @@ def create_app() -> Flask:
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(driver_portal_bp)
+
+    app.jinja_env.globals["static_url"] = static_url
+
+    @app.context_processor
+    def inject_static_url():
+        return {"static_url": static_url}
 
     @app.get("/api-config-check")
     def api_config_check():

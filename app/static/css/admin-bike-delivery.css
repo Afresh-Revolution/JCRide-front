@@ -17,9 +17,13 @@
   flex-wrap: wrap;
 }
 
-.bike-delivery-header > div {
+.bike-delivery-header > div:not(.bike-delivery-header__lead) {
   flex: 1 1 220px;
   min-width: 0;
+}
+
+.bike-delivery-header__lead {
+  flex: 1 1 280px;
 }
 
 .bike-delivery-header__title {
@@ -821,7 +825,11 @@
     align-items: stretch;
   }
 
-  .bike-delivery-header > div {
+  .bike-delivery-header > div:not(.bike-delivery-header__lead) {
+    flex-basis: auto;
+  }
+
+  .bike-delivery-header__lead {
     flex-basis: auto;
   }
 

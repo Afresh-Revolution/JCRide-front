@@ -11,9 +11,15 @@
 {% block dashboard_content %}
 <section class="bike-delivery-page">
   <header class="bike-delivery-header">
-    <div>
-      <h1 class="bike-delivery-header__title">Bike delivery fleet</h1>
-      <p class="bike-delivery-header__subtitle">Manage couriers, pricing and delivery operations.</p>
+    {% from "includes/brand_assets.html" import brand_mark %}
+    <div class="bike-delivery-header__lead">
+      <div class="bike-delivery-header__mascot" aria-hidden="true">
+        {{ brand_mark('bike-delivery-header__logo-img', 56) }}
+      </div>
+      <div>
+        <h1 class="bike-delivery-header__title">Bike delivery fleet</h1>
+        <p class="bike-delivery-header__subtitle">Manage couriers, pricing and delivery operations.</p>
+      </div>
     </div>
     <button type="button" class="bike-delivery-onboard-btn" id="bike-onboard-btn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

@@ -41,7 +41,7 @@
 .auth-signup__progress-segment {
   height: 6px;
   border-radius: 999px;
-  background: #e2e8f0;
+  background: var(--auth-border, #e2e8f0);
   transition: background 0.25s ease;
 }
 
