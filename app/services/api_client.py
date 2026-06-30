@@ -341,6 +341,49 @@ def delete_admin_driver(token, driver_id):
     return _request("DELETE", f"{API_PREFIX}/admin/drivers/{driver_id}", token=token)
 
 
+def get_admin_bike_delivery_stats(token):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/stats", token=token)
+
+
+def get_admin_bike_delivery_pricing(token):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/pricing", token=token)
+
+
+def get_admin_bike_delivery_zones(token):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/zones", token=token)
+
+
+def get_admin_bike_delivery_riders(token, search="", status=None, page=1, limit=20):
+    params = {"page": page, "limit": limit}
+    if search:
+        params["search"] = search
+    if status:
+        params["status"] = status
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/riders", token=token, params=params)
+
+
+def get_admin_bike_delivery_rider(token, rider_id):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/riders/{rider_id}", token=token)
+
+
+def onboard_admin_bike_rider(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/bike-delivery/riders",
+        token=token,
+        json=payload,
+    )
+
+
+def update_admin_bike_rider_status(token, rider_id, status):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/admin/bike-delivery/riders/{rider_id}/status",
+        token=token,
+        json={"status": status},
+    )
+
+
 def get_admin_trips_map(token):
     return get_admin_live_trips(token)
 
@@ -503,6 +546,19 @@ def update_admin_platform_settings(token, payload):
     return _request(
         "PATCH",
         f"{API_PREFIX}/admin/settings/platform",
+        token=token,
+        json=payload,
+    )
+
+
+def get_admin_bike_delivery_settings(token):
+    return _request("GET", f"{API_PREFIX}/admin/settings/bike-delivery", token=token)
+
+
+def update_admin_bike_delivery_settings(token, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/admin/settings/bike-delivery",
         token=token,
         json=payload,
     )

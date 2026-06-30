@@ -581,6 +581,35 @@ html {
     background: #243044;
   }
 
+  .auth-signup__vehicle-label,
+  .auth-signup__vehicle-copy strong {
+    color: var(--auth-ink);
+  }
+
+  .auth-signup__vehicle-card {
+    background: var(--auth-input-bg);
+    border-color: var(--auth-border);
+  }
+
+  .auth-signup__vehicle-card.is-selected {
+    background: rgba(6, 95, 70, 0.14);
+    border-color: #34d399;
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.12);
+  }
+
+  .auth-signup__vehicle-card.is-selected .auth-signup__vehicle-icon {
+    background: var(--auth-green-dark);
+    color: #ecfdf5;
+  }
+
+  .auth-signup__vehicle-icon {
+    color: #34d399;
+  }
+
+  .auth-signup__vehicle-copy span:last-child {
+    color: var(--auth-muted);
+  }
+
   .auth-signup__success {
     background: var(--auth-card-bg);
     border-color: var(--auth-border);
