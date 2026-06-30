@@ -20,8 +20,8 @@
     {% set profile_initials = profile.initials %}
     {% set profile_meta = '★ ' ~ profile.rating ~ ' · ' ~ profile.plate %}
     {% set show_topbar_quick_actions = true %}
-    {% set quick_notifications_url = '#' %}
-    {% set quick_settings_url = '#' %}
+    {% set quick_notifications_url = url_for('driver_portal.notifications') %}
+    {% set quick_settings_url = url_for('driver_portal.settings') %}
     {% include "includes/portal_navbar.html" %}
 
     <div class="admin-content driver-content">

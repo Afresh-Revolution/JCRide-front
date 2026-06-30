@@ -327,24 +327,6 @@ html {
     background: rgba(6, 95, 70, 0.35);
   }
 
-  .admin-sidebar__help {
-    background: var(--dash-green-active, #047857);
-  }
-
-  .admin-sidebar__help-title,
-  .admin-sidebar__help-sub {
-    color: #fff;
-  }
-
-  .admin-sidebar__help-btn {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.18);
-  }
-
-  .admin-sidebar__help-btn:hover {
-    background: rgba(255, 255, 255, 0.26);
-  }
-
   .admin-topbar__search svg {
     color: #94a3b8;
   }

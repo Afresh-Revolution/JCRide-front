@@ -1,0 +1,91 @@
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block portal_content %}
+<section class="notifications-page" aria-label="Notifications">
+  <div class="notifications-layout">
+    <article class="notifications-inbox">
+      <header class="notifications-inbox__header">
+        <div>
+          <h1 class="notifications-inbox__title">Inbox</h1>
+          <p class="notifications-inbox__sub">{{ unread_count }} unread</p>
+        </div>
+        <form method="post" action="{{ url_for('driver_portal.mark_notifications_read') }}">
+          <button type="submit" class="notifications-mark-read">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+            Mark all read
+          </button>
+        </form>
+      </header>
+
+      <ul class="notifications-list">
+        {% for item in notifications %}
+          <li class="notifications-item{% if item.unread %} is-unread{% endif %}">
+            <span class="notifications-item__icon notifications-item__icon--{{ item.type }}" aria-hidden="true">
+              {% if item.type == 'ride' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+              {% elif item.type == 'payout' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              {% elif item.type == 'rating' %}
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              {% elif item.type == 'warning' %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              {% else %}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              {% endif %}
+            </span>
+            <div class="notifications-item__body">
+              <p class="notifications-item__title">
+                {% if item.unread %}<span class="notifications-item__dot" aria-hidden="true"></span>{% endif %}
+                {{ item.title }}
+              </p>
+              <p class="notifications-item__text">{{ item.body }}</p>
+            </div>
+            <time class="notifications-item__time">{{ item.time }}</time>
+          </li>
+        {% endfor %}
+      </ul>
+    </article>
+
+    <aside class="notifications-settings" aria-label="Notification preferences">
+      <article class="notifications-settings-card">
+        <h2 class="notifications-settings-card__title">Alert me about</h2>
+        <ul class="notifications-toggles">
+          {% for alert in alert_settings %}
+            <li class="notifications-toggle-row">
+              <span>{{ alert.label }}</span>
+              <form method="post" action="{{ url_for('driver_portal.update_notification_setting') }}" class="notifications-toggle-form">
+                <input type="hidden" name="setting_id" value="{{ alert.id }}">
+                <input type="hidden" name="group" value="alerts">
+                <label class="driver-toggle">
+                  <input type="checkbox" name="enabled" value="1"{% if alert.enabled %} checked{% endif %} onchange="this.form.submit()">
+                  <span class="driver-toggle__track" aria-hidden="true"></span>
+                </label>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      </article>
+
+      <article class="notifications-settings-card">
+        <h2 class="notifications-settings-card__title">Channels</h2>
+        <ul class="notifications-toggles">
+          {% for channel in channel_settings %}
+            <li class="notifications-toggle-row">
+              <span>{{ channel.label }}</span>
+              <form method="post" action="{{ url_for('driver_portal.update_notification_setting') }}" class="notifications-toggle-form">
+                <input type="hidden" name="setting_id" value="{{ channel.id }}">
+                <input type="hidden" name="group" value="channels">
+                <label class="driver-toggle">
+                  <input type="checkbox" name="enabled" value="1"{% if channel.enabled %} checked{% endif %} onchange="this.form.submit()">
+                  <span class="driver-toggle__track" aria-hidden="true"></span>
+                </label>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      </article>
+    </aside>
+  </div>
+</section>
+{% endblock %}
