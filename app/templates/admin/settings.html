@@ -27,7 +27,7 @@
   </nav>
 
   <div id="settings-platform-panel">
-  <form class="settings-grid" id="settings-form">
+  <form class="settings-grid" id="settings-form" novalidate>
     <article class="dash-card settings-card">
       <h2 class="settings-card__title">Fare configuration</h2>
       <p class="settings-card__sub">Naira values applied platform-wide</p>
@@ -43,13 +43,31 @@
       </div>
     </article>
 
+    <article class="dash-card settings-card" id="bike-delivery-pricing">
+      <div class="settings-card__header">
+        <div>
+          <h2 class="settings-card__title">Bike delivery pricing</h2>
+          <p class="settings-card__sub">Courier fares and package fees shown on the Bike Delivery admin page</p>
+        </div>
+        <span class="settings-save-badge" id="bike-pricing-save-badge" hidden aria-live="polite">Saved</span>
+      </div>
+      <div class="settings-fields">
+        <label class="settings-field"><span>Base bike fare</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="base_bike_fare_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Per km (bike)</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="per_km_bike_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Small package</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="small_package_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Medium package</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="medium_package_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Large package</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="large_package_ngn" min="0" step="1"></div></label>
+        <label class="settings-field"><span>Insurance cover (per delivery)</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="bike_insurance_cover_ngn" min="0" step="1"></div></label>
+      </div>
+    </article>
+
     <article class="dash-card settings-card">
       <h2 class="settings-card__title">paystack integration</h2>
       <p class="settings-card__sub">Payment processing &amp; settlements</p>
       <div class="settings-fields">
         <label class="settings-field"><span>Merchant code</span><input type="text" name="merchant_code" autocomplete="off"></label>
         <label class="settings-field"><span>Settlement account</span><input type="text" name="settlement_account" autocomplete="off"></label>
-        <label class="settings-field"><span>Webhook URL</span><input type="url" name="webhook_url" autocomplete="off"></label>
+        <label class="settings-field"><span>Webhook URL</span><input type="text" name="webhook_url" autocomplete="off"></label>
         <label class="settings-field"><span>Auto-settlement schedule</span><input type="text" name="settlement_schedule" autocomplete="off"></label>
         <label class="settings-field"><span>API secret key</span><input type="password" name="api_secret" placeholder="sk_live_••••••••••••" autocomplete="new-password"></label>
       </div>

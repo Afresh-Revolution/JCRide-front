@@ -115,9 +115,6 @@
           <a href="{{ url_for('main.user_register_page') }}" class="auth-login__link auth-login__link--strong auth-loading-trigger auth-loading-link" data-loading-text="Loading…">Create account</a>
         </p>
         {% else %}
-        <p class="auth-login__status">
-          Approval status: <strong class="auth-login__status-verified">Verified</strong>
-        </p>
         <p class="auth-login__footer-text">
           New driver?
           <a href="{{ url_for('main.driver_register_page') }}" class="auth-login__link auth-login__link--strong auth-loading-trigger auth-loading-link" data-loading-text="Loading…">Apply now</a>

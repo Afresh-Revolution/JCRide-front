@@ -299,6 +299,7 @@ def _save_driver_signup(data: dict) -> None:
         "email_verified",
         "registered",
         "documents",
+        "vehicle_type",
     }
     session[DRIVER_SIGNUP_KEY] = {key: data[key] for key in allowed if key in data}
     session.modified = True
@@ -347,6 +348,7 @@ def _submit_driver_application(signup: dict, token: str) -> dict:
             "driver_license_url": license_url,
             "vehicle_papers_url": papers_url,
             "nin_document_url": nin_url,
+            "vehicle_category": signup.get("vehicle_type") or "car",
         },
     )
     profile = get_profile(token)
@@ -476,6 +478,12 @@ def driver_register_page():
             email = request.form.get("email", "").strip().lower()
             password = request.form.get("password", "")
             confirm_password = request.form.get("confirm_password", "")
+            vehicle_type = request.form.get("vehicle_type", "car").strip().lower()
+            if vehicle_type not in {"car", "bike"}:
+                vehicle_type = "car"
+            signup = _get_driver_signup()
+            signup["vehicle_type"] = vehicle_type
+            _save_driver_signup(signup)
             if len(full_name) < 2:
                 flash("Enter your full name.", "error")
             elif len(phone) < 6:
@@ -490,6 +498,7 @@ def driver_register_page():
                 signup = _get_driver_signup()
                 if signup.get("registered") and signup.get("access_token"):
                     signup["email"] = email
+                    signup["vehicle_type"] = vehicle_type
                     signup["step"] = 2
                     _save_driver_signup(signup)
                     flash("Continue your driver application.", "success")
@@ -506,6 +515,7 @@ def driver_register_page():
                     signup = {
                         "step": 2,
                         "email": email,
+                        "vehicle_type": vehicle_type,
                     }
                     _store_driver_signup_auth(signup, result)
                     delivery = result.get("otp_delivery")

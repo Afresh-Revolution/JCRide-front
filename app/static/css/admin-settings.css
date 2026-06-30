@@ -2,6 +2,64 @@
 
 .settings-page { display: flex; flex-direction: column; gap: 1.25rem; }
 
+#bike-delivery-pricing { scroll-margin-top: 1.5rem; }
+
+.settings-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.settings-card__header .settings-card__title { margin: 0 0 0.35rem; }
+.settings-card__header .settings-card__sub { margin: 0; }
+
+.settings-save-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #052e16;
+  background: #86efac;
+  border: 1px solid #4ade80;
+  animation: settings-badge-in 0.25s ease;
+}
+
+.settings-save-badge.is-visible { display: inline-flex; }
+
+@keyframes settings-badge-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.admin-toast {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 1200;
+  padding: 0.85rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ecfdf5;
+  background: #065f46;
+  border: 1px solid #10b981;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.admin-toast.is-error {
+  color: #fef2f2;
+  background: #7f1d1d;
+  border-color: #ef4444;
+}
+
 .settings-header {
   display: flex;
   align-items: flex-start;
