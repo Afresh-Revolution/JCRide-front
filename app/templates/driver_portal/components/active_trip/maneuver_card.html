@@ -1,0 +1,16 @@
+{# Next maneuver overlay on the map #}
+<aside class="active-trip-maneuver" aria-label="Next maneuver">
+  <p class="active-trip-maneuver__label">NEXT MANEUVER</p>
+  <div class="active-trip-maneuver__body">
+    <span class="active-trip-maneuver__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14"/>
+        <path d="M13 6l6 6-6 6"/>
+      </svg>
+    </span>
+    <div>
+      <p class="active-trip-maneuver__text">{{ trip.next_maneuver }}</p>
+      <p class="active-trip-maneuver__distance">in {{ trip.next_maneuver_distance_m }} m</p>
+    </div>
+  </div>
+</aside>

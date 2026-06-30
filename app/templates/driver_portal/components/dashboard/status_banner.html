@@ -1,7 +1,9 @@
 {# Online / offline status banner #}
 <section class="status-banner {% if online %}status-banner--online{% endif %}">
   <div class="status-banner__left">
-    <span class="status-banner__power">⏻</span>
+    <span class="status-banner__power" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+    </span>
     <div>
       <div class="status-banner__title">
         YOU ARE <strong>{% if online %}Online{% else %}Offline{% endif %}</strong>

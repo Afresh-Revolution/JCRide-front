@@ -83,8 +83,12 @@
     if (!tbody) return;
 
     if (!state.users.length) {
+      const hasFilters = state.search || (state.status && state.status !== "all");
+      const emptyMessage = hasFilters
+        ? "No users match your search."
+        : "No rider accounts yet. Users appear here after signup or JosCity login.";
       tbody.innerHTML =
-        '<tr class="users-table__empty"><td colspan="7">No users match your search.</td></tr>';
+        '<tr class="users-table__empty"><td colspan="7">' + escapeHtml(emptyMessage) + "</td></tr>";
       return;
     }
 
@@ -158,7 +162,9 @@
   function closeModal(modal) {
     if (!modal) return;
     modal.hidden = true;
-    document.body.style.overflow = "";
+    if (!window.AdminConfirm || !window.AdminConfirm.isOpen()) {
+      document.body.style.overflow = "";
+    }
   }
 
   function closeAllModals() {
@@ -210,7 +216,7 @@
       });
   }
 
-  function updateUserStatus(userId, status, message) {
+  function updateUserStatus(userId, status, message, user) {
     return apiRequest("/admin/api/users/" + encodeURIComponent(userId) + "/status", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -226,7 +232,11 @@
         } else {
           return loadUsers();
         }
-        showToast(message);
+        let toastMessage = message;
+        if (status === "verified" && user && user.email) {
+          toastMessage += " — approval email sent to " + user.email;
+        }
+        showToast(toastMessage);
       })
       .catch(function (err) {
         showToast(err.message, true);
@@ -234,19 +244,24 @@
   }
 
   function deleteUser(userId, userName) {
-    if (!window.confirm("Delete " + userName + "? This cannot be undone.")) {
-      return;
-    }
-    return apiRequest("/admin/api/users/" + encodeURIComponent(userId), {
-      method: "DELETE",
-    })
-      .then(function () {
-        showToast(userName + " deleted");
-        return loadUsers();
+    window.AdminConfirm.show({
+      title: "Delete user",
+      message: "Delete " + userName + "? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    }).then(function (confirmed) {
+      if (!confirmed) return;
+      return apiRequest("/admin/api/users/" + encodeURIComponent(userId), {
+        method: "DELETE",
       })
-      .catch(function (err) {
-        showToast(err.message, true);
-      });
+        .then(function () {
+          showToast(userName + " deleted");
+          return loadUsers();
+        })
+        .catch(function (err) {
+          showToast(err.message, true);
+        });
+    });
   }
 
   function buildActionsMenu(user) {
@@ -309,11 +324,28 @@
   function handleMenuAction(action, user) {
     closeActionsMenu();
     if (action === "approve") {
-      updateUserStatus(user.id, "verified", user.full_name + " approved");
+      window.AdminConfirm.show({
+        title: "Approve user",
+        message: "Approve " + user.full_name + "? They will be able to request rides.",
+        confirmLabel: "Approve",
+      }).then(function (confirmed) {
+        if (confirmed) {
+          updateUserStatus(user.id, "verified", user.full_name + " approved", user);
+        }
+      });
       return;
     }
     if (action === "suspend") {
-      updateUserStatus(user.id, "suspended", user.full_name + " suspended");
+      window.AdminConfirm.show({
+        title: "Suspend user",
+        message: "Suspend " + user.full_name + "? They will not be able to request rides until reinstated.",
+        confirmLabel: "Suspend",
+        variant: "danger",
+      }).then(function (confirmed) {
+        if (confirmed) {
+          updateUserStatus(user.id, "suspended", user.full_name + " suspended");
+        }
+      });
       return;
     }
     if (action === "delete") {

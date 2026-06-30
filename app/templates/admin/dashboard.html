@@ -76,7 +76,7 @@
     <div class="dash-card__header">
       <div>
         <h2 class="dash-card__title">Revenue growth</h2>
-        <p class="dash-card__subtitle">Monthly net revenue (&#8358; millions)</p>
+        <p class="dash-card__subtitle" id="revenue-chart-subtitle">Net revenue from completed trips</p>
       </div>
       <div class="period-toggle" role="group" aria-label="Revenue time period">
         <button type="button" class="period-toggle__btn" data-period="1M">1M</button>
@@ -87,6 +87,7 @@
     </div>
     <div class="chart-wrap">
       <canvas id="revenue-chart" aria-label="Revenue growth chart"></canvas>
+      <p class="chart-empty" id="revenue-chart-empty" hidden>No revenue in this period yet.</p>
     </div>
   </article>
 
@@ -105,7 +106,7 @@
   <div class="dash-card__header dash-card__header--map">
     <div>
       <h2 class="dash-card__title">Live trip monitor</h2>
-      <p class="dash-card__subtitle" id="live-trip-count">{{ live_trips.count | default(1284) | string }} trips in progress nationwide</p>
+      <p class="dash-card__subtitle" id="live-trip-count">{{ live_trips.count | default(0) | string }} trips in progress nationwide</p>
     </div>
     <div class="trip-legend">
       <span class="trip-legend__item"><span class="trip-legend__dot trip-legend__dot--active"></span> Active</span>
@@ -115,7 +116,7 @@
   </div>
   <div class="map-wrap">
     <div id="live-trip-map" class="live-trip-map"></div>
-    <span class="map-badge" id="map-city-badge">{{ live_trips.label | default('Nigeria · Live ops') }}</span>
+    <span class="map-badge" id="map-city-badge">{{ live_trips.label | default('No active trips') }}</span>
   </div>
 </section>
 {% endblock %}

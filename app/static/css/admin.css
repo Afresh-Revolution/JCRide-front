@@ -318,20 +318,23 @@ a {
   font-size: 0.9375rem;
   font-weight: 600;
   font-family: var(--admin-font);
-  color: var(--admin-white);
-  background: var(--admin-green-dark);
+  color: #ffffff;
+  background: #16a34a;
   border: none;
   border-radius: var(--admin-radius-sm);
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .admin-btn-submit:hover {
-  background: var(--admin-green-deep);
+  background: #22c55e;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
 }
 
 .admin-btn-submit:active {
   transform: scale(0.99);
+  background: #15803d;
 }
 
 .admin-security-cards {

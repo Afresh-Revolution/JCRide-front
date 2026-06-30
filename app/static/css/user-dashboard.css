@@ -3,6 +3,7 @@
 :root {
   --user-bg: #f4f6f8;
   --user-sidebar-w: 248px;
+  --user-layout-gap: 1.5rem;
   --user-green: #0d6b38;
   --user-green-dark: #0a4f2a;
   --user-green-active: #0a4f2a;
@@ -39,20 +40,28 @@ body.user-body.user-nav-open {
 
 .user-flash-container {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  top: auto;
+  left: auto;
   z-index: 2000;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-width: 360px;
+  max-width: min(360px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.user-flash-container .user-flash {
+  pointer-events: auto;
 }
 
 .user-flash {
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
   font-size: 0.875rem;
-  box-shadow: var(--user-shadow-hover);
+  line-height: 1.45;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
 
 .user-flash--success {
@@ -243,7 +252,7 @@ body.user-body.user-nav-open {
 /* Main */
 .user-main {
   flex: 1;
-  margin-left: var(--user-sidebar-w);
+  margin-left: calc(var(--user-sidebar-w) + var(--user-layout-gap));
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -2239,10 +2248,16 @@ body.user-body.user-nav-open {
 @media (max-width: 900px) {
   .user-sidebar {
     transform: translateX(-100%);
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .user-sidebar.is-open {
     transform: translateX(0);
+    z-index: 110;
   }
 
   .user-sidebar-backdrop {
@@ -2296,5 +2311,12 @@ body.user-body.user-nav-open {
 
   .user-topbar__search {
     display: none;
+  }
+
+  .user-flash-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: none;
   }
 }
