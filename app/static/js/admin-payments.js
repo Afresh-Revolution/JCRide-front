@@ -99,27 +99,38 @@
   }
 
   function renderStats(stats) {
-    const successful = stats.successful_24h || {};
-    const failed = stats.failed_24h || {};
-    const funding = stats.wallet_funding_24h || {};
-    const refunds = stats.refunds_24h || {};
+    const successful24h = stats.successful_24h || {};
+    const failed24h = stats.failed_24h || {};
+    const funding24h = stats.wallet_funding_24h || {};
+    const refunds24h = stats.refunds_24h || {};
+    const successfulAll = stats.successful_all || successful24h;
+    const failedAll = stats.failed_all || failed24h;
+    const fundingAll = stats.wallet_funding_all || funding24h;
+    const refundsAll = stats.refunds_all || refunds24h;
 
-    if (kpiSuccessfulAmount) kpiSuccessfulAmount.textContent = formatNaira(successful.amount_ngn);
+    if (kpiSuccessfulAmount) kpiSuccessfulAmount.textContent = formatNaira(successfulAll.amount_ngn);
     if (kpiSuccessfulTrend) {
-      kpiSuccessfulTrend.textContent = "▲ " + formatCount(successful.transaction_count) + " txns";
+      kpiSuccessfulTrend.textContent =
+        "▲ " + formatCount(successfulAll.transaction_count) + " total · " +
+        formatCount(successful24h.transaction_count) + " (24h)";
     }
-    if (kpiFailedAmount) kpiFailedAmount.textContent = formatNaira(failed.amount_ngn);
+    if (kpiFailedAmount) kpiFailedAmount.textContent = formatNaira(failedAll.amount_ngn);
     if (kpiFailedTrend) {
-      kpiFailedTrend.textContent = "▲ " + formatCount(failed.transaction_count) + " txns";
+      kpiFailedTrend.textContent =
+        "▲ " + formatCount(failedAll.transaction_count) + " total · " +
+        formatCount(failed24h.transaction_count) + " (24h)";
     }
-    if (kpiFundingAmount) kpiFundingAmount.textContent = formatNaira(funding.amount_ngn);
+    if (kpiFundingAmount) kpiFundingAmount.textContent = formatNaira(fundingAll.amount_ngn);
     if (kpiFundingTrend) {
-      const provider = funding.provider_label || "paystack";
-      kpiFundingTrend.textContent = "▲ " + provider;
+      const provider = fundingAll.provider_label || funding24h.provider_label || "Monnify";
+      kpiFundingTrend.textContent =
+        "▲ " + formatCount(fundingAll.transaction_count) + " fundings · " + provider;
     }
-    if (kpiRefundsAmount) kpiRefundsAmount.textContent = formatNaira(refunds.amount_ngn);
+    if (kpiRefundsAmount) kpiRefundsAmount.textContent = formatNaira(refundsAll.amount_ngn);
     if (kpiRefundsTrend) {
-      kpiRefundsTrend.textContent = "▲ " + formatCount(refunds.transaction_count) + " txns";
+      kpiRefundsTrend.textContent =
+        "▲ " + formatCount(refundsAll.transaction_count) + " total · " +
+        formatCount(refunds24h.transaction_count) + " (24h)";
     }
   }
 
@@ -178,7 +189,7 @@
     params.set("limit", String(state.limit));
     if (state.search) params.set("search", state.search);
     if (state.status) params.set("status", state.status);
-    if (state.category) params.set("type", state.category);
+    if (state.category) params.set("category", state.category);
     return "/admin/api/payments/transactions?" + params.toString();
   }
 

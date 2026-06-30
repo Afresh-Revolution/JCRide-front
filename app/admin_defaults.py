@@ -158,3 +158,43 @@ def ensure_nationwide_trips_map(data):
     if not data.get("label"):
         data["label"] = "Nigeria · Live ops"
     return data
+
+
+def build_empty_admin_stats():
+    """Dashboard KPI cards when /admin/dashboard/stats is unavailable."""
+    return {
+        "total_users": {"value": "0", "trend": "0 this week", "trend_type": "up"},
+        "active_drivers": {"value": "0", "trend": "0 online now", "trend_type": "up"},
+        "active_trips": {"value": "0", "trend": "Live", "trend_type": "live"},
+        "revenue_mtd": {"value": "₦0", "trend": "0.0%", "trend_type": "up-double"},
+        "wallet_funds": {"value": "₦0", "trend": None, "trend_type": None},
+        "completion_rate": {"value": "0.0%", "trend": "0.0%", "trend_type": "up-double"},
+    }
+
+
+def build_fallback_revenue(period="1Y"):
+    """Chart data when revenue analytics endpoint is unavailable."""
+    if period == "1M":
+        labels = ["W1", "W2", "W3", "W4"]
+        values = [2.1, 2.4, 2.8, 3.0]
+    elif period == "3M":
+        labels = ["Jan", "Feb", "Mar"]
+        values = [8.2, 9.1, 10.4]
+    elif period == "All":
+        labels = ["2022", "2023", "2024", "2025", "2026"]
+        values = [42, 58, 74, 91, 108]
+    else:
+        labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        values = [6.2, 6.8, 7.1, 7.5, 8.0, 8.4, 8.9, 9.2, 9.6, 10.1, 10.5, 11.0]
+    return {"labels": labels, "values": values, "period": period}
+
+
+def build_fallback_ride_tiers():
+    """Donut chart tiers when ride-tiers endpoint is unavailable."""
+    return {
+        "tiers": [
+            {"label": "Economy", "value": 62, "color": "#0d6b38"},
+            {"label": "Comfort", "value": 28, "color": "#22c55e"},
+            {"label": "Premium", "value": 10, "color": "#065f46"},
+        ]
+    }

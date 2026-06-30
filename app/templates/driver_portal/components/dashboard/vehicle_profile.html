@@ -1,0 +1,56 @@
+<section class="driver-vehicle-card{% if not driver or not driver.get('service_tier') %} driver-vehicle-card--incomplete{% endif %}">
+  <div class="driver-vehicle-card__header">
+    <div>
+      <h2 class="driver-vehicle-card__title">Vehicle &amp; service tier</h2>
+      <p class="driver-vehicle-card__sub">
+        Set your service tier and vehicle details. Required before you can go online.
+      </p>
+    </div>
+    {% if driver and driver.get('service_tier') %}
+    <span class="driver-vehicle-card__badge">Configured</span>
+    {% else %}
+    <span class="driver-vehicle-card__badge driver-vehicle-card__badge--warn">Incomplete</span>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{{ url_for('driver_portal.update_vehicle_profile') }}" class="driver-vehicle-card__form">
+    <div class="driver-vehicle-card__grid">
+      <label class="driver-vehicle-card__field">
+        <span>Service tier</span>
+        <select name="service_tier" class="driver-vehicle-card__select" required>
+          <option value="" disabled{% if not driver or not driver.get('service_tier') %} selected{% endif %}>Choose tier</option>
+          {% for tier in service_tiers %}
+          <option value="{{ tier }}"{% if driver and driver.get('service_tier') == tier %} selected{% endif %}>{{ tier|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="driver-vehicle-card__field">
+        <span>Vehicle type</span>
+        <select name="vehicle_category" class="driver-vehicle-card__select">
+          <option value="">Choose type</option>
+          {% for category in vehicle_categories %}
+          <option value="{{ category }}"{% if driver and driver.get('vehicle_category') == category %} selected{% endif %}>{{ category|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="driver-vehicle-card__field">
+        <span>Vehicle make / model</span>
+        <input type="text" name="vehicle_make" placeholder="Toyota Corolla" value="{{ (driver.get('vehicle_make') or '') if driver else '' }}">
+      </label>
+
+      <label class="driver-vehicle-card__field">
+        <span>Vehicle colour</span>
+        <input type="text" name="vehicle_color" placeholder="Blue" value="{{ (driver.get('vehicle_color') or '') if driver else '' }}">
+      </label>
+
+      <label class="driver-vehicle-card__field driver-vehicle-card__field--full">
+        <span>Plate number</span>
+        <input type="text" name="plate_number" placeholder="ABC-123-XY" value="{{ (driver.get('plate_number') or '') if driver else '' }}">
+      </label>
+    </div>
+
+    <button type="submit" class="driver-vehicle-card__submit">Save vehicle profile</button>
+  </form>
+</section>

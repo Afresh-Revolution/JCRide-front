@@ -19,6 +19,15 @@ def get_api_url() -> str:
     return str(url).strip().rstrip("/")
 
 
+def get_api_timeout() -> int:
+    """HTTP timeout (seconds) for backend requests."""
+    raw = _FILE_ENV.get("API_TIMEOUT") or os.getenv("API_TIMEOUT") or "90"
+    try:
+        return max(10, int(raw))
+    except (TypeError, ValueError):
+        return 90
+
+
 def reload_env() -> None:
     """Reload .env from disk (useful after editing the file)."""
     global _FILE_ENV, API_URL, SECRET_KEY, HOST, PORT

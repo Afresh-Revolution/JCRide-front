@@ -4,24 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}JCRide Driver Portal{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('driver_portal.static', filename='css/auth.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 <body class="auth-page">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="flash-stack">
-        {% for category, message in messages %}
-          <div class="flash flash--{{ category }}">{{ message }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
+  {% from "includes/flashes.html" import dismissible_flashes %}
+  {{ dismissible_flashes('flash-stack', 'flash', 'flash--') }}
 
   <div class="auth-layout">
     {% block content %}{% endblock %}
   </div>
   <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 </body>
 </html>

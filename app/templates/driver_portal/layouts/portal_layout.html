@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "portal_shell.html" %}
 {% block title %}{% block page_title %}Driver Portal{% endblock %} — JCRide NAIJA{% endblock %}
 
 {% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
@@ -19,16 +19,14 @@
     {% set profile_name = profile.name %}
     {% set profile_initials = profile.initials %}
     {% set profile_meta = '★ ' ~ profile.rating ~ ' · ' ~ profile.plate %}
+    {% set show_topbar_quick_actions = true %}
+    {% set quick_notifications_url = '#' %}
+    {% set quick_settings_url = '#' %}
     {% include "includes/portal_navbar.html" %}
 
     <div class="admin-content driver-content">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="driver-flash driver-flash--{{ category }}">{{ message }}</div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('', 'driver-flash', 'driver-flash--') }}
 
       {% block portal_content %}{% endblock %}
     </div>
@@ -39,4 +37,5 @@
 {% block scripts %}
 {% block page_scripts %}{% endblock %}
 <script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
+<script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 {% endblock %}
