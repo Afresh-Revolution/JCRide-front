@@ -8,6 +8,8 @@
   --auth-muted: #64748b;
   --auth-border: #e2e8f0;
   --auth-input-bg: #f8fafc;
+  --auth-card-bg: #ffffff;
+  --auth-success-icon-bg: #ecfdf5;
   --auth-font: "Inter", system-ui, -apple-system, sans-serif;
 }
 
