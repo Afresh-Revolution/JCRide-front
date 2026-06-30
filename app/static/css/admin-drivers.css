@@ -296,6 +296,12 @@
   border: 1px solid rgba(239, 68, 68, 0.28);
 }
 
+.drivers-status--rejected {
+  background: rgba(239, 68, 68, 0.14);
+  color: #991b1b;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+}
+
 .drivers-actions {
   display: flex;
   align-items: center;
@@ -342,6 +348,16 @@
 
 .drivers-action-btn--suspend:hover {
   background: rgba(239, 68, 68, 0.08);
+}
+
+.drivers-action-btn--delete {
+  color: #991b1b;
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+.drivers-action-btn--delete:hover {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
 }
 
 .drivers-action-btn:disabled {
@@ -488,6 +504,24 @@
 .drivers-btn--ghost {
   background: transparent;
   border: 1px solid var(--dash-border);
+}
+
+.drivers-btn--primary {
+  background: var(--dash-green);
+  color: #fff;
+}
+
+.drivers-btn--primary:hover {
+  background: var(--dash-green-dark);
+}
+
+.drivers-btn--danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.drivers-btn--danger:hover {
+  background: #b91c1c;
 }
 
 .drivers-toast {

@@ -3,6 +3,9 @@ import re
 
 from app.services.api_client import (
     ApiError,
+    get_driver_profile,
+    get_profile,
+    login,
     login_with_joscity_fallback,
     register,
     register_driver,
@@ -37,16 +40,9 @@ DRIVER_SIGNUP_KEY = "driver_signup"
 RIDER_SIGNUP_KEY = "rider_signup"
 DRIVER_SIGNUP_STEPS = {
     1: "Personal info",
-    2: "Vehicle info",
-    3: "Documents",
-    4: "OTP verification",
-    5: "Submitted",
-}
-
-VEHICLE_TIER_MAP = {
-    "economy": ("car", "economy"),
-    "comfort": ("car", "comfort"),
-    "premium": ("car", "premium"),
+    2: "Documents",
+    3: "OTP verification",
+    4: "Submitted",
 }
 
 ALLOWED_DOC_TYPES = {
@@ -167,18 +163,47 @@ def _handle_login(portal: str):
             flash("Enter your password.", "error")
         else:
             try:
-                result = login_with_joscity_fallback(identifier, password)
+                if portal == "driver":
+                    result = login(identifier, password)
+                else:
+                    result = login_with_joscity_fallback(identifier, password)
                 user = result.get("user") or {}
                 role = user.get("role", "")
                 expected_role = PORTAL_ROLES[portal]
 
-                if portal == "driver" and user.get("joscity_user_id"):
-                    flash(
-                        "JosCity accounts sign in through the rider portal. "
-                        "To drive with JCRide, apply with a driver account first.",
-                        "error",
-                    )
-                elif role != expected_role:
+                if portal == "driver" and role == "customer":
+                    token = result.get("access_token", "")
+                    try:
+                        get_driver_profile(token)
+                    except ApiError as exc:
+                        if exc.status_code == 404:
+                            if user.get("joscity_user_id"):
+                                flash(
+                                    "This JosCity account has not completed driver signup. "
+                                    "Apply as a driver first — rider JosCity sign-in is not available here.",
+                                    "error",
+                                )
+                            else:
+                                flash(
+                                    "Your driver application is not complete yet. "
+                                    "Continue signup to upload documents and verify your account.",
+                                    "error",
+                                )
+                            _resume_driver_signup_from_login(result, identifier)
+                            return redirect(
+                                url_for("main.driver_register_page", action="resume")
+                            )
+                        raise
+                    profile = get_profile(token)
+                    user = profile.get("user") or {}
+                    role = user.get("role", "")
+                    result = {
+                        "access_token": token,
+                        "user": user,
+                        "wallet": profile.get("wallet") or result.get("wallet") or {},
+                    }
+
+                if role != expected_role:
                     account_name = "driver" if role == "driver" else "rider"
                     flash(
                         f"This account is registered as a {account_name}. "
@@ -186,6 +211,12 @@ def _handle_login(portal: str):
                         "error",
                     )
                 else:
+                    if portal == "driver":
+                        _establish_driver_session(result, identifier, remember=remember)
+                        _clear_driver_signup()
+                        flash("Signed in successfully.", "success")
+                        return redirect(url_for("driver_portal.dashboard"))
+
                     session["token"] = result.get("access_token", "")
                     session["user_id"] = user.get("id")
                     session["email"] = user.get("email") or (identifier if "@" in identifier else email)
@@ -200,13 +231,10 @@ def _handle_login(portal: str):
                     session.permanent = remember
                     flash(
                         "Signed in with JosCity."
-                        if user.get("joscity_user_id")
+                        if portal == "rider" and user.get("joscity_user_id")
                         else "Signed in successfully.",
                         "success",
                     )
-                    if portal == "driver":
-                        _set_driver_portal_session(result, identifier)
-                        return redirect(url_for("driver_portal.dashboard"))
                     return redirect(url_for("main.user_dashboard"))
             except ApiError as exc:
                 flash(exc.message, "error")
@@ -244,6 +272,8 @@ def rider_login_page():
 
 @main_bp.route("/auth/driver-login", methods=["GET", "POST"])
 def driver_login_page():
+    if request.method == "GET":
+        _clear_driver_signup()
     return _handle_login("driver")
 
 
@@ -251,8 +281,26 @@ def _get_driver_signup() -> dict:
     return dict(session.get(DRIVER_SIGNUP_KEY) or {})
 
 
+def _driver_signup_resume_step(signup: dict) -> int:
+    if signup.get("documents"):
+        return 3 if not signup.get("email_verified") else 4
+    if signup.get("registered"):
+        return 2 if signup.get("email_verified") else 3
+    return 1
+
+
 def _save_driver_signup(data: dict) -> None:
-    session[DRIVER_SIGNUP_KEY] = data
+    """Persist only wizard state required to finish signup — no personal details."""
+    allowed = {
+        "step",
+        "access_token",
+        "user_id",
+        "email",
+        "email_verified",
+        "registered",
+        "documents",
+    }
+    session[DRIVER_SIGNUP_KEY] = {key: data[key] for key in allowed if key in data}
     session.modified = True
 
 
@@ -266,11 +314,80 @@ def _driver_signup_step() -> int:
         step = int(step)
     except (TypeError, ValueError):
         step = 1
-    return max(1, min(step, 5))
+    return max(1, min(step, 4))
 
 
 def _driver_login_identifier(signup: dict) -> str:
     return _signup_identifier(signup)
+
+
+def _driver_account_verified(user: dict) -> bool:
+    return bool(user.get("email_verified") or user.get("phone_verified"))
+
+
+def _store_driver_signup_auth(signup: dict, result: dict) -> None:
+    user = result.get("user") or {}
+    signup["access_token"] = result.get("access_token", "")
+    signup["user_id"] = user.get("id")
+    signup["registered"] = True
+    signup["email_verified"] = _driver_account_verified(user)
+    signup.pop("password", None)
+
+
+def _submit_driver_application(signup: dict, token: str) -> dict:
+    documents = signup.get("documents") or {}
+    license_url = documents.get("driver_license_url", "")
+    papers_url = documents.get("vehicle_papers_url", "")
+    nin_url = documents.get("nin_document_url", "")
+    if not all(len(url) >= 8 for url in (license_url, papers_url, nin_url)):
+        raise ApiError("Upload all required documents before submitting.", 400)
+    register_driver(
+        token,
+        {
+            "driver_license_url": license_url,
+            "vehicle_papers_url": papers_url,
+            "nin_document_url": nin_url,
+        },
+    )
+    profile = get_profile(token)
+    user = profile.get("user") or {}
+    if user.get("role") != "driver":
+        raise ApiError(
+            "Driver application could not be completed. Please try again or contact support.",
+            502,
+        )
+    return profile
+
+
+def _resume_driver_signup_from_login(result: dict, identifier: str) -> None:
+    user = result.get("user") or {}
+    signup = {
+        "access_token": result.get("access_token", ""),
+        "user_id": user.get("id"),
+        "email": user.get("email") or (identifier if "@" in identifier else ""),
+        "email_verified": _driver_account_verified(user),
+        "registered": True,
+    }
+    signup["step"] = _driver_signup_resume_step(signup)
+    _save_driver_signup(signup)
+
+
+def _establish_driver_session(result: dict, identifier: str = "", remember: bool = False) -> None:
+    user = result.get("user") or {}
+    role = user.get("role", "")
+    session["token"] = result.get("access_token", "")
+    session["user_id"] = user.get("id")
+    session["email"] = user.get("email") or (identifier if "@" in identifier else "")
+    session["phone"] = user.get("phone") or (identifier if "@" not in identifier else "")
+    session["name"] = user.get("full_name")
+    session["role"] = role
+    session["portal"] = "driver"
+    session.pop("joscity_user_id", None)
+    wallet = result.get("wallet") or {}
+    if wallet.get("balance_ngn") is not None:
+        session["wallet_balance_ngn"] = wallet.get("balance_ngn")
+    session.permanent = remember
+    _set_driver_portal_session(result, identifier)
 
 
 def _validate_upload(file_storage) -> str | None:
@@ -296,24 +413,42 @@ def driver_register_page():
         if action == "restart":
             _clear_driver_signup()
             return redirect(url_for("main.driver_register_page"))
+        if step == 1 and action not in ("back", "resume"):
+            _clear_driver_signup()
+            signup = {}
+            step = 1
         if action == "back" and step > 1:
             signup["step"] = step - 1
             _save_driver_signup(signup)
             return redirect(url_for("main.driver_register_page"))
-        if action == "dashboard" and step == 5:
+        if action == "dashboard" and step == 4:
             token = signup.get("access_token")
             if token:
-                session["token"] = token
-                session["user_id"] = signup.get("user_id")
-                session["email"] = signup.get("email")
-                session["phone"] = signup.get("phone")
-                session["name"] = signup.get("full_name")
-                session["role"] = "driver"
-                session["portal"] = "driver"
-                _clear_driver_signup()
-                return redirect(url_for("main.driver_page"))
+                try:
+                    profile = get_profile(token)
+                    user = profile.get("user") or {}
+                    if user.get("role") != "driver":
+                        flash(
+                            "Your driver application is not complete yet. Continue signup.",
+                            "error",
+                        )
+                        signup["step"] = _driver_signup_resume_step(signup)
+                        _save_driver_signup(signup)
+                        return redirect(url_for("main.driver_register_page", action="resume"))
+                    _establish_driver_session(
+                        {
+                            "access_token": token,
+                            "user": user,
+                            "wallet": profile.get("wallet") or {},
+                        },
+                        signup.get("email", ""),
+                    )
+                    _clear_driver_signup()
+                    return redirect(url_for("driver_portal.dashboard"))
+                except ApiError as exc:
+                    flash(exc.message, "error")
             flash("Complete verification before continuing.", "error")
-            signup["step"] = 4
+            signup["step"] = 3
             _save_driver_signup(signup)
             return redirect(url_for("main.driver_register_page"))
 
@@ -321,7 +456,7 @@ def driver_register_page():
         posted_step = request.form.get("step", type=int) or step
         action = request.form.get("action", "continue")
 
-        if action == "resend" and posted_step == 4:
+        if action == "resend" and posted_step == 3:
             identifier = _driver_login_identifier(signup)
             if not identifier:
                 flash("Start your application again.", "error")
@@ -331,7 +466,7 @@ def driver_register_page():
                 flash("A new verification code was sent to your email.", "success")
             except ApiError as exc:
                 flash(exc.message, "error")
-            signup["step"] = 4
+            signup["step"] = 3
             _save_driver_signup(signup)
             return redirect(url_for("main.driver_register_page"))
 
@@ -352,110 +487,144 @@ def driver_register_page():
             elif password != confirm_password:
                 flash("Passwords do not match.", "error")
             else:
-                signup.update(
-                    {
+                signup = _get_driver_signup()
+                if signup.get("registered") and signup.get("access_token"):
+                    signup["email"] = email
+                    signup["step"] = 2
+                    _save_driver_signup(signup)
+                    flash("Continue your driver application.", "success")
+                    return redirect(url_for("main.driver_register_page"))
+
+                try:
+                    result = register(
+                        full_name,
+                        phone,
+                        email,
+                        password,
+                        confirm_password=confirm_password,
+                    )
+                    signup = {
                         "step": 2,
-                        "full_name": full_name,
-                        "phone": phone,
                         "email": email,
-                        "password": password,
                     }
-                )
+                    _store_driver_signup_auth(signup, result)
+                    delivery = result.get("otp_delivery")
+                    if delivery == "not_configured":
+                        flash(
+                            "Account created, but email delivery is not configured. "
+                            "Contact support for your verification code.",
+                            "error",
+                        )
+                    elif delivery == "already_verified":
+                        flash("Account verified. Continue to upload your documents.", "success")
+                    elif delivery != "sent":
+                        flash("Account created. Continue to upload your documents.", "success")
+                except ApiError as exc:
+                    if exc.status_code == 409 and "already registered as a driver" in exc.message.lower():
+                        flash(exc.message, "error")
+                    elif exc.status_code == 409:
+                        try:
+                            result = login(email, password)
+                            user = result.get("user") or {}
+                            token = result.get("access_token", "")
+                            if user.get("role") == "driver":
+                                flash(
+                                    "This account is already registered as a driver. Sign in instead.",
+                                    "error",
+                                )
+                                return redirect(url_for("main.driver_login_page"))
+                            try:
+                                get_driver_profile(token)
+                            except ApiError as driver_exc:
+                                if driver_exc.status_code == 404:
+                                    _resume_driver_signup_from_login(result, email)
+                                    flash("Continue your driver application.", "success")
+                                    return redirect(
+                                        url_for("main.driver_register_page", action="resume")
+                                    )
+                                raise
+                            flash(
+                                "This account is already registered as a driver. Sign in instead.",
+                                "error",
+                            )
+                            return redirect(url_for("main.driver_login_page"))
+                        except ApiError:
+                            flash(
+                                "That email or phone is already registered. "
+                                "Sign in with your existing password or use a different email.",
+                                "error",
+                            )
+                    else:
+                        flash(exc.message, "error")
+                    return redirect(url_for("main.driver_register_page"))
+
                 _save_driver_signup(signup)
                 return redirect(url_for("main.driver_register_page"))
 
         elif posted_step == 2:
-            vehicle_tier = request.form.get("vehicle_tier", "economy")
-            vehicle_model = request.form.get("vehicle_model", "").strip()
-            vehicle_color = request.form.get("vehicle_color", "").strip()
-            plate_number = request.form.get("plate_number", "").strip().upper()
-            if vehicle_tier not in VEHICLE_TIER_MAP:
-                flash("Select a vehicle type.", "error")
-            elif len(vehicle_model) < 1:
-                flash("Enter your vehicle model.", "error")
-            elif len(vehicle_color) < 1:
-                flash("Enter your vehicle color.", "error")
-            elif len(plate_number) < 2:
-                flash("Enter your plate number.", "error")
-            else:
-                category, tier = VEHICLE_TIER_MAP[vehicle_tier]
-                signup.update(
-                    {
-                        "step": 3,
-                        "vehicle_tier": vehicle_tier,
-                        "vehicle_category": category,
-                        "service_tier": tier,
-                        "vehicle_model": vehicle_model,
-                        "vehicle_color": vehicle_color,
-                        "plate_number": plate_number,
-                    }
-                )
-                _save_driver_signup(signup)
-                return redirect(url_for("main.driver_register_page"))
-
-        elif posted_step == 3:
             license_file = request.files.get("driver_license")
             papers_file = request.files.get("vehicle_papers")
             nin_file = request.files.get("nin_document")
+
+            doc_error = None
             for label, doc in (
                 ("Driver license", license_file),
                 ("Vehicle papers", papers_file),
                 ("National ID / NIN", nin_file),
             ):
-                error = _validate_upload(doc)
-                if error:
-                    flash(f"{label}: {error}", "error")
+                doc_error = _validate_upload(doc)
+                if doc_error:
+                    flash(f"{label}: {doc_error}", "error")
                     break
-            else:
-                try:
-                    if not signup.get("access_token"):
-                        result = register(
-                            signup["full_name"],
-                            signup["phone"],
-                            signup["email"],
-                            signup["password"],
-                        )
-                        signup["access_token"] = result.get("access_token", "")
-                        user = result.get("user") or {}
-                        signup["user_id"] = user.get("id")
-                        signup.pop("password", None)
-                        delivery = result.get("otp_delivery")
-                        if delivery == "not_configured":
-                            flash(
-                                "Account created, but email delivery is not configured. "
-                                "Contact support for your verification code.",
-                                "error",
-                            )
-                        elif delivery != "sent":
-                            flash("Account created. Check your email for a verification code.", "success")
 
+            if doc_error is None:
+                try:
                     token = signup.get("access_token")
                     if not token:
-                        flash("Could not start your application. Try again.", "error")
-                    else:
-                        uploads = {
-                            "driver_license_url": upload_driver_document(
-                                token, "license", license_file
-                            ),
-                            "vehicle_papers_url": upload_driver_document(
-                                token, "vehicle_papers", papers_file
-                            ),
-                            "nin_document_url": upload_driver_document(
-                                token, "nin", nin_file
-                            ),
-                        }
-                        signup["documents"] = {
-                            key: value.get("file_url", "")
-                            for key, value in uploads.items()
-                        }
-                        signup["step"] = 4
+                        flash("Complete step 1 before uploading documents.", "error")
+                        signup["step"] = 1
                         _save_driver_signup(signup)
-                        flash("Documents uploaded. Enter the verification code sent to your email.", "success")
                         return redirect(url_for("main.driver_register_page"))
+
+                    uploads = {
+                        "driver_license_url": upload_driver_document(
+                            token, "license", license_file
+                        ),
+                        "vehicle_papers_url": upload_driver_document(
+                            token, "vehicle_papers", papers_file
+                        ),
+                        "nin_document_url": upload_driver_document(
+                            token, "nin", nin_file
+                        ),
+                    }
+                    signup["documents"] = {
+                        key: value.get("file_url", "")
+                        for key, value in uploads.items()
+                    }
+                    token = signup.get("access_token")
+                    if signup.get("email_verified") and token:
+                        try:
+                            _submit_driver_application(signup, token)
+                            signup["step"] = 4
+                            _save_driver_signup(signup)
+                            flash("Application submitted successfully.", "success")
+                            return redirect(url_for("main.driver_register_page"))
+                        except ApiError as exc:
+                            flash(exc.message, "error")
+                            signup["step"] = 2
+                            _save_driver_signup(signup)
+                            return redirect(url_for("main.driver_register_page"))
+                    signup["step"] = 3
+                    _save_driver_signup(signup)
+                    flash(
+                        "Documents uploaded. Enter the verification code sent to your email.",
+                        "success",
+                    )
+                    return redirect(url_for("main.driver_register_page"))
                 except ApiError as exc:
                     flash(exc.message, "error")
 
-        elif posted_step == 4:
+        elif posted_step == 3:
             code = request.form.get("otp_code", "").replace(" ", "").strip()
             identifier = _driver_login_identifier(signup)
             if len(code) < 6:
@@ -471,26 +640,17 @@ def driver_register_page():
                     user = verify_result.get("user") or {}
                     signup["access_token"] = token
                     signup["user_id"] = user.get("id") or signup.get("user_id")
-                    documents = signup.get("documents") or {}
-                    register_driver(
-                        token,
-                        {
-                            "vehicle_category": signup.get("vehicle_category", "car"),
-                            "service_tier": signup.get("service_tier", "economy"),
-                            "vehicle_model": signup.get("vehicle_model", ""),
-                            "vehicle_color": signup.get("vehicle_color", ""),
-                            "plate_number": signup.get("plate_number", ""),
-                            "driver_license_url": documents.get("driver_license_url", ""),
-                            "vehicle_papers_url": documents.get("vehicle_papers_url", ""),
-                            "nin_document_url": documents.get("nin_document_url", ""),
-                        },
-                    )
-                    signup["step"] = 5
+                    signup["email_verified"] = _driver_account_verified(user)
+                    _submit_driver_application(signup, token)
+                    signup["step"] = 4
                     _save_driver_signup(signup)
                     flash("Application submitted successfully.", "success")
                     return redirect(url_for("main.driver_register_page"))
                 except ApiError as exc:
                     flash(exc.message, "error")
+                    signup["step"] = 3
+                    _save_driver_signup(signup)
+                    return redirect(url_for("main.driver_register_page"))
 
         step = _driver_signup_step()
         signup = _get_driver_signup()
@@ -498,7 +658,7 @@ def driver_register_page():
     return render_template(
         "auth/driver_register.html",
         step=step,
-        total_steps=5,
+        total_steps=4,
         step_label=DRIVER_SIGNUP_STEPS.get(step, ""),
         signup=signup,
     )
@@ -830,22 +990,8 @@ def user_support():
 
 @main_bp.route("/driver", methods=["GET", "POST"])
 def driver_page():
-    online = session.get("driver_online", False)
-    if request.method == "POST":
-        token = session.get("token")
-        if not token:
-            flash("Driver onboarding is coming soon.", "error")
-        else:
-            action = request.form.get("action")
-            try:
-                new_status = action == "online"
-                set_availability(token, new_status)
-                session["driver_online"] = new_status
-                flash("You are now online." if new_status else "You are now offline.", "success")
-                online = new_status
-            except ApiError as exc:
-                flash(exc.message, "error")
-    return render_template("driver.html", online=online)
+    """Legacy route — send drivers to the driver portal dashboard."""
+    return redirect(url_for("driver_portal.dashboard"))
 
 
 @main_bp.route("/logout")

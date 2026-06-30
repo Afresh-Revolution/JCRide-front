@@ -62,15 +62,8 @@
     </aside>
 
     <section class="auth-login__panel auth-signup__panel">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="auth-login__flashes">
-            {% for category, message in messages %}
-              <div class="auth-login__flash auth-login__flash--{{ category }}">{{ message }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('auth-login__flashes', 'auth-login__flash', 'auth-login__flash--') }}
 
       {% if step > 1 %}
       <a href="{{ url_for('main.user_register_page', action='back') }}" class="auth-login__back">
@@ -167,5 +160,6 @@
   <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-signup.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 </body>
 </html>

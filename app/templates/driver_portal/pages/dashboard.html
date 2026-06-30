@@ -7,6 +7,9 @@
 
 {% block portal_content %}
   {% include "components/dashboard/status_banner.html" %}
+  {% if not driver or not driver.get('service_tier') %}
+    {% include "components/dashboard/vehicle_profile.html" %}
+  {% endif %}
 
   <section class="metrics-grid">
     {% for metric in metrics %}

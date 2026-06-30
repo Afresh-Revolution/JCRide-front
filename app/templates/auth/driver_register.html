@@ -62,15 +62,8 @@
     </aside>
 
     <section class="auth-login__panel auth-signup__panel">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="auth-login__flashes">
-            {% for category, message in messages %}
-              <div class="auth-login__flash auth-login__flash--{{ category }}">{{ message }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('auth-login__flashes', 'auth-login__flash', 'auth-login__flash--') }}
 
       {% if step > 1 and step < 4 %}
       <a href="{{ url_for('main.driver_register_page', action='back') }}" class="auth-login__back">
@@ -102,15 +95,15 @@
           <input type="hidden" name="step" value="1">
           <label class="auth-login__field">
             <span>Full Name</span>
-            <input type="text" name="full_name" required placeholder="Tunde Bakare" value="{{ signup.get('full_name', '') }}" autocomplete="name">
+            <input type="text" name="full_name" required placeholder="Tunde Bakare" autocomplete="name">
           </label>
           <label class="auth-login__field">
             <span>Phone Number</span>
-            <input type="tel" name="phone" required placeholder="+234 800 000 0000" value="{{ signup.get('phone', '') }}" autocomplete="tel">
+            <input type="tel" name="phone" required placeholder="+234 800 000 0000" autocomplete="tel">
           </label>
           <label class="auth-login__field">
             <span>Email</span>
-            <input type="email" name="email" required placeholder="driver@example.com" value="{{ signup.get('email', '') }}" autocomplete="email">
+            <input type="email" name="email" required placeholder="driver@example.com" autocomplete="email">
           </label>
           <label class="auth-login__field">
             <span>Password</span>
@@ -186,7 +179,7 @@
           </div>
           <h3>Application submitted</h3>
           <p>Awaiting approval. Our team typically reviews within 24 hours. We&rsquo;ll notify you by SMS.</p>
-          <a href="{{ url_for('main.driver_register_page', action='dashboard') }}" class="auth-login__submit auth-signup__success-btn auth-loading-trigger" data-loading-text="Opening…">Continue to dashboard preview</a>
+          <a href="{{ url_for('main.driver_register_page', action='dashboard') }}" class="auth-login__submit auth-signup__success-btn auth-loading-trigger" data-loading-text="Opening…">Continue to dashboard</a>
         </div>
         {% endif %}
 
@@ -207,5 +200,6 @@
   <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-signup.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 </body>
 </html>

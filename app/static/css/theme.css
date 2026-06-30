@@ -25,6 +25,7 @@ html {
     --dash-muted: #d1d5db;
     --dash-border: #374151;
     --dash-card: #111827;
+    --dash-input-bg: #1f2937;
     --dash-green: #4ade80;
     --dash-green-dark: #065f46;
     --dash-green-active: #047857;
@@ -36,8 +37,9 @@ html {
     --auth-muted: #cbd5e1;
     --auth-border: #334155;
     --auth-input-bg: #1e293b;
-    --auth-green: #34d399;
-    --auth-green-dark: #6ee7b7;
+    --auth-green: #059669;
+    --auth-green-dark: #065f46;
+    --auth-green-deep: #064e3b;
 
     /* Portals */
     --portal-ink: #f1f5f9;
@@ -45,16 +47,17 @@ html {
     --portal-muted-light: #94a3b8;
     --portal-border: #334155;
     --portal-surface: #0f172a;
-    --portal-green-800: #6ee7b7;
-    --portal-green-700: #4ade80;
-    --portal-green-600: #34d399;
+    --portal-green-800: #065f46;
+    --portal-green-700: #047857;
+    --portal-green-600: #059669;
     --portal-green-100: rgba(6, 95, 70, 0.35);
     --portal-green-50: rgba(6, 78, 59, 0.25);
 
     /* Admin login (split) */
-    --admin-green: #4ade80;
-    --admin-green-dark: #065f46;
-    --admin-green-deep: #047857;
+    --admin-green: #064e3b;
+    --admin-green-dark: #052e16;
+    --admin-green-deep: #065f46;
+    --admin-lime: #86efac;
     --admin-white: #111827;
     --admin-text: #f3f4f6;
     --admin-muted: #d1d5db;
@@ -120,6 +123,25 @@ html {
     background: #0f172a;
   }
 
+  .auth-login__brand {
+    background: linear-gradient(165deg, #064e3b 0%, #052e16 48%, #022c22 100%);
+    color: #ecfdf5;
+  }
+
+  .auth-login__brand::before {
+    background:
+      radial-gradient(circle at 85% 15%, rgba(52, 211, 153, 0.14), transparent 42%),
+      radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.05), transparent 50%);
+  }
+
+  .auth-login__eyebrow {
+    color: #86efac;
+  }
+
+  .auth-login__stat strong {
+    color: #ecfdf5;
+  }
+
   .auth-login__panel {
     background: #111827;
   }
@@ -136,13 +158,27 @@ html {
     color: #fecaca;
   }
 
+  .flash-dismissible__close:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
   .auth-login__social-btn {
     background: #1e293b;
     color: var(--auth-ink);
   }
 
   .auth-login__submit {
-    color: #fff;
+    color: #ecfdf5;
+    background: #065f46;
+  }
+
+  .auth-login__submit:hover {
+    background: #047857;
+  }
+
+  .auth-login__link--strong,
+  .auth-login__link:hover {
+    color: #6ee7b7;
   }
 
   .landing-hero,
@@ -222,6 +258,15 @@ html {
     background: var(--portal-green-50);
   }
 
+  .portal-card__icon {
+    background: linear-gradient(145deg, #047857, #064e3b);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  .portal-card__eyebrow {
+    color: #6ee7b7;
+  }
+
   .admin-topbar {
     background: rgba(17, 24, 39, 0.92);
     border-bottom-color: var(--dash-border);
@@ -280,8 +325,22 @@ html {
     background: rgba(6, 95, 70, 0.35);
   }
 
+  .admin-sidebar__help {
+    background: var(--dash-green-active, #047857);
+  }
+
+  .admin-sidebar__help-title,
+  .admin-sidebar__help-sub {
+    color: #fff;
+  }
+
   .admin-sidebar__help-btn {
-    color: #064e3b;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  .admin-sidebar__help-btn:hover {
+    background: rgba(255, 255, 255, 0.26);
   }
 
   .admin-topbar__search svg {
@@ -302,20 +361,79 @@ html {
     background: var(--admin-white);
   }
 
+  .admin-panel-left {
+    background: linear-gradient(165deg, #064e3b 0%, #052e16 52%, #022c22 100%);
+    color: #ecfdf5;
+  }
+
+  .admin-panel-left .admin-brand__name,
+  .admin-panel-left .admin-brand__tag,
+  .admin-panel-left .admin-headline {
+    color: #ecfdf5;
+  }
+
+  .admin-panel-left .admin-eyebrow {
+    color: #86efac;
+  }
+
+  .admin-panel-left .admin-description,
+  .admin-panel-left .admin-link-muted {
+    color: rgba(236, 253, 245, 0.82);
+  }
+
+  .admin-panel-left .admin-link-muted:hover {
+    color: #ecfdf5;
+  }
+
+  .admin-panel-left .admin-stat-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .admin-panel-left .admin-stat-card__label {
+    color: rgba(236, 253, 245, 0.72);
+  }
+
+  .admin-panel-left__footer {
+    color: rgba(236, 253, 245, 0.55);
+  }
+
   .admin-field input {
     background: var(--admin-input-bg);
     color: var(--admin-text);
     border-color: var(--admin-border);
   }
 
+  .admin-field input:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
+    background: var(--admin-input-bg);
+  }
+
+  .admin-btn-submit {
+    color: #ecfdf5;
+    background: #065f46;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+  }
+
+  .admin-btn-submit:hover {
+    background: #047857;
+    color: #ecfdf5;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+  }
+
+  .admin-btn-submit:active {
+    background: #064e3b;
+    color: #ecfdf5;
+  }
+
+  .admin-security-card__icon {
+    color: #6ee7b7;
+  }
+
   .admin-security-card {
     background: var(--admin-card-bg);
     border-color: var(--admin-border);
-  }
-
-  .driver-sidebar__logout:hover {
-    background: #1f2937;
-    color: var(--dash-text);
   }
 
   .driver-flash {
@@ -951,11 +1069,6 @@ html {
   }
 
   /* Driver portal */
-  .driver-sidebar__logout:hover {
-    background: #1f2937;
-    color: var(--dash-text);
-  }
-
   .driver-btn--outline {
     background: transparent;
     border-color: var(--dash-border);
@@ -975,15 +1088,75 @@ html {
 
   .metric-card,
   .panel,
-  .ride-request-card {
+  .ride-request-card,
+  .driver-vehicle-card {
     background: var(--dash-card);
     border-color: var(--dash-border);
+    color: var(--dash-text);
   }
 
+  .driver-vehicle-card__title,
+  .driver-vehicle-card__field,
+  .driver-vehicle-card__field span,
+  .panel__title,
+  .metric-card__value {
+    color: var(--dash-text);
+  }
+
+  .driver-vehicle-card__sub,
   .metric-card__title,
   .panel__subtitle,
   .ride-request-card__meta {
     color: var(--dash-muted);
+  }
+
+  .driver-vehicle-card__field input,
+  .driver-vehicle-card__select,
+  body.admin-body .admin-content input,
+  body.admin-body .admin-content select,
+  body.admin-body .admin-content textarea {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  .driver-vehicle-card__field input::placeholder {
+    color: var(--dash-muted);
+  }
+
+  .driver-vehicle-card__field input:focus,
+  .driver-vehicle-card__select:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+  }
+
+  .driver-vehicle-card__select option {
+    background: var(--dash-card);
+    color: var(--dash-text);
+  }
+
+  .driver-vehicle-card__badge {
+    background: rgba(6, 95, 70, 0.25);
+    color: #6ee7b7;
+  }
+
+  .driver-vehicle-card__badge--warn {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fcd34d;
+  }
+
+  .driver-vehicle-card__submit {
+    background: #065f46;
+    color: #ecfdf5;
+  }
+
+  .driver-vehicle-card__submit:hover {
+    background: #047857;
+  }
+
+  .driver-vehicle-card--incomplete {
+    border-color: rgba(245, 158, 11, 0.55);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12);
   }
 
   .metric-card__icon {
@@ -991,19 +1164,54 @@ html {
     color: #6ee7b7;
   }
 
+  .metric-card__icon--rating {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+  }
+
   .metric-card__trend {
     background: rgba(6, 95, 70, 0.25);
     color: #6ee7b7;
   }
 
+  .status-banner {
+    background: #1f2937;
+    box-shadow: var(--dash-shadow);
+  }
+
+  .status-banner--online {
+    background: var(--dash-green-active);
+  }
+
   .text-success,
-  .ride-request-card__rating,
   .ride-request-card__fare {
     color: #6ee7b7;
   }
 
+  .ride-request-card__rating {
+    color: var(--dash-muted);
+  }
+
+  .ride-request-card__rating svg {
+    color: #6ee7b7;
+  }
+
   .ride-request-card__avatar {
-    background: #374151;
+    background: rgba(6, 95, 70, 0.25);
+    color: #6ee7b7;
+  }
+
+  .ride-request-card__badge {
+    background: rgba(6, 95, 70, 0.25);
+    color: #6ee7b7;
+  }
+
+  .ride-request-card__stop {
+    background: #1f2937;
+  }
+
+  .ride-request-card__actions .driver-btn--outline {
+    background: transparent;
     color: var(--dash-muted);
   }
 
@@ -1023,21 +1231,21 @@ html {
 
   /* User / rider portal */
   .user-flash--success {
-    background: rgba(6, 95, 70, 0.25);
-    color: #a7f3d0;
-    border-color: rgba(16, 185, 129, 0.35);
+    background: #064e3b;
+    color: #d1fae5;
+    border-color: rgba(16, 185, 129, 0.45);
   }
 
   .user-flash--error {
-    background: rgba(127, 29, 29, 0.35);
+    background: #7f1d1d;
     color: #fecaca;
-    border-color: rgba(248, 113, 113, 0.35);
+    border-color: rgba(248, 113, 113, 0.45);
   }
 
   .user-flash--info {
-    background: rgba(30, 64, 175, 0.35);
-    color: #bfdbfe;
-    border-color: rgba(96, 165, 250, 0.35);
+    background: #1e3a8a;
+    color: #dbeafe;
+    border-color: rgba(96, 165, 250, 0.45);
   }
 
   .user-nav-item:hover:not(.user-nav-item--soon) {
@@ -1514,11 +1722,18 @@ html {
   }
 
   .text-success,
-  .ride-request-card__rating,
   .ride-request-card__fare,
   .driver-portal .text-success,
   body.admin-body .metric-card__trend,
-  body.admin-body .metric-card__icon {
+  body.admin-body .metric-card__icon:not(.metric-card__icon--rating) {
+    color: #6ee7b7 !important;
+  }
+
+  body.admin-body .ride-request-card__rating {
+    color: var(--dash-muted) !important;
+  }
+
+  body.admin-body .ride-request-card__rating svg {
     color: #6ee7b7 !important;
   }
 
@@ -1526,8 +1741,13 @@ html {
     background: rgba(6, 95, 70, 0.25) !important;
   }
 
-  body.admin-body .metric-card__icon {
+  body.admin-body .metric-card__icon:not(.metric-card__icon--rating) {
     background: rgba(6, 95, 70, 0.25) !important;
+  }
+
+  body.admin-body .metric-card__icon--rating {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
   }
 
   body.admin-body .panel__title,
@@ -1630,5 +1850,46 @@ html {
     --primary-hover: #047857;
     --secondary: #6c5ce7;
     --error: #dc2626;
+  }
+}
+
+.flash-dismissible {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.flash-dismissible__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.flash-dismissible__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.15rem -0.25rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  opacity: 0.72;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.flash-dismissible__close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  .flash-dismissible__close:hover {
+    background: rgba(255, 255, 255, 0.08);
   }
 }
