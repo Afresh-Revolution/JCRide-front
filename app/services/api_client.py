@@ -98,7 +98,7 @@ def joscity_login(email_or_phone, password):
 
 
 def login_with_joscity_fallback(email_or_phone, password):
-    """Try JC-Ride login first; on missing/invalid credentials, try JosCity login."""
+    """Try JosRide login first; on missing/invalid credentials, try JosCity login."""
     try:
         return login(email_or_phone, password)
     except ApiError as exc:

@@ -204,7 +204,7 @@ def register_page():
         email = request.form.get("email", "").strip()
 
         try:
-            register(name, phone, email or f"{phone}@jcride.local", "driver123")
+            register(name, phone, email or f"{phone}@josride.local", "driver123")
             flash("Application submitted. Sign in when approved.", "success")
             return redirect(url_for("driver_portal.login"))
         except ApiError:

@@ -1,1 +1,1 @@
-"""JC-Ride Flask frontend application."""
+"""JosRide Flask frontend application."""

@@ -1,16 +1,12 @@
 {# Reusable driver portal sidebar — pass active_nav: dashboard | requests | active_trip | earnings | notifications | profile | settings #}
 <aside class="admin-sidebar" id="{{ sidebar_id|default('driver-sidebar') }}" aria-label="Driver navigation">
+  {% from "includes/brand_assets.html" import brand_mark %}
   <div class="admin-sidebar__brand">
     <div class="admin-sidebar__logo" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
-        <circle cx="7.5" cy="17" r="2"/>
-        <circle cx="16.5" cy="17" r="2"/>
-        <path d="M5 11h14"/>
-      </svg>
+      {{ brand_mark('admin-sidebar__logo-img', 36) }}
     </div>
     <div class="admin-sidebar__brand-text">
-      <span class="admin-sidebar__brand-name">JCRide <span class="admin-sidebar__brand-naija">NAIJA</span></span>
+      <span class="admin-sidebar__brand-name">JosRide <span class="admin-sidebar__brand-naija">NAIJA</span></span>
       <span class="admin-sidebar__badge">DRIVER</span>
     </div>
   </div>

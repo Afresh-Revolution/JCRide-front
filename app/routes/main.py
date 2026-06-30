@@ -827,7 +827,7 @@ def user_register_page():
                     session["role"] = user.get("role", "customer")
                     session["portal"] = "rider"
                     _clear_rider_signup()
-                    flash("Welcome to JCRide! Your account is ready.", "success")
+                    flash("Welcome to JosRide! Your account is ready.", "success")
                     return redirect(url_for("main.user_dashboard"))
                 except ApiError as exc:
                     flash(exc.message, "error")
