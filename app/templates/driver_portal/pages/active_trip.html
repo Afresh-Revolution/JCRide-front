@@ -1,10 +1,62 @@
 {% extends "layouts/portal_layout.html" %}
 {% block page_title %}Active Trip{% endblock %}
 
+{% block page_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+{% endblock %}
+
 {% block portal_content %}
-  <header class="driver-page-header">
-    <h1 class="driver-page-header__title">Active Trip</h1>
-    <p class="driver-page-header__sub">Trip screen coming soon — accept a ride from Ride Requests to start.</p>
-  </header>
+{% if trip %}
+<section class="active-trip-page" aria-label="Active trip">
+  <div class="active-trip-layout">
+    <div class="active-trip-map-col">
+      <div class="active-trip-map-shell">
+        {% include "components/active_trip/maneuver_card.html" %}
+        <div class="map-wrap active-trip-map-wrap">
+          <div id="driver-active-trip-map" class="live-trip-map driver-active-trip-map" role="img" aria-label="Live trip map"></div>
+        </div>
+      </div>
+      <script type="application/json" id="driver-active-trip-map-data">{{ map_data | tojson }}</script>
+    </div>
+
+    <aside class="active-trip-panel" aria-label="Trip details">
+      {% include "components/active_trip/trip_status_card.html" %}
+      {% include "components/active_trip/live_metrics_card.html" %}
+
+      <form method="post" action="{{ url_for('driver_portal.complete_trip') }}" class="active-trip-complete-form">
+        <button type="submit" class="active-trip-complete-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+          Complete trip
+        </button>
+      </form>
+    </aside>
+  </div>
+</section>
+{% else %}
+<section class="active-trip-empty">
+  <div class="active-trip-empty__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+  </div>
+  <h1 class="active-trip-empty__title">No active trip</h1>
+  <p class="active-trip-empty__text">Accept a ride request to start navigation and see live trip metrics here.</p>
   <a href="{{ url_for('driver_portal.ride_requests') }}" class="driver-btn driver-btn--primary">View ride requests</a>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block page_scripts %}
+{% if trip %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/driver-active-trip.js') }}"></script>
+<script>
+(function () {
+  var chatBtn = document.querySelector(".active-trip-comms__btn--chat");
+  if (!chatBtn) return;
+  chatBtn.addEventListener("click", function () {
+    var rider = chatBtn.getAttribute("data-chat-rider") || "rider";
+    window.alert("Opening chat with " + rider + " — in-app messaging coming soon.");
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

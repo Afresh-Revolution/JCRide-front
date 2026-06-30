@@ -1,0 +1,39 @@
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Earnings{% endblock %}
+
+{% block page_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block portal_content %}
+<section class="earnings-page" aria-label="Earnings">
+  <div class="earnings-summary-grid">
+    {% for card in earnings.summary %}
+      {% include "components/earnings/summary_card.html" %}
+    {% endfor %}
+  </div>
+
+  <div class="earnings-charts-grid">
+    <article class="earnings-chart-card">
+      <h2 class="earnings-chart-card__title">Earnings trend (last 4 weeks)</h2>
+      <div class="earnings-chart-card__canvas-wrap">
+        <canvas id="earnings-weekly-chart" aria-label="Weekly earnings bar chart"></canvas>
+      </div>
+    </article>
+    <article class="earnings-chart-card">
+      <h2 class="earnings-chart-card__title">Trips per day</h2>
+      <div class="earnings-chart-card__canvas-wrap">
+        <canvas id="earnings-daily-chart" aria-label="Daily trips line chart"></canvas>
+      </div>
+    </article>
+  </div>
+
+  {% include "components/earnings/withdraw_banner.html" %}
+</section>
+
+<script type="application/json" id="earnings-chart-data">{{ chart_data | tojson }}</script>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/driver-earnings.js') }}"></script>
+{% endblock %}
