@@ -1,0 +1,81 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'support' %}
+
+{% block user_content %}
+<div class="support-quick-grid">
+  <a href="#" class="support-quick-card">
+    <span class="support-quick-card__icon support-quick-card__icon--green">💬</span>
+    <div>
+      <strong>Live Chat</strong>
+      <span>Avg 2 min reply</span>
+    </div>
+    <span class="support-quick-card__chev" aria-hidden="true">›</span>
+  </a>
+  <a href="tel:0700527433" class="support-quick-card">
+    <span class="support-quick-card__icon support-quick-card__icon--green">📞</span>
+    <div>
+      <strong>Call Center</strong>
+      <span>0700-JCRIDE</span>
+    </div>
+    <span class="support-quick-card__chev" aria-hidden="true">›</span>
+  </a>
+  <a href="#" class="support-quick-card">
+    <span class="support-quick-card__icon support-quick-card__icon--green">📖</span>
+    <div>
+      <strong>Help Center</strong>
+      <span>Browse articles</span>
+    </div>
+    <span class="support-quick-card__chev" aria-hidden="true">›</span>
+  </a>
+  <a href="#" class="support-quick-card support-quick-card--emergency">
+    <span class="support-quick-card__icon support-quick-card__icon--red">!</span>
+    <div>
+      <strong>Emergency</strong>
+      <span>Tap to call NSCDC</span>
+    </div>
+    <span class="support-quick-card__chev" aria-hidden="true">›</span>
+  </a>
+</div>
+
+<div class="support-layout">
+  <section class="rider-panel support-ticket">
+    <h2 class="rider-panel__title">Open a support ticket</h2>
+    <form class="support-form" method="post">
+      <label class="support-field">
+        <span>Category</span>
+        <select name="category">
+          <option selected>Billing &amp; payments</option>
+          <option>Trip issue</option>
+          <option>Account access</option>
+          <option>Other</option>
+        </select>
+      </label>
+      <label class="support-field">
+        <span>Related trip (optional)</span>
+        <input type="text" name="trip_id" placeholder="JCR-29481" value="JCR-29481">
+      </label>
+      <label class="support-field">
+        <span>Describe the issue</span>
+        <textarea name="description" rows="5" placeholder="Tell us what happened..."></textarea>
+      </label>
+      <button type="submit" class="rider-btn rider-btn--request support-submit">Submit ticket</button>
+    </form>
+  </section>
+
+  <section class="rider-panel support-faq">
+    <h2 class="rider-panel__title">Frequently asked</h2>
+    <div class="faq-list" id="faq-list">
+      {% for item in faq_items %}
+      <details class="faq-item"{% if loop.first %} open{% endif %}>
+        <summary>{{ item.question }}</summary>
+        <p>{{ item.answer }}</p>
+      </details>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+{% endblock %}

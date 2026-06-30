@@ -1,5 +1,9 @@
 {% extends "admin/base.html" %}
 {% block title %}Admin Portal — JCRide NAIJA{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-loading.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
+{% endblock %}
 {% block body %}
 <div class="admin-split">
   <aside class="admin-panel-left" aria-label="JCRide NAIJA">
@@ -93,7 +97,7 @@
           >
         </div>
 
-        <button type="submit" class="admin-btn-submit">Sign in</button>
+        <button type="submit" class="admin-btn-submit" data-loading-text="Signing in…">Sign in</button>
       </form>
 
       <div class="admin-security-cards">
@@ -125,4 +129,8 @@
     </div>
   </main>
 </div>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
 {% endblock %}

@@ -3,4 +3,7 @@
 {% set profile_name = 'Operations' %}
 {% set profile_initials = 'O' %}
 {% set profile_meta = session.get('admin_email', 'ops@jcride.ng') ~ ' · Super Admin' %}
+{% set show_topbar_quick_actions = true %}
+{% set quick_notifications_url = url_for('admin.notifications') %}
+{% set quick_settings_url = url_for('admin.settings_page') %}
 {% include "includes/portal_navbar.html" %}

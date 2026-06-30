@@ -342,7 +342,7 @@ def get_admin_analytics_growth(token):
     return _request("GET", f"{API_PREFIX}/admin/analytics/user-driver-growth", token=token)
 
 
-def get_admin_analytics_heatmap(token, city="Lagos"):
+def get_admin_analytics_heatmap(token, city="nigeria"):
     return _request("GET", f"{API_PREFIX}/admin/analytics/demand-heatmap", token=token, params={"city": city})
 
 

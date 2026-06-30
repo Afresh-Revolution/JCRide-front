@@ -44,6 +44,12 @@ from app.services.api_client import (
     update_admin_landing_page,
 )
 from app.services.landing_content import merge_landing_page
+from app.admin_defaults import (
+    build_nationwide_demand_heatmap,
+    build_nationwide_live_map,
+    ensure_nationwide_live_map,
+    ensure_nationwide_trips_map,
+)
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -56,17 +62,7 @@ EMPTY_STATS = {
     "completion_rate": {"value": "0.0%", "trend": "0.0%", "trend_type": "up-double"},
 }
 
-EMPTY_LIVE_TRIPS = {
-    "count": 0,
-    "label": "Nigeria · Live ops",
-    "map_center": {"lat": 9.0820, "lng": 8.6753},
-    "map_zoom": 6,
-    "markers": [],
-    "route": [],
-    "vehicle_position": None,
-    "start": None,
-    "end": None,
-}
+EMPTY_LIVE_TRIPS = build_nationwide_live_map()
 
 
 def _payment_stat_card(amount_ngn, transaction_count, provider_label=None):
@@ -233,7 +229,7 @@ def dashboard():
     token = _admin_token()
     try:
         stats = get_admin_stats(token)
-        live_trips = get_admin_live_trips(token)
+        live_trips = ensure_nationwide_live_map(get_admin_live_trips(token))
     except ApiError as exc:
         redirect_response = _handle_api_error(exc)
         if redirect_response:
@@ -403,9 +399,9 @@ def api_payment_settle():
 @admin_required
 def api_trips_map():
     try:
-        return jsonify(get_admin_trips_map(_admin_token()))
-    except ApiError as exc:
-        return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(ensure_nationwide_trips_map(get_admin_trips_map(_admin_token())))
+    except ApiError:
+        return jsonify(ensure_nationwide_trips_map({}))
 
 
 @admin_bp.route("/api/trips")
@@ -545,9 +541,9 @@ def api_ride_tiers():
 @admin_required
 def api_live_trips():
     try:
-        return jsonify(get_admin_live_trips(_admin_token()))
-    except ApiError as exc:
-        return jsonify({"message": exc.message}), exc.status_code
+        return jsonify(ensure_nationwide_live_map(get_admin_live_trips(_admin_token())))
+    except ApiError:
+        return jsonify(ensure_nationwide_live_map({}))
 
 
 @admin_bp.route("/api/stats")
@@ -675,11 +671,20 @@ def api_analytics_growth():
 @admin_bp.route("/api/analytics/heatmap")
 @admin_required
 def api_analytics_heatmap():
-    city = request.args.get("city", "Lagos")
+    scope = request.args.get("scope", "nigeria")
+    city = request.args.get("city")
     try:
-        return jsonify(get_admin_analytics_heatmap(_admin_token(), city=city))
-    except ApiError as exc:
-        return jsonify({"message": exc.message}), exc.status_code
+        if scope == "nigeria" and not city:
+            data = get_admin_analytics_heatmap(_admin_token(), city="nigeria")
+        else:
+            data = get_admin_analytics_heatmap(_admin_token(), city=city or "Lagos")
+        if not (data.get("cells") or []):
+            return jsonify(build_nationwide_demand_heatmap())
+        if scope == "nigeria" and not data.get("rows"):
+            return jsonify(build_nationwide_demand_heatmap())
+        return jsonify(data)
+    except ApiError:
+        return jsonify(build_nationwide_demand_heatmap())
 
 
 @admin_bp.route("/api/settings/platform")
