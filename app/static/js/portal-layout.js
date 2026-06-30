@@ -43,7 +43,7 @@
       });
     }
 
-    sidebar.querySelectorAll(".admin-nav-item, .driver-sidebar__logout").forEach(function (link) {
+    sidebar.querySelectorAll(".admin-nav-item, .admin-sidebar__logout, .driver-sidebar__logout").forEach(function (link) {
       link.addEventListener("click", function () {
         setOpen(false);
       });

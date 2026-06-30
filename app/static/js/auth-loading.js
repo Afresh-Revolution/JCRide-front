@@ -28,6 +28,13 @@
     });
   });
 
+  document.querySelectorAll("#admin-login-form").forEach((form) => {
+    form.addEventListener("submit", () => {
+      const button = form.querySelector(".admin-btn-submit[type='submit']");
+      activateLoading(button);
+    });
+  });
+
   document.querySelectorAll(
     ".auth-loading-trigger, a.landing-btn[href*='/register'], a.landing-btn[href*='/portals'], a.landing-link[href*='/portals']"
   ).forEach((el) => {

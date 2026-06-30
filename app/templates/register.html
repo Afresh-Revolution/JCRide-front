@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Register — JC-Ride{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
+{% endblock %}
 {% block content %}
 <section class="card">
   <h2>Create Account</h2>
@@ -14,4 +17,7 @@
   </form>
   <p class="form-footer">Already have an account? <a href="{{ url_for('main.portals_page') }}">Sign In</a></p>
 </section>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
 {% endblock %}
