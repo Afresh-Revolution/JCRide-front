@@ -34,20 +34,28 @@ body.user-body.admin-nav-open {
 
 .user-flash-container {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  top: auto;
+  left: auto;
   z-index: 2000;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-width: 360px;
+  max-width: min(360px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.user-flash-container .user-flash {
+  pointer-events: auto;
 }
 
 .user-flash {
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
   font-size: 0.875rem;
-  box-shadow: var(--user-shadow-hover);
+  line-height: 1.45;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
 
 .user-flash--success {
@@ -2798,5 +2806,12 @@ body.user-body.admin-nav-open {
 
   .admin-topbar__search {
     display: none;
+  }
+
+  .user-flash-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    max-width: none;
   }
 }

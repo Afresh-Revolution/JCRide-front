@@ -13,7 +13,7 @@
   <div class="payments-kpi-grid">
     <article class="kpi-card">
       <div class="kpi-card__body">
-        <span class="kpi-card__label">Successful (24H)</span>
+        <span class="kpi-card__label">Successful</span>
         <span class="kpi-card__value" id="kpi-successful-amount">—</span>
         <span class="kpi-card__trend kpi-card__trend--up" id="kpi-successful-trend">▲ — txns</span>
       </div>
@@ -24,7 +24,7 @@
 
     <article class="kpi-card">
       <div class="kpi-card__body">
-        <span class="kpi-card__label">Failed (24H)</span>
+        <span class="kpi-card__label">Failed</span>
         <span class="kpi-card__value" id="kpi-failed-amount">—</span>
         <span class="kpi-card__trend kpi-card__trend--down" id="kpi-failed-trend">▲ — txns</span>
       </div>
@@ -58,7 +58,7 @@
 
   <div class="payments-card dash-card">
     <div class="payments-card__header">
-      <h2 class="payments-card__title">paystack transactions</h2>
+      <h2 class="payments-card__title">Payment transactions</h2>
       <div class="payments-card__actions">
         <div class="payments-filter" id="payments-filter">
           <button type="button" class="payments-filter__btn" id="payments-filter-toggle" aria-haspopup="listbox" aria-expanded="false">
@@ -84,6 +84,7 @@
                 <option value="wallet_funding">Wallet funding</option>
                 <option value="refund">Refund</option>
                 <option value="withdrawal">Withdrawal</option>
+                <option value="driver_earning">Driver earning</option>
               </select>
             </div>
             <div class="payments-filter__field">
@@ -101,7 +102,7 @@
     </div>
 
     <div class="payments-table-wrap">
-      <table class="payments-table" aria-label="paystack transactions">
+      <table class="payments-table" aria-label="Payment transactions">
         <thead>
           <tr>
             <th scope="col">Reference</th>
@@ -136,7 +137,7 @@
       <button type="button" class="payments-modal__close" data-close-modal aria-label="Close">&times;</button>
     </div>
     <form id="settle-form" class="payments-modal__body">
-      <p class="payments-modal__hint">Transfer collected platform funds to the corporate settlement account via paystack.</p>
+      <p class="payments-modal__hint">Transfer collected platform funds to the corporate settlement account (Monnify).</p>
       <div class="payments-field">
         <label for="settle-amount">Amount (₦) <span class="payments-field__optional">optional — leave blank for full balance</span></label>
         <input type="number" id="settle-amount" name="amount_ngn" min="1" step="0.01" placeholder="Full platform balance">

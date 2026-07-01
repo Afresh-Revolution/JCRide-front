@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drive with JCRide</title>
+  <title>Drive with JosRide</title>
+  {% from "includes/brand_assets.html" import favicon_links, brand_stylesheet, brand_mark %}
+  {{ favicon_links() }}
+  {{ brand_stylesheet() }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,19 +18,14 @@
 </head>
 <body class="auth-login-page auth-login-page--driver auth-signup-page">
   <div class="auth-login">
-    <aside class="auth-login__brand" aria-label="JCRide">
+    <aside class="auth-login__brand" aria-label="JosRide">
       <div class="auth-login__brand-top">
         <a href="{{ url_for('main.home') }}" class="auth-login__logo">
           <span class="auth-login__logo-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
-              <circle cx="7.5" cy="17" r="2"/>
-              <circle cx="16.5" cy="17" r="2"/>
-              <path d="M5 11h14"/>
-            </svg>
+            {{ brand_mark('auth-login__logo-img', 40) }}
           </span>
           <span class="auth-login__logo-text">
-            <strong>JCRide</strong>
+            <strong>JosRide</strong>
             <span>NAIJA</span>
           </span>
         </a>
@@ -58,19 +56,12 @@
         </div>
       </div>
 
-      <p class="auth-login__copyright">&copy; 2026 JCRide Technologies Ltd.</p>
+      <p class="auth-login__copyright">&copy; 2026 JosRide Technologies Ltd.</p>
     </aside>
 
     <section class="auth-login__panel auth-signup__panel">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="auth-login__flashes">
-            {% for category, message in messages %}
-              <div class="auth-login__flash auth-login__flash--{{ category }}">{{ message }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
-      {% endwith %}
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('auth-login__flashes', 'auth-login__flash', 'auth-login__flash--') }}
 
       {% if step > 1 and step < 4 %}
       <a href="{{ url_for('main.driver_register_page', action='back') }}" class="auth-login__back">
@@ -85,7 +76,7 @@
       {% endif %}
 
       <div class="auth-login__form-wrap auth-signup__wrap">
-        <h2>Drive with JCRide</h2>
+        <h2>Drive with JosRide</h2>
         <p class="auth-login__subtitle">{{ step_label }}</p>
 
         <div class="auth-signup__progress" aria-label="Progress">
@@ -100,17 +91,52 @@
         {% if step == 1 %}
         <form method="post" class="auth-login__form auth-signup__form" novalidate>
           <input type="hidden" name="step" value="1">
+          <div class="auth-signup__vehicle">
+            <p class="auth-signup__vehicle-label">What will you drive?</p>
+            <div class="auth-signup__vehicle-options" role="radiogroup" aria-label="What will you drive?">
+              {% set selected_vehicle = signup.get('vehicle_type', 'car') %}
+              <label class="auth-signup__vehicle-card{% if selected_vehicle != 'bike' %} is-selected{% endif %}">
+                <input type="radio" name="vehicle_type" value="car" class="auth-signup__vehicle-input"{% if selected_vehicle != 'bike' %} checked{% endif %}>
+                <span class="auth-signup__vehicle-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                    <circle cx="7" cy="17" r="2"/>
+                    <circle cx="17" cy="17" r="2"/>
+                  </svg>
+                </span>
+                <span class="auth-signup__vehicle-copy">
+                  <strong>Car</strong>
+                  <span>Rides &mdash; Economy to Premium</span>
+                </span>
+              </label>
+              <label class="auth-signup__vehicle-card{% if selected_vehicle == 'bike' %} is-selected{% endif %}">
+                <input type="radio" name="vehicle_type" value="bike" class="auth-signup__vehicle-input"{% if selected_vehicle == 'bike' %} checked{% endif %}>
+                <span class="auth-signup__vehicle-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18.5" cy="17.5" r="3.5"/>
+                    <circle cx="5.5" cy="17.5" r="3.5"/>
+                    <circle cx="15" cy="5" r="1"/>
+                    <path d="M12 17.5V14l-3-3 4-3 2 3h2"/>
+                  </svg>
+                </span>
+                <span class="auth-signup__vehicle-copy">
+                  <strong>Bike</strong>
+                  <span>Delivery only</span>
+                </span>
+              </label>
+            </div>
+          </div>
           <label class="auth-login__field">
             <span>Full Name</span>
-            <input type="text" name="full_name" required placeholder="Tunde Bakare" value="{{ signup.get('full_name', '') }}" autocomplete="name">
+            <input type="text" name="full_name" required placeholder="Tunde Bakare" autocomplete="name">
           </label>
           <label class="auth-login__field">
             <span>Phone Number</span>
-            <input type="tel" name="phone" required placeholder="+234 800 000 0000" value="{{ signup.get('phone', '') }}" autocomplete="tel">
+            <input type="tel" name="phone" required placeholder="+234 800 000 0000" autocomplete="tel">
           </label>
           <label class="auth-login__field">
             <span>Email</span>
-            <input type="email" name="email" required placeholder="driver@example.com" value="{{ signup.get('email', '') }}" autocomplete="email">
+            <input type="email" name="email" required placeholder="driver@example.com" autocomplete="email">
           </label>
           <label class="auth-login__field">
             <span>Password</span>
@@ -186,7 +212,7 @@
           </div>
           <h3>Application submitted</h3>
           <p>Awaiting approval. Our team typically reviews within 24 hours. We&rsquo;ll notify you by SMS.</p>
-          <a href="{{ url_for('main.driver_register_page', action='dashboard') }}" class="auth-login__submit auth-signup__success-btn auth-loading-trigger" data-loading-text="Opening…">Continue to dashboard preview</a>
+          <a href="{{ url_for('main.driver_register_page', action='dashboard') }}" class="auth-login__submit auth-signup__success-btn auth-loading-trigger" data-loading-text="Opening…">Continue to dashboard</a>
         </div>
         {% endif %}
 
@@ -207,5 +233,6 @@
   <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-signup.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 </body>
 </html>

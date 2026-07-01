@@ -1,0 +1,158 @@
+/* JosRide brand assets — logo-main, logo-secondary, hero */
+
+.brand-mark,
+.landing-brand__icon img,
+.portal-brand__icon img,
+.auth-login__logo-icon img,
+.admin-sidebar__logo img,
+.user-sidebar__logo img,
+.admin-brand__icon img,
+.brand__icon img,
+.portal-card__icon--logo img,
+.bike-delivery-header__mascot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+
+.brand-wordmark,
+.landing-brand__wordmark,
+.auth-login__brand-wordmark {
+  display: block;
+  width: auto;
+  max-width: min(100%, 220px);
+  height: auto;
+  max-height: 52px;
+  object-fit: contain;
+}
+
+.landing-brand__icon,
+.portal-brand__icon,
+.auth-login__logo-icon,
+.admin-brand__icon,
+.brand__icon,
+.portal-card__icon--logo,
+.bike-delivery-header__mascot {
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.landing-brand__icon,
+.portal-brand__icon {
+  background: transparent;
+}
+
+.auth-login__logo-icon,
+.admin-brand__icon,
+.brand__icon {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.admin-sidebar__logo,
+.user-sidebar__logo {
+  overflow: hidden;
+  padding: 0;
+  background: #0f172a;
+}
+
+.portal-card__icon--logo {
+  padding: 0.35rem;
+  background: #0f172a;
+}
+
+.bike-delivery-header__mascot {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #0f172a;
+  box-shadow: 0 4px 14px rgba(6, 95, 70, 0.18);
+}
+
+.bike-delivery-header__lead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+/* Auth split panel — Jos hero photo */
+.auth-login__brand-mascot,
+.admin-panel-left__mascot {
+  position: absolute;
+  z-index: 0;
+}
+
+.auth-login__brand-mascot {
+  right: -0.5rem;
+  bottom: 0;
+  width: min(52%, 300px);
+  max-height: 68%;
+  height: auto;
+  object-fit: cover;
+  object-position: center bottom;
+  pointer-events: none;
+  opacity: 0.98;
+  border-radius: 1rem 0 0 0;
+}
+
+.admin-panel-left__mascot {
+  right: -1rem;
+  bottom: 0;
+  width: min(50%, 280px);
+  max-height: 62%;
+  object-fit: cover;
+  object-position: center bottom;
+  pointer-events: none;
+  opacity: 0.96;
+  border-radius: 1rem 0 0 0;
+}
+
+/* Landing hero */
+.landing-hero__mockup-photo {
+  object-fit: cover;
+  object-position: center center;
+}
+
+.header .logo img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+  object-fit: contain;
+  background: #0f172a;
+}
+
+@media (max-width: 960px) {
+  .auth-login__brand-mascot {
+    width: min(44%, 220px);
+    max-height: 52%;
+    opacity: 0.88;
+  }
+
+  .admin-panel-left__mascot {
+    width: min(42%, 200px);
+    max-height: 48%;
+    opacity: 0.85;
+  }
+}
+
+@media (max-width: 720px) {
+  .auth-login__brand-mascot,
+  .admin-panel-left__mascot {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .admin-sidebar__logo,
+  .user-sidebar__logo,
+  .portal-card__icon--logo,
+  .bike-delivery-header__mascot {
+    background: #111827;
+  }
+}

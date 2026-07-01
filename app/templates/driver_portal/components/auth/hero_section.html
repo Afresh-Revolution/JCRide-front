@@ -1,10 +1,14 @@
 {# Left green marketing panel — shared by login & register #}
+{% from "includes/brand_assets.html" import brand_mark, brand_hero %}
 <aside class="auth-hero">
+  {{ brand_hero() }}
   <div class="auth-hero__top">
     <div class="brand">
-      <span class="brand__icon">🚗</span>
+      <span class="brand__icon" aria-hidden="true">
+        {{ brand_mark('brand__logo-img', 40) }}
+      </span>
       <div>
-        <div class="brand__name">JCRide</div>
+        <div class="brand__name">JosRide</div>
         <div class="brand__tag">NAIJA</div>
       </div>
     </div>
@@ -26,5 +30,5 @@
     {% endfor %}
   </div>
 
-  <p class="auth-hero__footer">© 2026 JCRide Technologies Ltd.</p>
+  <p class="auth-hero__footer">© 2026 JosRide Technologies Ltd.</p>
 </aside>

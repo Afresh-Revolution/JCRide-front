@@ -1,0 +1,13 @@
+{# Withdraw to bank banner #}
+<article class="earnings-withdraw-banner">
+  <div class="earnings-withdraw-banner__info">
+    <p class="earnings-withdraw-banner__label">Withdraw to bank</p>
+    <p class="earnings-withdraw-banner__amount">{{ withdrawal.amount }}</p>
+    <p class="earnings-withdraw-banner__bank">
+      {{ withdrawal.bank_name }} · {{ withdrawal.account_masked }} · {{ withdrawal.provider }}
+    </p>
+  </div>
+  <form method="post" action="{{ url_for('driver_portal.withdraw_earnings') }}">
+    <button type="submit" class="earnings-withdraw-banner__btn">Withdraw now</button>
+  </form>
+</article>

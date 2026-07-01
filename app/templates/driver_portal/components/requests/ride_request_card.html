@@ -2,12 +2,27 @@
 <article class="ride-request-card">
   <div class="ride-request-card__top">
     <div class="ride-request-card__rider">
-      <div class="ride-request-card__avatar">{{ request.rider_initials }}</div>
-      <div>
-        <div class="ride-request-card__name">{{ request.rider_name }}</div>
+      <div class="ride-request-card__avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="ride-request-card__rider-info">
+        <div class="ride-request-card__name-row">
+          <span class="ride-request-card__name">{{ request.rider_name }}</span>
+          <span class="ride-request-card__rating">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            {{ request.rating }}
+          </span>
+        </div>
         <div class="ride-request-card__meta">
-          <span class="ride-request-card__rating">★ {{ request.rating }}</span>
-          <span>{{ request.distance_km }} km · {{ request.duration_min }} min</span>
+          <span class="ride-request-card__meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {{ request.distance_km }} km
+          </span>
+          <span class="ride-request-card__meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {{ request.duration_min }} min
+          </span>
+          <span class="ride-request-card__badge">{{ request.pickup_eta }}</span>
         </div>
       </div>
     </div>
@@ -17,18 +32,16 @@
     </div>
   </div>
 
-  <span class="ride-request-card__badge">{{ request.pickup_eta }}</span>
-
   <div class="ride-request-card__route">
-    <div class="ride-request-card__stop">
-      <span class="ride-request-card__dot ride-request-card__dot--pickup"></span>
+    <div class="ride-request-card__stop ride-request-card__stop--pickup">
+      <span class="ride-request-card__dot ride-request-card__dot--pickup" aria-hidden="true"></span>
       <div>
         <span class="ride-request-card__stop-label">PICKUP</span>
         <span class="ride-request-card__stop-value">{{ request.pickup }}</span>
       </div>
     </div>
-    <div class="ride-request-card__stop">
-      <span class="ride-request-card__dot ride-request-card__dot--dest"></span>
+    <div class="ride-request-card__stop ride-request-card__stop--dest">
+      <span class="ride-request-card__dot ride-request-card__dot--dest" aria-hidden="true"></span>
       <div>
         <span class="ride-request-card__stop-label">DESTINATION</span>
         <span class="ride-request-card__stop-value">{{ request.destination }}</span>
@@ -38,10 +51,10 @@
 
   <div class="ride-request-card__actions">
     <form method="post" action="{{ url_for('driver_portal.reject_ride', request_id=request.id) }}">
-      <button type="submit" class="driver-btn driver-btn--outline">Reject</button>
+      <button type="submit" class="driver-btn driver-btn--outline driver-btn--pill">Reject</button>
     </form>
     <form method="post" action="{{ url_for('driver_portal.accept_ride', request_id=request.id) }}">
-      <button type="submit" class="driver-btn driver-btn--primary">Accept ride</button>
+      <button type="submit" class="driver-btn driver-btn--primary driver-btn--pill">Accept ride</button>
     </form>
   </div>
 </article>

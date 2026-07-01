@@ -1,0 +1,225 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'bike_delivery' %}
+
+{% block page_title %}Bike Delivery{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-bike-delivery.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="bike-delivery-page">
+  <header class="bike-delivery-header">
+    {% from "includes/brand_assets.html" import brand_mark %}
+    <div class="bike-delivery-header__lead">
+      <div class="bike-delivery-header__mascot" aria-hidden="true">
+        {{ brand_mark('bike-delivery-header__logo-img', 56) }}
+      </div>
+      <div>
+        <h1 class="bike-delivery-header__title">Bike delivery fleet</h1>
+        <p class="bike-delivery-header__subtitle">Manage couriers, pricing and delivery operations.</p>
+      </div>
+    </div>
+    <button type="button" class="bike-delivery-onboard-btn" id="bike-onboard-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Onboard rider
+    </button>
+  </header>
+
+  <div class="bike-delivery-kpi-grid kpi-grid">
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Active riders</span>
+        <span class="kpi-card__value" id="bike-kpi-active-riders">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M15 6a1 1 0 0 0-1-1H9l-2 4h11l-2-5Z"/><path d="M8 17.5h8"/></svg>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Deliveries today</span>
+        <span class="kpi-card__value" id="bike-kpi-deliveries-today">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--green">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Avg pickup time</span>
+        <span class="kpi-card__value" id="bike-kpi-pickup-time">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--amber">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-card__body">
+        <span class="kpi-card__label">Weekly GMV</span>
+        <span class="kpi-card__value" id="bike-kpi-weekly-gmv">—</span>
+      </div>
+      <div class="kpi-card__icon kpi-card__icon--teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      </div>
+    </article>
+  </div>
+
+  <div class="bike-delivery-details-grid">
+    <article class="dash-card bike-delivery-pricing">
+      <div class="dash-card__header">
+        <div>
+          <h2 class="dash-card__title">Delivery pricing</h2>
+          <p class="dash-card__subtitle">Editable in <a href="{{ url_for('admin.settings_page') }}#bike-delivery-pricing" class="bike-delivery-link">Settings → Bike delivery pricing</a></p>
+        </div>
+      </div>
+      <ul class="bike-delivery-pricing__list" id="bike-pricing-list">
+        <li class="bike-delivery-pricing__loading">Loading pricing…</li>
+      </ul>
+    </article>
+
+    <article class="dash-card bike-delivery-zones">
+      <div class="dash-card__header">
+        <h2 class="dash-card__title">Active delivery zones</h2>
+      </div>
+      <div class="bike-delivery-zones__tags" id="bike-zones-tags">
+        <span class="bike-delivery-zones__loading">Loading zones…</span>
+      </div>
+      <div class="bike-delivery-stats-grid" id="bike-zone-stats">
+        <div class="bike-delivery-stat">
+          <span class="bike-delivery-stat__label">Insurance cover</span>
+          <span class="bike-delivery-stat__value" id="bike-stat-insurance">—</span>
+        </div>
+        <div class="bike-delivery-stat">
+          <span class="bike-delivery-stat__label">Helmet compliance</span>
+          <span class="bike-delivery-stat__value" id="bike-stat-helmet">—</span>
+        </div>
+        <div class="bike-delivery-stat">
+          <span class="bike-delivery-stat__label">On-time rate</span>
+          <span class="bike-delivery-stat__value" id="bike-stat-ontime">—</span>
+        </div>
+        <div class="bike-delivery-stat">
+          <span class="bike-delivery-stat__label">Cancellations</span>
+          <span class="bike-delivery-stat__value" id="bike-stat-cancellations">—</span>
+        </div>
+        <div class="bike-delivery-stat">
+          <span class="bike-delivery-stat__label">Avg trip</span>
+          <span class="bike-delivery-stat__value" id="bike-stat-avg-trip">—</span>
+        </div>
+        <div class="bike-delivery-stat">
+          <span class="bike-delivery-stat__label">Rider rating</span>
+          <span class="bike-delivery-stat__value" id="bike-stat-rating">—</span>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="bike-delivery-toolbar dash-card">
+    <div class="bike-delivery-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="bike-riders-search" placeholder="Search rider or plate" aria-label="Search bike delivery riders">
+    </div>
+    <div class="bike-delivery-filter-tabs" role="tablist" aria-label="Filter riders by status">
+      <button type="button" class="bike-delivery-filter-tab is-active" data-status="all" role="tab">All</button>
+      <button type="button" class="bike-delivery-filter-tab" data-status="pending" role="tab">Pending</button>
+      <button type="button" class="bike-delivery-filter-tab" data-status="approved" role="tab">Approved</button>
+      <button type="button" class="bike-delivery-filter-tab" data-status="suspended" role="tab">Suspended</button>
+    </div>
+  </div>
+
+  <div class="bike-delivery-card dash-card">
+    <div class="bike-delivery-table-wrap">
+      <table class="bike-delivery-table" aria-label="Bike delivery riders">
+        <thead>
+          <tr>
+            <th scope="col">Rider</th>
+            <th scope="col">Bike</th>
+            <th scope="col">Plate</th>
+            <th scope="col">Zone</th>
+            <th scope="col">Deliveries</th>
+            <th scope="col">Earnings</th>
+            <th scope="col">Rating</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody id="bike-riders-table-body">
+          <tr class="bike-delivery-table__loading"><td colspan="9">Loading riders…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bike-delivery-pagination" id="bike-riders-pagination" hidden>
+      <span class="bike-delivery-pagination__info" id="bike-riders-pagination-info"></span>
+      <div class="bike-delivery-pagination__controls">
+        <button type="button" class="bike-delivery-pagination__btn" id="bike-riders-prev-btn" disabled>Previous</button>
+        <button type="button" class="bike-delivery-pagination__btn" id="bike-riders-next-btn" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Rider detail modal -->
+<div class="bike-delivery-modal-overlay" id="bike-rider-detail-modal" hidden>
+  <div class="bike-delivery-modal" role="dialog" aria-labelledby="bike-rider-detail-title" aria-modal="true">
+    <div class="bike-delivery-modal__header">
+      <h2 id="bike-rider-detail-title">Rider details</h2>
+      <button type="button" class="bike-delivery-modal__close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <div class="bike-delivery-modal__body" id="bike-rider-detail-body"></div>
+    <div class="bike-delivery-modal__footer">
+      <button type="button" class="bike-delivery-btn bike-delivery-btn--ghost" data-close-modal>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Onboard rider modal -->
+<div class="bike-delivery-modal-overlay" id="bike-onboard-modal" hidden>
+  <div class="bike-delivery-modal bike-delivery-modal--form" role="dialog" aria-labelledby="bike-onboard-title" aria-modal="true">
+    <div class="bike-delivery-modal__header">
+      <h2 id="bike-onboard-title">Onboard rider</h2>
+      <button type="button" class="bike-delivery-modal__close" data-close-modal aria-label="Close">&times;</button>
+    </div>
+    <form id="bike-onboard-form" class="bike-delivery-modal__body bike-delivery-form" novalidate>
+      <label class="bike-delivery-field">
+        <span>Full name</span>
+        <input type="text" name="full_name" required placeholder="Ibrahim Sule" autocomplete="name">
+      </label>
+      <label class="bike-delivery-field">
+        <span>Phone</span>
+        <input type="tel" name="phone" required placeholder="+234 800 000 0000" autocomplete="tel">
+      </label>
+      <label class="bike-delivery-field">
+        <span>Email</span>
+        <input type="email" name="email" placeholder="rider@example.com" autocomplete="email">
+      </label>
+      <label class="bike-delivery-field">
+        <span>Bike model</span>
+        <input type="text" name="bike_model" required placeholder="Bajaj Boxer">
+      </label>
+      <label class="bike-delivery-field">
+        <span>Plate number</span>
+        <input type="text" name="plate_number" required placeholder="LSR-842-AB">
+      </label>
+      <label class="bike-delivery-field">
+        <span>Delivery zone</span>
+        <select name="zone" required id="bike-onboard-zone">
+          <option value="">Select zone</option>
+        </select>
+      </label>
+          <p class="bike-delivery-form-hint" id="bike-onboard-hint">Creates a pending bike courier account. The rider can sign in after approval.</p>
+      <p class="bike-delivery-form-error" id="bike-onboard-error" hidden></p>
+      <div class="bike-delivery-modal__footer bike-delivery-modal__footer--inline">
+        <button type="button" class="bike-delivery-btn bike-delivery-btn--ghost" data-close-modal>Cancel</button>
+        <button type="submit" class="bike-delivery-btn bike-delivery-btn--primary">Save rider</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="bike-delivery-toast" id="bike-delivery-toast" hidden role="status"></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-bike-delivery.js') }}"></script>
+{% endblock %}

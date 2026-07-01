@@ -7,10 +7,10 @@ DEFAULT_LANDING_PAGE: dict = {
         "title_accent": "Nigeria.",
         "subtitle": (
             "Book a verified driver in minutes, track your trip live, and pay only for the "
-            "kilometers you ride. From Lekki to Wuse, JCRide is built for the way Nigerians actually move."
+            "kilometers you ride. From Lekki to Wuse, JosRide is built for the way Nigerians actually move."
         ),
         "primary_cta_label": "Book your first ride",
-        "secondary_cta_label": "Drive with JCRide",
+        "secondary_cta_label": "Drive with JosRide",
         "watch_label": "Watch how it works",
         "watch_href": "#how-it-works",
         "trust_reviews": "4.9 · 38k+ reviews",
@@ -92,7 +92,7 @@ DEFAULT_LANDING_PAGE: dict = {
     "cities_section": {
         "eyebrow": "Live nationwide",
         "title": "14 cities. One ride app.",
-        "subtitle": "From the energy of Lagos Island to the calm of Calabar — JCRide is everywhere you need to be.",
+        "subtitle": "From the energy of Lagos Island to the calm of Calabar — JosRide is everywhere you need to be.",
         "cities": [
             "Lagos", "Abuja", "Port Harcourt", "Ibadan", "Kano", "Enugu", "Benin City",
             "Kaduna", "Calabar", "Uyo", "Owerri", "Jos", "Ilorin", "Abeokuta",
@@ -135,8 +135,8 @@ DEFAULT_LANDING_PAGE: dict = {
         "eyebrow": "Testimonials",
         "title": "Loved by Nigerians, coast to coast",
         "items": [
-            {"quote": "I take JCRide every morning from Yaba to V.I. The drivers are professional and the per-km billing is a game changer — no more arguments about price.", "initials": "CA", "name": "Chioma A.", "role": "Marketing Lead, Lagos"},
-            {"quote": "I switched from another platform because JCRide pays out instantly through Paystack. I see every naira I earn within 5 minutes of dropping off.", "initials": "EO", "name": "Emeka O.", "role": "Driver-Partner, Abuja"},
+            {"quote": "I take JosRide every morning from Yaba to V.I. The drivers are professional and the per-km billing is a game changer — no more arguments about price.", "initials": "CA", "name": "Chioma A.", "role": "Marketing Lead, Lagos"},
+            {"quote": "I switched from another platform because JosRide pays out instantly through Paystack. I see every naira I earn within 5 minutes of dropping off.", "initials": "EO", "name": "Emeka O.", "role": "Driver-Partner, Abuja"},
             {"quote": "The SOS button and live trip sharing make me feel safe when I'm coming home late. My mum loves that she can track my ride.", "initials": "AB", "name": "Aisha B.", "role": "Student, Ibadan"},
             {"quote": "We use the Schedule feature every Sunday for church. Driver shows up on the dot, every single time. Premium category is worth it.", "initials": "TO", "name": "Tunde O.", "role": "Accountant, Lagos"},
             {"quote": "The receipts go straight to my email. Bookkeeping for staff transport has never been this clean.", "initials": "FN", "name": "Fatima N.", "role": "HR Manager, Abuja"},
@@ -157,13 +157,13 @@ DEFAULT_LANDING_PAGE: dict = {
             },
             {
                 "question": "Are drivers verified?",
-                "answer": "Yes. Every JCRide driver is NIN-verified, passes a background check, and completes vehicle inspection before going live on the platform.",
+                "answer": "Yes. Every JosRide driver is NIN-verified, passes a background check, and completes vehicle inspection before going live on the platform.",
             },
         ],
     },
     "cta": {
         "title": "Your next ride is one tap away.",
-        "subtitle": "Join 2.4 million Nigerians already moving smarter with JCRide. Sign up in seconds — your first ride is on us.",
+        "subtitle": "Join 2.4 million Nigerians already moving smarter with JosRide. Sign up in seconds — your first ride is on us.",
         "primary_label": "Get started free",
         "secondary_label": "Drive with us",
         "stats": [

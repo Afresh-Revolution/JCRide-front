@@ -103,7 +103,30 @@
     });
   }
 
+  function initVehiclePicker() {
+    const options = document.querySelector(".auth-signup__vehicle-options");
+    if (!options) return;
+
+    const cards = Array.from(options.querySelectorAll(".auth-signup__vehicle-card"));
+
+    function syncSelected() {
+      cards.forEach((card) => {
+        const input = card.querySelector(".auth-signup__vehicle-input");
+        card.classList.toggle("is-selected", Boolean(input && input.checked));
+      });
+    }
+
+    cards.forEach((card) => {
+      const input = card.querySelector(".auth-signup__vehicle-input");
+      if (!input) return;
+      input.addEventListener("change", syncSelected);
+    });
+
+    syncSelected();
+  }
+
   initOtp();
   initResendTimer();
   initUploads();
+  initVehiclePicker();
 })();

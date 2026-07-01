@@ -302,7 +302,7 @@ SUPPORT_FAQ = [
         "answer": "We auto-match a nearby driver at no extra cost. Your authorization is released within 24 hours.",
     },
     {
-        "question": "Is JCRide available outside Lagos?",
+        "question": "Is JosRide available outside Lagos?",
         "answer": "Yes — Abuja, Port Harcourt, Ibadan, Kano, Enugu and 9 more cities.",
     },
     {

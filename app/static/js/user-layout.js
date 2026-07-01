@@ -7,8 +7,37 @@
   if (!toggle || !sidebar) return;
 
   var desktopQuery = window.matchMedia("(min-width: 901px)");
+  var lockedScrollY = 0;
+
+  function lockBodyScroll() {
+    lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.position = "fixed";
+    document.body.style.top = "-" + lockedScrollY + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+  }
+
+  function unlockBodyScroll() {
+    if (document.body.style.position !== "fixed") return;
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    window.scrollTo(0, lockedScrollY);
+  }
 
   function setOpen(open) {
+    var isMobile = !desktopQuery.matches;
+
+    if (open && isMobile) {
+      lockBodyScroll();
+      sidebar.scrollTop = 0;
+    } else if (!open) {
+      unlockBodyScroll();
+    }
+
     sidebar.classList.toggle("is-open", open);
     if (backdrop) {
       backdrop.classList.toggle("is-visible", open);

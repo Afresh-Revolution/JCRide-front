@@ -16,6 +16,9 @@ html {
     --green-50: rgba(6, 78, 59, 0.35);
     --green-100: rgba(6, 95, 70, 0.4);
     --green-800: #6ee7b7;
+    --green-brand: #047857;
+    --green-brand-hover: #059669;
+    --green-brand-text: #ecfdf5;
     --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
 
@@ -25,6 +28,7 @@ html {
     --dash-muted: #d1d5db;
     --dash-border: #374151;
     --dash-card: #111827;
+    --dash-input-bg: #1f2937;
     --dash-green: #4ade80;
     --dash-green-dark: #065f46;
     --dash-green-active: #047857;
@@ -36,8 +40,11 @@ html {
     --auth-muted: #cbd5e1;
     --auth-border: #334155;
     --auth-input-bg: #1e293b;
-    --auth-green: #34d399;
-    --auth-green-dark: #6ee7b7;
+    --auth-card-bg: #1e293b;
+    --auth-success-icon-bg: rgba(6, 95, 70, 0.35);
+    --auth-green: #059669;
+    --auth-green-dark: #065f46;
+    --auth-green-deep: #064e3b;
 
     /* Portals */
     --portal-ink: #f1f5f9;
@@ -45,16 +52,17 @@ html {
     --portal-muted-light: #94a3b8;
     --portal-border: #334155;
     --portal-surface: #0f172a;
-    --portal-green-800: #6ee7b7;
-    --portal-green-700: #4ade80;
-    --portal-green-600: #34d399;
+    --portal-green-800: #065f46;
+    --portal-green-700: #047857;
+    --portal-green-600: #059669;
     --portal-green-100: rgba(6, 95, 70, 0.35);
     --portal-green-50: rgba(6, 78, 59, 0.25);
 
     /* Admin login (split) */
-    --admin-green: #4ade80;
-    --admin-green-dark: #065f46;
-    --admin-green-deep: #047857;
+    --admin-green: #064e3b;
+    --admin-green-dark: #052e16;
+    --admin-green-deep: #065f46;
+    --admin-lime: #86efac;
     --admin-white: #111827;
     --admin-text: #f3f4f6;
     --admin-muted: #d1d5db;
@@ -120,6 +128,25 @@ html {
     background: #0f172a;
   }
 
+  .auth-login__brand {
+    background: linear-gradient(165deg, #064e3b 0%, #052e16 48%, #022c22 100%);
+    color: #ecfdf5;
+  }
+
+  .auth-login__brand::before {
+    background:
+      radial-gradient(circle at 85% 15%, rgba(52, 211, 153, 0.14), transparent 42%),
+      radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.05), transparent 50%);
+  }
+
+  .auth-login__eyebrow {
+    color: #86efac;
+  }
+
+  .auth-login__stat strong {
+    color: #ecfdf5;
+  }
+
   .auth-login__panel {
     background: #111827;
   }
@@ -136,13 +163,27 @@ html {
     color: #fecaca;
   }
 
+  .flash-dismissible__close:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
   .auth-login__social-btn {
     background: #1e293b;
     color: var(--auth-ink);
   }
 
   .auth-login__submit {
-    color: #fff;
+    color: #ecfdf5;
+    background: #065f46;
+  }
+
+  .auth-login__submit:hover {
+    background: #047857;
+  }
+
+  .auth-login__link--strong,
+  .auth-login__link:hover {
+    color: #6ee7b7;
   }
 
   .landing-hero,
@@ -159,11 +200,6 @@ html {
 
   .landing-header {
     background: rgba(15, 23, 42, 0.92);
-    border-bottom-color: var(--border);
-  }
-
-  .landing-nav {
-    background: var(--surface);
     border-bottom-color: var(--border);
   }
 
@@ -220,6 +256,15 @@ html {
 
   .portal-feature__icon {
     background: var(--portal-green-50);
+  }
+
+  .portal-card__icon {
+    background: linear-gradient(145deg, #047857, #064e3b);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  .portal-card__eyebrow {
+    color: #6ee7b7;
   }
 
   .admin-topbar {
@@ -280,10 +325,6 @@ html {
     background: rgba(6, 95, 70, 0.35);
   }
 
-  .admin-sidebar__help-btn {
-    color: #064e3b;
-  }
-
   .admin-topbar__search svg {
     color: #94a3b8;
   }
@@ -302,20 +343,79 @@ html {
     background: var(--admin-white);
   }
 
+  .admin-panel-left {
+    background: linear-gradient(165deg, #064e3b 0%, #052e16 52%, #022c22 100%);
+    color: #ecfdf5;
+  }
+
+  .admin-panel-left .admin-brand__name,
+  .admin-panel-left .admin-brand__tag,
+  .admin-panel-left .admin-headline {
+    color: #ecfdf5;
+  }
+
+  .admin-panel-left .admin-eyebrow {
+    color: #86efac;
+  }
+
+  .admin-panel-left .admin-description,
+  .admin-panel-left .admin-link-muted {
+    color: rgba(236, 253, 245, 0.82);
+  }
+
+  .admin-panel-left .admin-link-muted:hover {
+    color: #ecfdf5;
+  }
+
+  .admin-panel-left .admin-stat-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .admin-panel-left .admin-stat-card__label {
+    color: rgba(236, 253, 245, 0.72);
+  }
+
+  .admin-panel-left__footer {
+    color: rgba(236, 253, 245, 0.55);
+  }
+
   .admin-field input {
     background: var(--admin-input-bg);
     color: var(--admin-text);
     border-color: var(--admin-border);
   }
 
+  .admin-field input:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.22);
+    background: var(--admin-input-bg);
+  }
+
+  .admin-btn-submit {
+    color: #ecfdf5;
+    background: #065f46;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+  }
+
+  .admin-btn-submit:hover {
+    background: #047857;
+    color: #ecfdf5;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+  }
+
+  .admin-btn-submit:active {
+    background: #064e3b;
+    color: #ecfdf5;
+  }
+
+  .admin-security-card__icon {
+    color: #6ee7b7;
+  }
+
   .admin-security-card {
     background: var(--admin-card-bg);
     border-color: var(--admin-border);
-  }
-
-  .driver-sidebar__logout:hover {
-    background: #1f2937;
-    color: var(--dash-text);
   }
 
   .driver-flash {
@@ -461,7 +561,68 @@ html {
     background: #243044;
   }
 
+  .auth-signup__vehicle-label,
+  .auth-signup__vehicle-copy strong {
+    color: var(--auth-ink);
+  }
+
+  .auth-signup__vehicle-card {
+    background: var(--auth-input-bg);
+    border-color: var(--auth-border);
+  }
+
+  .auth-signup__vehicle-card.is-selected {
+    background: rgba(6, 95, 70, 0.14);
+    border-color: #34d399;
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.12);
+  }
+
+  .auth-signup__vehicle-card.is-selected .auth-signup__vehicle-icon {
+    background: var(--auth-green-dark);
+    color: #ecfdf5;
+  }
+
+  .auth-signup__vehicle-icon {
+    color: #34d399;
+  }
+
+  .auth-signup__vehicle-copy span:last-child {
+    color: var(--auth-muted);
+  }
+
+  .auth-signup__success {
+    background: var(--auth-card-bg);
+    border-color: var(--auth-border);
+  }
+
+  .auth-signup__success h3 {
+    color: var(--auth-ink);
+  }
+
+  .auth-signup__success-icon {
+    background: var(--auth-success-icon-bg);
+    color: #6ee7b7;
+  }
+
   .auth-signup__success p {
+    color: var(--auth-muted);
+  }
+
+  .driver-register__success {
+    background: var(--auth-card-bg);
+    border-color: var(--auth-border);
+  }
+
+  .driver-register__success h3 {
+    color: var(--auth-ink);
+  }
+
+  .driver-register__success-icon {
+    background: var(--auth-success-icon-bg);
+    color: #6ee7b7;
+  }
+
+  .driver-register__success p {
     color: var(--auth-muted);
   }
 
@@ -951,11 +1112,6 @@ html {
   }
 
   /* Driver portal */
-  .driver-sidebar__logout:hover {
-    background: #1f2937;
-    color: var(--dash-text);
-  }
-
   .driver-btn--outline {
     background: transparent;
     border-color: var(--dash-border);
@@ -975,15 +1131,75 @@ html {
 
   .metric-card,
   .panel,
-  .ride-request-card {
+  .ride-request-card,
+  .driver-vehicle-card {
     background: var(--dash-card);
     border-color: var(--dash-border);
+    color: var(--dash-text);
   }
 
+  .driver-vehicle-card__title,
+  .driver-vehicle-card__field,
+  .driver-vehicle-card__field span,
+  .panel__title,
+  .metric-card__value {
+    color: var(--dash-text);
+  }
+
+  .driver-vehicle-card__sub,
   .metric-card__title,
   .panel__subtitle,
   .ride-request-card__meta {
     color: var(--dash-muted);
+  }
+
+  .driver-vehicle-card__field input,
+  .driver-vehicle-card__select,
+  body.admin-body .admin-content input,
+  body.admin-body .admin-content select,
+  body.admin-body .admin-content textarea {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  .driver-vehicle-card__field input::placeholder {
+    color: var(--dash-muted);
+  }
+
+  .driver-vehicle-card__field input:focus,
+  .driver-vehicle-card__select:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+  }
+
+  .driver-vehicle-card__select option {
+    background: var(--dash-card);
+    color: var(--dash-text);
+  }
+
+  .driver-vehicle-card__badge {
+    background: rgba(6, 95, 70, 0.25);
+    color: #6ee7b7;
+  }
+
+  .driver-vehicle-card__badge--warn {
+    background: rgba(245, 158, 11, 0.18);
+    color: #fcd34d;
+  }
+
+  .driver-vehicle-card__submit {
+    background: #065f46;
+    color: #ecfdf5;
+  }
+
+  .driver-vehicle-card__submit:hover {
+    background: #047857;
+  }
+
+  .driver-vehicle-card--incomplete {
+    border-color: rgba(245, 158, 11, 0.55);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.12);
   }
 
   .metric-card__icon {
@@ -991,19 +1207,54 @@ html {
     color: #6ee7b7;
   }
 
+  .metric-card__icon--rating {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+  }
+
   .metric-card__trend {
     background: rgba(6, 95, 70, 0.25);
     color: #6ee7b7;
   }
 
+  .status-banner {
+    background: #1f2937;
+    box-shadow: var(--dash-shadow);
+  }
+
+  .status-banner--online {
+    background: var(--dash-green-active);
+  }
+
   .text-success,
-  .ride-request-card__rating,
   .ride-request-card__fare {
     color: #6ee7b7;
   }
 
+  .ride-request-card__rating {
+    color: var(--dash-muted);
+  }
+
+  .ride-request-card__rating svg {
+    color: #6ee7b7;
+  }
+
   .ride-request-card__avatar {
-    background: #374151;
+    background: rgba(6, 95, 70, 0.25);
+    color: #6ee7b7;
+  }
+
+  .ride-request-card__badge {
+    background: rgba(6, 95, 70, 0.25);
+    color: #6ee7b7;
+  }
+
+  .ride-request-card__stop {
+    background: #1f2937;
+  }
+
+  .ride-request-card__actions .driver-btn--outline {
+    background: transparent;
     color: var(--dash-muted);
   }
 
@@ -1023,21 +1274,21 @@ html {
 
   /* User / rider portal */
   .user-flash--success {
-    background: rgba(6, 95, 70, 0.25);
-    color: #a7f3d0;
-    border-color: rgba(16, 185, 129, 0.35);
+    background: #064e3b;
+    color: #d1fae5;
+    border-color: rgba(16, 185, 129, 0.45);
   }
 
   .user-flash--error {
-    background: rgba(127, 29, 29, 0.35);
+    background: #7f1d1d;
     color: #fecaca;
-    border-color: rgba(248, 113, 113, 0.35);
+    border-color: rgba(248, 113, 113, 0.45);
   }
 
   .user-flash--info {
-    background: rgba(30, 64, 175, 0.35);
-    color: #bfdbfe;
-    border-color: rgba(96, 165, 250, 0.35);
+    background: #1e3a8a;
+    color: #dbeafe;
+    border-color: rgba(96, 165, 250, 0.45);
   }
 
   body.user-body .admin-nav-item:hover:not(.admin-nav-item--soon) {
@@ -1514,11 +1765,18 @@ html {
   }
 
   .text-success,
-  .ride-request-card__rating,
   .ride-request-card__fare,
   .driver-portal .text-success,
   body.admin-body .metric-card__trend,
-  body.admin-body .metric-card__icon {
+  body.admin-body .metric-card__icon:not(.metric-card__icon--rating) {
+    color: #6ee7b7 !important;
+  }
+
+  body.admin-body .ride-request-card__rating {
+    color: var(--dash-muted) !important;
+  }
+
+  body.admin-body .ride-request-card__rating svg {
     color: #6ee7b7 !important;
   }
 
@@ -1526,8 +1784,13 @@ html {
     background: rgba(6, 95, 70, 0.25) !important;
   }
 
-  body.admin-body .metric-card__icon {
+  body.admin-body .metric-card__icon:not(.metric-card__icon--rating) {
     background: rgba(6, 95, 70, 0.25) !important;
+  }
+
+  body.admin-body .metric-card__icon--rating {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
   }
 
   body.admin-body .panel__title,
@@ -1614,7 +1877,271 @@ html {
     border-color: var(--border);
   }
 
+  /* Landing buttons — --green-800 is a mint accent in dark mode, not a fill color */
+  body.landing .landing-btn--primary {
+    background: var(--green-brand);
+    color: var(--green-brand-text);
+  }
+
+  body.landing .landing-btn--primary:hover {
+    background: var(--green-brand-hover);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  body.landing .landing-btn--accent {
+    background: #bef264;
+    color: #14532d;
+  }
+
+  body.landing .landing-btn--accent:hover {
+    background: #a3e635;
+    color: #052e16;
+  }
+
+  body.landing .landing-btn--ghost {
+    color: var(--ink);
+    border-color: var(--border);
+  }
+
+  body.landing .landing-btn--ghost:hover {
+    background: var(--surface-muted);
+  }
+
+  body.landing .landing-price-card--featured {
+    background: linear-gradient(165deg, #065f46 0%, #064e3b 100%);
+    border-color: #047857;
+    color: #f0fdf4;
+  }
+
+  body.landing .landing-price-card--featured .landing-price-card__tier {
+    color: #bef264;
+  }
+
+  body.landing .landing-price-card--featured .landing-price-card__desc {
+    color: rgba(240, 253, 244, 0.82);
+  }
+
+  body.landing .landing-price-card__badge {
+    background: #bef264;
+    color: #14532d;
+  }
+
+  body.landing .landing-brand__icon {
+    background: #065f46;
+  }
+
+  body.landing .landing-audience-card--driver .landing-btn--accent {
+    background: #bef264;
+    color: #14532d;
+  }
+
+  body.landing .landing-audience-card--driver .landing-btn--accent:hover {
+    background: #a3e635;
+    color: #052e16;
+  }
+
   .landing-link {
+    color: #6ee7b7;
+  }
+
+  /* Driver portal auth (split layout in driver_portal/css/auth.css) */
+  body.auth-page .progress__segment {
+    background: #374151;
+  }
+
+  body.auth-page .progress__segment--active {
+    background: #6ee7b7;
+  }
+
+  body.auth-page .flash:not(.flash--error) {
+    background: rgba(6, 95, 70, 0.25);
+    color: #a7f3d0;
+  }
+
+  body.auth-page .auth-link--accent {
+    color: #6ee7b7;
+  }
+
+  body.auth-page .btn--primary {
+    background: #065f46;
+    color: #ecfdf5;
+  }
+
+  body.auth-page .btn--primary:hover {
+    background: #047857;
+  }
+
+  body.auth-page .field__input:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+  }
+
+  .auth-signup__progress-segment {
+    background: #374151;
+  }
+
+  .auth-signup__progress-segment.is-complete {
+    background: #6ee7b7;
+  }
+
+  .auth-signup__progress-label {
+    color: var(--auth-muted, var(--muted));
+  }
+
+  .auth-login__subtitle {
+    color: var(--auth-muted, var(--muted));
+  }
+
+  .auth-login__form-wrap h2,
+  .auth-signup__vehicle-label {
+    color: var(--auth-ink, var(--text));
+  }
+
+  /* Driver portal — in-app pages */
+  body.driver-portal .driver-btn--primary {
+    background: var(--dash-green-dark);
+    color: #ecfdf5;
+  }
+
+  body.driver-portal .driver-btn--ghost {
+    background: var(--dash-input-bg);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .driver-btn--ghost:hover {
+    background: #374151;
+  }
+
+  body.driver-portal .driver-settings-account__btn {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .driver-settings-account__btn--danger {
+    background: rgba(127, 29, 29, 0.25);
+    border-color: rgba(248, 113, 113, 0.35);
+    color: #fca5a5;
+  }
+
+  body.driver-portal .driver-settings-account__btn--danger:hover {
+    background: rgba(127, 29, 29, 0.35);
+  }
+
+  body.driver-portal .driver-active-trip-map {
+    background: #1f2937;
+  }
+
+  body.driver-portal .active-trip-card,
+  body.driver-portal .active-trip-empty,
+  body.driver-portal .earnings-summary-card,
+  body.driver-portal .earnings-chart-card,
+  body.driver-portal .earnings-withdraw-banner,
+  body.driver-portal .notifications-inbox,
+  body.driver-portal .notifications-settings-card,
+  body.driver-portal .driver-profile-summary,
+  body.driver-portal .driver-profile-card,
+  body.driver-portal .driver-settings-card,
+  body.driver-portal .driver-support-quick-card,
+  body.driver-portal .driver-support-dedicated,
+  body.driver-portal .driver-support-safety,
+  body.driver-portal .panel {
+    background: var(--dash-card);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .active-trip-maneuver {
+    background: rgba(17, 24, 39, 0.96);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+    box-shadow: var(--dash-shadow-hover);
+  }
+
+  body.driver-portal .active-trip-maneuver__label {
+    color: #4ade80;
+  }
+
+  body.driver-portal .active-trip-maneuver__text {
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .active-trip-maneuver__distance {
+    color: var(--dash-muted);
+  }
+
+  body.driver-portal .active-trip-status {
+    color: #4ade80;
+  }
+
+  body.driver-portal .active-trip-status__dot {
+    background: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
+  }
+
+  body.driver-portal .active-trip-comms__btn {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .active-trip-comms__btn svg {
+    color: currentColor;
+  }
+
+  body.driver-portal .active-trip-comms__btn:hover {
+    background: #374151;
+  }
+
+  body.driver-portal .map-preview__grid {
+    background:
+      linear-gradient(#374151 1px, transparent 1px) 0 0 / 36px 36px,
+      linear-gradient(90deg, #374151 1px, transparent 1px) 0 0 / 36px 36px;
+  }
+
+  body.driver-portal .map-preview__water {
+    background: #1e3a5f;
+  }
+
+  body.driver-portal .notifications-mark-read {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .notifications-mark-read:hover {
+    background: #374151;
+  }
+
+  body.driver-portal .notifications-item {
+    border-bottom-color: var(--dash-border);
+  }
+
+  body.driver-portal .driver-support-quick-card:hover {
+    border-color: #4b5563;
+  }
+
+  body.driver-portal .driver-toggle__track {
+    background: #374151;
+  }
+
+  body.driver-portal .driver-toggle input:checked + .driver-toggle__track {
+    background: var(--dash-green-active);
+  }
+
+  body.driver-portal .driver-settings-field select,
+  body.driver-portal .driver-profile-stat {
+    background: var(--dash-input-bg);
+    border-color: var(--dash-border);
+    color: var(--dash-text);
+  }
+
+  body.driver-portal .ride-request-card__actions .driver-btn--outline {
+    background: transparent;
+    color: var(--dash-muted);
+  }
+
+  body.driver-portal .text-success {
     color: #6ee7b7;
   }
 }
@@ -1672,4 +2199,45 @@ html[data-user-theme="light"] {
   --user-green: #0d6b38;
   --user-green-dark: #0a4f2a;
   --user-green-active: #0a4f2a;
+}
+
+.flash-dismissible {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.flash-dismissible__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.flash-dismissible__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.15rem -0.25rem 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  opacity: 0.72;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.flash-dismissible__close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  .flash-dismissible__close:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
 }

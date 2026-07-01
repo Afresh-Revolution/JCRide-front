@@ -209,7 +209,7 @@
   padding: 1.5rem 1.25rem 0.5rem;
   border: 1px solid var(--auth-border);
   border-radius: 18px;
-  background: #fff;
+  background: var(--auth-card-bg, #fff);
 }
 
 .driver-register__success-icon {
@@ -219,7 +219,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #ecfdf5;
+  background: var(--auth-success-icon-bg, #ecfdf5);
   color: var(--auth-green-dark);
 }
 
@@ -232,6 +232,7 @@
   font-size: 1.25rem;
   font-weight: 800;
   margin-bottom: 0.65rem;
+  color: var(--auth-ink);
 }
 
 .driver-register__success p {
@@ -246,6 +247,28 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
+}
+
+@media (max-width: 960px) {
+  .driver-register__wrap {
+    width: 100%;
+  }
+
+  .driver-register__panel {
+    padding-top: 0.5rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .driver-register__progress {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .driver-register__progress-label {
+    text-align: center;
+  }
 }
 
 @media (max-width: 520px) {

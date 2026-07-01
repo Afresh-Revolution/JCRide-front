@@ -1,0 +1,129 @@
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Support{% endblock %}
+
+{% block portal_content %}
+<section class="driver-support-page" aria-label="Driver support">
+  <div class="driver-support-quick-grid">
+    <a href="#driver-support-chat" class="driver-support-quick-card">
+      <span class="driver-support-quick-card__icon driver-support-quick-card__icon--green" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </span>
+      <div>
+        <strong>Live Chat</strong>
+        <span>Avg 2 min reply</span>
+      </div>
+      <span class="driver-support-quick-card__chev" aria-hidden="true">›</span>
+    </a>
+    <a href="tel:07005257433" class="driver-support-quick-card">
+      <span class="driver-support-quick-card__icon driver-support-quick-card__icon--green" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </span>
+      <div>
+        <strong>Driver Hotline</strong>
+        <span>0700-JOS-RIDE</span>
+      </div>
+      <span class="driver-support-quick-card__chev" aria-hidden="true">›</span>
+    </a>
+    <a href="#" class="driver-support-quick-card">
+      <span class="driver-support-quick-card__icon driver-support-quick-card__icon--green" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </span>
+      <div>
+        <strong>Help Center</strong>
+        <span>Driver guides &amp; policies</span>
+      </div>
+      <span class="driver-support-quick-card__chev" aria-hidden="true">›</span>
+    </a>
+    <a href="tel:112" class="driver-support-quick-card driver-support-quick-card--emergency">
+      <span class="driver-support-quick-card__icon driver-support-quick-card__icon--red" aria-hidden="true">!</span>
+      <div>
+        <strong>Emergency</strong>
+        <span>Tap to call NSCDC</span>
+      </div>
+      <span class="driver-support-quick-card__chev" aria-hidden="true">›</span>
+    </a>
+  </div>
+
+  <div class="driver-support-layout">
+    <article class="driver-support-card driver-support-card--form" id="driver-support-chat">
+      <h2 class="driver-support-card__title">Open a support ticket</h2>
+      <form method="post" class="driver-support-form">
+        <label class="driver-support-field">
+          <span>Category</span>
+          <select name="category" required>
+            {% for category in support_categories %}
+              <option value="{{ category }}"{% if category == 'Payment & earnings' %} selected{% endif %}>{{ category }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="driver-support-field">
+          <span>Related trip ID (optional)</span>
+          <input type="text" name="trip_id" placeholder="JOS-29481" value="{{ form_trip_id }}">
+        </label>
+        <label class="driver-support-field">
+          <span>Describe the issue</span>
+          <textarea name="description" rows="5" placeholder="Tell us what happened..." required>{{ form_description }}</textarea>
+        </label>
+        <button type="submit" class="driver-support-submit">Submit ticket</button>
+      </form>
+    </article>
+
+    <aside class="driver-support-aside">
+      <article class="driver-support-card">
+        <h2 class="driver-support-card__title">Frequently asked</h2>
+        <ul class="driver-support-faq">
+          {% for question in support_faq %}
+            <li><button type="button" class="driver-support-faq__item">{{ question }}</button></li>
+          {% endfor %}
+        </ul>
+      </article>
+
+      <article class="driver-support-card driver-support-card--dedicated">
+        <div class="driver-support-dedicated__head">
+          <span class="driver-support-dedicated__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 11h2l2-7h10l2 7h2v2h-2l-1 9H6L5 13H3z"/><path d="M9 21h6"/></svg>
+          </span>
+          <div>
+            <h3 class="driver-support-dedicated__title">Dedicated driver support</h3>
+            <p class="driver-support-dedicated__hours">Mon–Sun · 06:00 – 23:00 WAT</p>
+          </div>
+        </div>
+        <dl class="driver-support-dedicated__stats">
+          <div>
+            <dt>Avg response</dt>
+            <dd>4.2 min</dd>
+          </div>
+          <div>
+            <dt>Resolution rate</dt>
+            <dd>98%</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="driver-support-card driver-support-card--safety">
+        <div class="driver-support-safety__head">
+          <span class="driver-support-safety__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </span>
+          <h3 class="driver-support-safety__title">Safety first</h3>
+        </div>
+        <p class="driver-support-safety__text">
+          Use the in-app SOS button during any trip. Our safety team and NSCDC partners are alerted immediately with your live location.
+        </p>
+      </article>
+    </aside>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+  document.querySelectorAll(".driver-support-faq__item").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      window.alert("FAQ: " + btn.textContent.trim() + "\\n\\nFull answers are available in the Help Center.");
+    });
+  });
+})();
+</script>
+{% endblock %}
