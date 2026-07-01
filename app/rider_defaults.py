@@ -148,15 +148,46 @@ RIDE_TIERS = [
     },
 ]
 
+SCHEDULE_FORM = {
+    "pickup": "Lekki Phase 1",
+    "destination": "",
+    "date": "06/29/2026",
+    "time": "08:00 AM",
+    "fare_low": "₦4,200",
+    "fare_high": "₦5,700",
+}
+
+SCHEDULE_FARE_RANGES = {
+    "economy": ("₦2,800", "₦4,300"),
+    "comfort": ("₦4,200", "₦5,700"),
+    "premium": ("₦6,400", "₦7,900"),
+}
+
+SCHEDULE_CLASS_LABELS = {
+    "economy": "Economy",
+    "comfort": "Comfort",
+    "premium": "Premium",
+}
+
 SCHEDULE_VEHICLE_CLASSES = [
     {"id": "economy", "name": "Economy", "rate": "₦220/km", "seats": 4, "selected": False},
-    {"id": "comfort", "name": "Comfort", "rate": "₦280/km", "seats": 4, "selected": False},
-    {"id": "premium", "name": "Premium", "rate": "₦420/km", "seats": 4, "vehicle": "SUV", "selected": True},
+    {"id": "comfort", "name": "Comfort", "rate": "₦280/km", "seats": 4, "selected": True},
+    {"id": "premium", "name": "Premium", "rate": "₦420/km", "seats": 4, "vehicle": "SUV", "selected": False},
 ]
 
 UPCOMING_SCHEDULED_RIDES = [
     {
         "id": "sch-1",
+        "pickup": "Lekki Phase 1",
+        "destination": "Ikoyi",
+        "datetime": "Mon, 29 Jun · 08:00 AM",
+        "class": "Economy",
+        "repeat": "Once",
+        "reminder": "30 min before",
+        "fare": "₦2,800 – ₦4,300",
+    },
+    {
+        "id": "sch-2",
         "pickup": "Lekki Phase 1",
         "destination": "Murtala Muhammed Airport T2",
         "datetime": "Mon, 29 Jun · 06:30 AM",
@@ -166,7 +197,7 @@ UPCOMING_SCHEDULED_RIDES = [
         "fare": "₦8,400",
     },
     {
-        "id": "sch-2",
+        "id": "sch-3",
         "pickup": "Home · Ikoyi",
         "destination": "Office · Victoria Island",
         "datetime": "Mon–Fri · 07:45 AM",
@@ -194,6 +225,26 @@ LIVE_TRACKING = {
     "destination": "Victoria Island",
     "booking_id": "JCR-29481",
     "tier": "Economy",
+    "fare_estimate": "₦3,450",
+}
+
+TRACKING_FINDING = {
+    "pickup": "Lekki Phase 1",
+    "destination": "Victoria Island",
+    "fare_estimate": "₦3,450",
+    "area": "Lekki",
+    "match_delay_ms": 3200,
+}
+
+SHARE_RIDE = {
+    "share_url": "https://jcride.ng/t/JCR-29481?s=adaeze",
+    "share_message": "Follow my JCRide trip live:",
+    "contacts": [
+        {"initials": "MO", "name": "Mom", "phone": "+234 803 111 2222", "trusted": True},
+        {"initials": "CE", "name": "Chinedu E.", "phone": "+234 805 222 0098", "trusted": True},
+        {"initials": "FY", "name": "Fatima Y.", "phone": "+234 802 333 4455", "trusted": False},
+        {"initials": "OH", "name": "Office HR", "phone": "+234 1 700 8822", "trusted": False},
+    ],
 }
 
 RIDE_HISTORY_TRIPS = [
@@ -259,3 +310,16 @@ SUPPORT_FAQ = [
         "answer": "If actual fare is lower than the estimate, the difference is auto-refunded to your wallet within minutes.",
     },
 ]
+
+SETTINGS_DEFAULTS = {
+    "dark_mode": False,
+    "use_location": True,
+    "show_fare_per_km": True,
+    "share_analytics": True,
+    "personalised_offers": False,
+    "share_name_with_driver": True,
+    "language": "English (Nigeria)",
+    "currency": "₦ Nigerian Naira (NGN)",
+    "distance_units": "Kilometers (km)",
+    "timezone": "WAT · Africa/Lagos (UTC+1)",
+}

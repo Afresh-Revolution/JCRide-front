@@ -4,35 +4,54 @@
 {% block user_content %}
 <div class="settings-grid">
   <article class="rider-panel settings-card">
+    <h2 class="settings-card__title">App preferences</h2>
     <div class="settings-toggle">
-      <div class="settings-toggle__icon">📱</div>
+      <span class="settings-toggle__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </span>
+      <div class="settings-toggle__body">
+        <strong>Dark mode</strong>
+        <span>Reduce eye strain at night</span>
+      </div>
+      <label class="user-toggle">
+        <input type="checkbox" id="settings-dark-mode"{% if settings.dark_mode %} checked{% endif %}>
+        <span class="user-toggle__slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <span class="settings-toggle__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      </span>
       <div class="settings-toggle__body">
         <strong>Use device location</strong>
         <span>Improve pickup accuracy</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox" checked>
+        <input type="checkbox"{% if settings.use_location %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
     <div class="settings-toggle">
-      <div class="settings-toggle__icon">🌐</div>
+      <span class="settings-toggle__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </span>
       <div class="settings-toggle__body">
         <strong>Show fare estimate in km</strong>
         <span>Display per-kilometer breakdown</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox" checked>
+        <input type="checkbox"{% if settings.show_fare_per_km %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
   </article>
 
   <article class="rider-panel settings-card">
+    <h2 class="settings-card__title">Language &amp; region</h2>
     <label class="settings-field">
-      <span>Language</span>
+      <span>LANGUAGE</span>
       <select>
-        <option selected>English (Nigeria)</option>
+        <option selected>{{ settings.language }}</option>
         <option>Yoruba</option>
         <option>Igbo</option>
         <option>Hausa</option>
@@ -41,60 +60,60 @@
     <label class="settings-field">
       <span>CURRENCY</span>
       <select>
-        <option selected>₦ Nigerian Naira (NGN)</option>
+        <option selected>{{ settings.currency }}</option>
       </select>
     </label>
     <label class="settings-field">
       <span>DISTANCE UNITS</span>
       <select>
-        <option selected>Kilometers (km)</option>
+        <option selected>{{ settings.distance_units }}</option>
         <option>Miles (mi)</option>
       </select>
     </label>
-    <label class="settings-field">
+    <label class="settings-field settings-field--last">
       <span>TIME ZONE</span>
       <select>
-        <option selected>WAT · Africa/Lagos (UTC+1)</option>
+        <option selected>{{ settings.timezone }}</option>
       </select>
     </label>
   </article>
 
   <article class="rider-panel settings-card">
-    <h2 class="rider-panel__title">Privacy</h2>
-    <div class="settings-toggle">
+    <h2 class="settings-card__title">Privacy</h2>
+    <div class="settings-toggle settings-toggle--compact">
       <div class="settings-toggle__body">
         <strong>Share trip data for analytics</strong>
         <span>Anonymised usage only</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox" checked>
+        <input type="checkbox"{% if settings.share_analytics %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
-    <div class="settings-toggle">
+    <div class="settings-toggle settings-toggle--compact">
       <div class="settings-toggle__body">
         <strong>Personalised offers</strong>
         <span>Recommendations based on history</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox">
+        <input type="checkbox"{% if settings.personalised_offers %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
-    <div class="settings-toggle">
+    <div class="settings-toggle settings-toggle--compact">
       <div class="settings-toggle__body">
         <strong>Allow driver to see saved name</strong>
         <span>First name only</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox" checked>
+        <input type="checkbox"{% if settings.share_name_with_driver %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
   </article>
 
   <article class="rider-panel settings-card">
-    <h2 class="rider-panel__title">Account</h2>
+    <h2 class="settings-card__title">Account</h2>
     <div class="settings-action-row">
       <div>
         <strong>Download my data</strong>
@@ -114,12 +133,15 @@
         <strong>Delete account</strong>
         <span>Permanent · cannot be undone</span>
       </div>
-      <button type="button" class="rider-btn rider-btn--danger-sm">🗑 Delete</button>
+      <button type="button" class="rider-btn rider-btn--danger-sm settings-delete-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Delete
+      </button>
     </div>
   </article>
 </div>
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-settings.js') }}"></script>
 {% endblock %}

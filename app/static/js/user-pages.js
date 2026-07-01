@@ -1,6 +1,12 @@
 (function () {
   "use strict";
 
+  var scheduleFares = {
+    economy: "₦2,800 – ₦4,300",
+    comfort: "₦4,200 – ₦5,700",
+    premium: "₦6,400 – ₦7,900",
+  };
+
   document.querySelectorAll("#schedule-classes .schedule-class").forEach(function (card) {
     card.addEventListener("click", function () {
       document.querySelectorAll("#schedule-classes .schedule-class").forEach(function (el) {
@@ -8,7 +14,13 @@
       });
       card.classList.add("is-selected");
       var input = card.querySelector('input[type="radio"]');
-      if (input) input.checked = true;
+      if (input) {
+        input.checked = true;
+        var fareEl = document.getElementById("schedule-fare-value");
+        if (fareEl && scheduleFares[input.value]) {
+          fareEl.textContent = scheduleFares[input.value];
+        }
+      }
     });
   });
 

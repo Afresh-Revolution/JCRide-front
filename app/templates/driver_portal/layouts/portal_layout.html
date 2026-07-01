@@ -1,11 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{% block page_title %}Driver Portal{% endblock %} — JCRide NAIJA{% endblock %}
 
-{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/driver-portal.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
-{% block page_head %}{% endblock %}
-{% endblock %}
+{% block head %}{% block page_head %}{% endblock %}{% endblock %}
 
 {% block body %}
 <div class="admin-app">

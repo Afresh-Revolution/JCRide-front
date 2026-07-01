@@ -1,5 +1,7 @@
 from flask import Blueprint, flash, get_flashed_messages, redirect, render_template, request, session, url_for
+from datetime import datetime
 import re
+import uuid
 
 from app.services.api_client import (
     ApiError,
@@ -22,8 +24,14 @@ from app.rider_defaults import (
     RIDE_HISTORY_TRIPS,
     RIDE_TIERS,
     RIDER_STATS,
+    SCHEDULE_CLASS_LABELS,
+    SCHEDULE_FARE_RANGES,
+    SCHEDULE_FORM,
     SCHEDULE_VEHICLE_CLASSES,
+    SETTINGS_DEFAULTS,
+    SHARE_RIDE,
     SUPPORT_FAQ,
+    TRACKING_FINDING,
     UPCOMING_SCHEDULED_RIDES,
     WALLET_SUMMARY,
     WALLET_TRANSACTIONS,
@@ -83,6 +91,16 @@ PORTAL_ROLES = {
     "driver": "driver",
 }
 
+RIDER_ROLES = frozenset({"customer", "rider"})
+
+
+def _role_matches_portal(role: str, portal: str) -> bool:
+    role = (role or "").strip().lower()
+    expected = PORTAL_ROLES.get(portal, "")
+    if portal == "rider":
+        return role in RIDER_ROLES or role == expected
+    return role == expected
+
 
 def _resolve_login_identifier(phone: str, email: str) -> str:
     phone = phone.strip()
@@ -140,6 +158,38 @@ def _require_rider():
     return None
 
 
+def _parse_schedule_date(date_str: str) -> datetime:
+    date_str = (date_str or "").strip()
+    for fmt in ("%m/%d/%Y", "%m/%d/%y"):
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+    return datetime.now()
+
+
+def _format_schedule_list_datetime(parsed_date: datetime, time_str: str) -> str:
+    time_str = (time_str or "08:00 AM").strip()
+    return f"{parsed_date.strftime('%a, %d %b')} · {time_str}"
+
+
+def _format_schedule_success_when(parsed_date: datetime, time_str: str) -> str:
+    time_str = (time_str or "08:00 AM").strip()
+    return f"{parsed_date.strftime('%a, %d %b')} at {time_str}"
+
+
+def _schedule_fare_display(vehicle_class: str) -> str:
+    low, high = SCHEDULE_FARE_RANGES.get(vehicle_class, SCHEDULE_FARE_RANGES["comfort"])
+    if low == high:
+        return low
+    return f"{low} – {high}"
+
+
+def _upcoming_scheduled_rides() -> list:
+    user_rides = list(session.get("rider_scheduled_rides") or [])
+    return user_rides + list(UPCOMING_SCHEDULED_RIDES)
+
+
 def _handle_login(portal: str):
     if portal not in PORTAL_ROLES:
         portal = "rider"
@@ -170,7 +220,6 @@ def _handle_login(portal: str):
                 result = login_with_joscity_fallback(identifier, password)
                 user = result.get("user") or {}
                 role = user.get("role", "")
-                expected_role = PORTAL_ROLES[portal]
 
                 if portal == "driver" and user.get("joscity_user_id"):
                     flash(
@@ -178,7 +227,7 @@ def _handle_login(portal: str):
                         "To drive with JCRide, apply with a driver account first.",
                         "error",
                     )
-                elif role != expected_role:
+                elif not _role_matches_portal(role, portal):
                     account_name = "driver" if role == "driver" else "rider"
                     flash(
                         f"This account is registered as a {account_name}. "
@@ -311,7 +360,7 @@ def driver_register_page():
                 session["role"] = "driver"
                 session["portal"] = "driver"
                 _clear_driver_signup()
-                return redirect(url_for("main.driver_page"))
+                return redirect(url_for("driver_portal.dashboard"))
             flash("Complete verification before continuing.", "error")
             signup["step"] = 4
             _save_driver_signup(signup)
@@ -709,6 +758,7 @@ def user_book_ride():
         try:
             request_ride(session["token"], pickup, dropoff)
             flash(f"Ride requested ({tier}) — waiting for a driver.", "success")
+            return redirect(url_for("main.user_live_tracking", reset=1))
         except ApiError as exc:
             flash(exc.message, "error")
 
@@ -721,16 +771,84 @@ def user_book_ride():
     )
 
 
-@main_bp.route("/user/schedule-ride")
+@main_bp.route("/user/schedule-ride", methods=["GET", "POST"])
 def user_schedule_ride():
     guard = _require_rider()
     if guard:
         return guard
+
+    if request.args.get("dismiss") == "1":
+        session.pop("schedule_success", None)
+        return redirect(url_for("main.user_schedule_ride"))
+
+    schedule_form = dict(SCHEDULE_FORM)
+    vehicle_classes = [dict(item) for item in SCHEDULE_VEHICLE_CLASSES]
+
+    if request.method == "POST":
+        pickup = request.form.get("pickup", "").strip()
+        destination = request.form.get("destination", "").strip()
+        date_str = request.form.get("date", "").strip()
+        time_str = request.form.get("time", "").strip()
+        vehicle_class = request.form.get("vehicle_class", "comfort")
+        repeat = request.form.get("repeat", "Once")
+        reminder = request.form.get("reminder", "30 min before")
+
+        schedule_form.update({
+            "pickup": pickup,
+            "destination": destination,
+            "date": date_str or schedule_form["date"],
+            "time": time_str or schedule_form["time"],
+            "repeat": repeat,
+            "reminder": reminder,
+            "vehicle_class": vehicle_class,
+        })
+        fare_low, fare_high = SCHEDULE_FARE_RANGES.get(
+            vehicle_class, SCHEDULE_FARE_RANGES["comfort"]
+        )
+        schedule_form["fare_low"] = fare_low
+        schedule_form["fare_high"] = fare_high
+
+        for item in vehicle_classes:
+            item["selected"] = item["id"] == vehicle_class
+
+        if not pickup or not destination:
+            flash("Enter both pickup and destination.", "error")
+        else:
+            parsed_date = _parse_schedule_date(date_str or schedule_form["date"])
+            class_label = SCHEDULE_CLASS_LABELS.get(vehicle_class, "Comfort")
+            new_ride = {
+                "id": f"sch-user-{uuid.uuid4().hex[:8]}",
+                "pickup": pickup,
+                "destination": destination,
+                "datetime": _format_schedule_list_datetime(
+                    parsed_date, time_str or schedule_form["time"]
+                ),
+                "class": class_label,
+                "repeat": repeat,
+                "reminder": reminder,
+                "fare": _schedule_fare_display(vehicle_class),
+            }
+            scheduled = list(session.get("rider_scheduled_rides") or [])
+            scheduled.insert(0, new_ride)
+            session["rider_scheduled_rides"] = scheduled
+            session["schedule_success"] = {
+                "when": _format_schedule_success_when(
+                    parsed_date, time_str or schedule_form["time"]
+                ),
+                "class": class_label,
+                "reminder": reminder,
+            }
+            return redirect(url_for("main.user_schedule_ride"))
+
+    upcoming_rides = _upcoming_scheduled_rides()
     return render_template(
         "user/schedule_ride.html",
         active_page="schedule_ride",
-        vehicle_classes=SCHEDULE_VEHICLE_CLASSES,
-        upcoming_rides=UPCOMING_SCHEDULED_RIDES,
+        vehicle_classes=vehicle_classes,
+        schedule_form=schedule_form,
+        upcoming_rides=upcoming_rides,
+        upcoming_count=len(upcoming_rides),
+        schedule_success=session.get("schedule_success"),
         **_rider_context(),
     )
 
@@ -744,6 +862,27 @@ def user_live_tracking():
         "user/live_tracking.html",
         active_page="live_tracking",
         tracking=LIVE_TRACKING,
+        finding=TRACKING_FINDING,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/live-tracking/share")
+def user_share_ride():
+    guard = _require_rider()
+    if guard:
+        return guard
+    share = dict(SHARE_RIDE)
+    rider_name = session.get("name") or PROFILE_DEFAULTS["full_name"]
+    share["share_url"] = (
+        f"https://jcride.ng/t/{LIVE_TRACKING['booking_id']}"
+        f"?s={rider_name.split()[0].lower()}"
+    )
+    return render_template(
+        "user/share_ride.html",
+        active_page="live_tracking",
+        tracking=LIVE_TRACKING,
+        share=share,
         **_rider_context(),
     )
 
@@ -808,6 +947,7 @@ def user_settings():
     return render_template(
         "user/settings.html",
         active_page="settings",
+        settings=SETTINGS_DEFAULTS,
         **_rider_context(),
     )
 
@@ -830,22 +970,10 @@ def user_support():
 
 @main_bp.route("/driver", methods=["GET", "POST"])
 def driver_page():
-    online = session.get("driver_online", False)
-    if request.method == "POST":
-        token = session.get("token")
-        if not token:
-            flash("Driver onboarding is coming soon.", "error")
-        else:
-            action = request.form.get("action")
-            try:
-                new_status = action == "online"
-                set_availability(token, new_status)
-                session["driver_online"] = new_status
-                flash("You are now online." if new_status else "You are now offline.", "success")
-                online = new_status
-            except ApiError as exc:
-                flash(exc.message, "error")
-    return render_template("driver.html", online=online)
+    """Legacy URL — send drivers to the real driver portal."""
+    if session.get("driver_token") or session.get("role") == "driver":
+        return redirect(url_for("driver_portal.dashboard"))
+    return redirect(url_for("driver_portal.login"))
 
 
 @main_bp.route("/logout")

@@ -1040,68 +1040,68 @@ html {
     border-color: rgba(96, 165, 250, 0.35);
   }
 
-  .user-nav-item:hover:not(.user-nav-item--soon) {
+  body.user-body .admin-nav-item:hover:not(.admin-nav-item--soon) {
     background: #1f2937;
     color: var(--user-text);
   }
 
-  .user-nav-item,
-  .user-nav-item svg {
+  body.user-body .admin-nav-item,
+  body.user-body .admin-nav-item svg {
     color: var(--user-muted);
   }
 
-  .user-nav-item:hover:not(.user-nav-item--soon) svg {
+  body.user-body .admin-nav-item:hover:not(.admin-nav-item--soon) svg {
     color: var(--user-text);
   }
 
-  .user-nav-item.is-active {
+  body.user-body .admin-nav-item.is-active {
     color: #fff;
   }
 
-  .user-nav-item.is-active svg {
+  body.user-body .admin-nav-item.is-active svg {
     color: #fff;
   }
 
-  .user-sidebar__badge {
+  body.user-body .admin-sidebar__badge {
     color: #6ee7b7;
     background: rgba(6, 95, 70, 0.35);
   }
 
-  .user-sidebar__help-btn {
+  body.user-body .admin-sidebar__help-btn {
     color: #064e3b;
   }
 
-  .user-topbar,
-  .user-sidebar,
-  .user-menu-toggle,
-  .user-icon-btn,
-  .user-logout-btn {
+  body.user-body .admin-topbar,
+  body.user-body .admin-sidebar,
+  body.user-body .admin-menu-toggle,
+  body.user-body .admin-icon-btn,
+  body.user-body .admin-sidebar__logout {
     background: var(--user-card);
     border-color: var(--user-border);
     color: var(--user-muted);
   }
 
-  .user-topbar__search {
+  body.user-body .admin-topbar__search {
     background: #1f2937;
     border-color: var(--user-border);
   }
 
-  .user-topbar__search input {
+  body.user-body .admin-topbar__search input {
     color: var(--user-text);
   }
 
-  .user-topbar__search input::placeholder {
+  body.user-body .admin-topbar__search input::placeholder {
     color: #94a3b8;
   }
 
-  .user-icon-btn:hover,
-  .user-logout-btn:hover,
-  .user-menu-toggle:hover {
+  body.user-body .admin-icon-btn:hover,
+  body.user-body .admin-sidebar__logout:hover,
+  body.user-body .admin-menu-toggle:hover {
     background: #1f2937;
     color: var(--user-text);
   }
 
-  .user-menu-toggle span {
+  body.user-body .admin-menu-toggle span {
     background: var(--user-text);
   }
 
@@ -1247,7 +1247,8 @@ html {
     color: #6ee7b7;
   }
 
-  .user-nav-item--soon {
+  .user-nav-item--soon,
+  .admin-nav-item--soon {
     opacity: 0.45;
   }
 
@@ -1309,7 +1310,7 @@ html {
   /* ── Text & icon visibility (dark surfaces) ── */
 
   body.admin-body .admin-content :where(h1, h2, h3, h4, p, li, label, strong, td, th),
-  body.user-body .user-content :where(h1, h2, h3, h4, p, li, label, strong, td, th),
+  body.user-body .admin-content :where(h1, h2, h3, h4, p, li, label, strong, td, th),
   .driver-page-header__title,
   .rider-panel__title,
   .book-ride-form__title,
@@ -1319,12 +1320,11 @@ html {
   .wallet-balance-card__value,
   .trip-stat__value,
   .ride-tier__name,
-  .admin-profile__name,
-  .user-profile__name {
+  .admin-profile__name {
     color: var(--dash-text, var(--user-text));
   }
 
-  body.user-body .user-content :where(h1, h2, h3, h4, p, li, label, strong, td, th),
+  body.user-body .admin-content :where(h1, h2, h3, h4, p, li, label, strong, td, th),
   body.user-body .driver-page-header__title,
   body.user-body .rider-panel__title,
   body.user-body .book-ride-form__title,
@@ -1631,4 +1631,45 @@ html {
     --secondary: #6c5ce7;
     --error: #dc2626;
   }
+}
+
+/* Rider portal manual theme (Settings → Dark mode) */
+html[data-user-theme="dark"] {
+  color-scheme: dark;
+  --dash-bg: #0b1220;
+  --dash-text: #f3f4f6;
+  --dash-muted: #d1d5db;
+  --dash-border: #374151;
+  --dash-card: #111827;
+  --dash-green: #4ade80;
+  --dash-green-dark: #065f46;
+  --dash-green-active: #047857;
+  --user-bg: #0b1220;
+  --user-text: #f3f4f6;
+  --user-muted: #d1d5db;
+  --user-border: #374151;
+  --user-card: #111827;
+  --user-green: #4ade80;
+  --user-green-dark: #065f46;
+  --user-green-active: #047857;
+}
+
+html[data-user-theme="light"] {
+  color-scheme: light;
+  --dash-bg: #f4f6f8;
+  --dash-text: #111827;
+  --dash-muted: #6b7280;
+  --dash-border: #e5e7eb;
+  --dash-card: #ffffff;
+  --dash-green: #0d6b38;
+  --dash-green-dark: #0a4f2a;
+  --dash-green-active: #0a4f2a;
+  --user-bg: #f4f6f8;
+  --user-text: #111827;
+  --user-muted: #6b7280;
+  --user-border: #e5e7eb;
+  --user-card: #ffffff;
+  --user-green: #0d6b38;
+  --user-green-dark: #0a4f2a;
+  --user-green-active: #0a4f2a;
 }
