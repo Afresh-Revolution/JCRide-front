@@ -4,7 +4,7 @@ import requests
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import ReadTimeout, RequestException, Timeout
 
-from app.config import get_api_timeout, get_api_url
+from app.config import get_api_timeout, get_api_url, get_deployed_api_url, is_local_api_url
 
 API_PREFIX = "/api/v1"
 
@@ -51,8 +51,19 @@ def _connection_error_message(api_url: str, exc: RequestException) -> str:
     return f"Could not reach API at {api_url}. Details: {exc}"
 
 
+def _api_base_urls() -> list[str]:
+    primary = get_api_url()
+    fallback = get_deployed_api_url()
+    if is_local_api_url(primary) and _normalize_url(fallback) != _normalize_url(primary):
+        return [primary, fallback]
+    return [primary]
+
+
+def _normalize_url(url: str) -> str:
+    return str(url).strip().rstrip("/")
+
+
 def _request(method, endpoint, token=None, **kwargs):
-    api_url = get_api_url()
     headers = {"Content-Type": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -60,22 +71,34 @@ def _request(method, endpoint, token=None, **kwargs):
     timeout = kwargs.pop("timeout", get_api_timeout())
     max_attempts = 2
     last_exc: RequestException | None = None
+    last_url = get_api_url()
+    response = None
 
-    for attempt in range(max_attempts):
-        try:
-            response = requests.request(
-                method, f"{api_url}{endpoint}", headers=headers, timeout=timeout, **kwargs
-            )
-            break
-        except RequestException as exc:
-            last_exc = exc
-            retryable = isinstance(exc, (ReadTimeout, Timeout, RequestsConnectionError))
-            if attempt < max_attempts - 1 and retryable:
-                time.sleep(2)
-                continue
-            raise ApiError(_connection_error_message(api_url, exc)) from exc
+    for base_url in _api_base_urls():
+        last_url = base_url
+        for attempt in range(max_attempts):
+            try:
+                response = requests.request(
+                    method, f"{base_url}{endpoint}", headers=headers, timeout=timeout, **kwargs
+                )
+                break
+            except RequestException as exc:
+                last_exc = exc
+                retryable = isinstance(exc, (ReadTimeout, Timeout, RequestsConnectionError))
+                if attempt < max_attempts - 1 and retryable:
+                    time.sleep(2)
+                    continue
+                if isinstance(exc, RequestsConnectionError) and base_url != _api_base_urls()[-1]:
+                    break
+                raise ApiError(_connection_error_message(base_url, exc)) from exc
+        else:
+            continue
+        break
     else:
-        raise ApiError(_connection_error_message(api_url, last_exc)) from last_exc
+        raise ApiError(_connection_error_message(last_url, last_exc)) from last_exc
+
+    if response is None:
+        raise ApiError(_connection_error_message(last_url, last_exc)) from last_exc
     if not response.ok:
         raise ApiError(_parse_error(response), response.status_code)
     return response.json() if response.content else {}
