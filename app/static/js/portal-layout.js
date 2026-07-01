@@ -12,6 +12,11 @@
       sidebarId: "driver-sidebar",
       backdropId: "driver-sidebar-backdrop",
     },
+    {
+      toggleId: "user-menu-toggle",
+      sidebarId: "user-sidebar",
+      backdropId: "user-sidebar-backdrop",
+    },
   ];
 
   configs.forEach(function (cfg) {
@@ -31,6 +36,7 @@
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
       toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
       document.body.classList.toggle("admin-nav-open", open);
+      document.body.classList.toggle("user-nav-open", open);
     }
 
     toggle.addEventListener("click", function () {
@@ -43,7 +49,7 @@
       });
     }
 
-    sidebar.querySelectorAll(".admin-nav-item, .admin-sidebar__logout, .driver-sidebar__logout").forEach(function (link) {
+    sidebar.querySelectorAll(".admin-nav-item:not(.admin-nav-item--soon), .admin-sidebar__logout, .driver-sidebar__logout, .admin-sidebar__help-btn").forEach(function (link) {
       link.addEventListener("click", function () {
         setOpen(false);
       });

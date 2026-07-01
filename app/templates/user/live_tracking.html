@@ -2,7 +2,32 @@
 {% set active_page = 'live_tracking' %}
 
 {% block user_content %}
-<div class="tracking-layout">
+<section class="tracking-finding" id="tracking-finding" data-match-delay="{{ finding.match_delay_ms }}">
+  <article class="tracking-finding__card rider-panel">
+    <div class="tracking-finding__spinner-wrap" aria-hidden="true">
+      <span class="tracking-finding__spinner"></span>
+    </div>
+    <h1 class="tracking-finding__title">Finding your driver…</h1>
+    <p class="tracking-finding__subtitle">Matching you with the closest available driver in {{ finding.area }}</p>
+    <div class="tracking-finding__trip">
+      <div class="tracking-finding__trip-col">
+        <span class="tracking-finding__label">Pickup</span>
+        <strong>{{ finding.pickup }}</strong>
+      </div>
+      <div class="tracking-finding__trip-col">
+        <span class="tracking-finding__label">Drop-off</span>
+        <strong>{{ finding.destination }}</strong>
+      </div>
+      <div class="tracking-finding__trip-col">
+        <span class="tracking-finding__label">Fare est.</span>
+        <strong>{{ finding.fare_estimate }}</strong>
+      </div>
+    </div>
+    <button type="button" class="rider-btn rider-btn--outline tracking-finding__cancel" id="tracking-cancel-request" data-cancel-url="{{ url_for('main.user_dashboard') }}">Cancel request</button>
+  </article>
+</section>
+
+<div class="tracking-layout is-hidden" id="tracking-active" hidden>
   <section class="rider-panel rider-panel--map tracking-map">
     <div class="rider-map">
       <span class="rider-map__badge">{{ tracking.status_label }}</span>
@@ -69,10 +94,14 @@
     </article>
 
     <div class="tracking-bottom-actions">
-      <button type="button" class="rider-btn rider-btn--outline-sm tracking-share">↗ Share ride</button>
+      <a href="{{ url_for('main.user_share_ride') }}" class="rider-btn rider-btn--outline-sm tracking-share">↗ Share ride</a>
       <button type="button" class="rider-btn rider-btn--sos">🆘 SOS</button>
     </div>
     <button type="button" class="rider-btn rider-btn--request">Start trip (simulate driver pickup)</button>
   </aside>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-tracking.js') }}"></script>
 {% endblock %}

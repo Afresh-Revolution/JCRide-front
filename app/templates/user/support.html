@@ -4,7 +4,9 @@
 {% block user_content %}
 <div class="support-quick-grid">
   <a href="#" class="support-quick-card">
-    <span class="support-quick-card__icon support-quick-card__icon--green">💬</span>
+    <span class="support-quick-card__icon support-quick-card__icon--green" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </span>
     <div>
       <strong>Live Chat</strong>
       <span>Avg 2 min reply</span>
@@ -12,7 +14,9 @@
     <span class="support-quick-card__chev" aria-hidden="true">›</span>
   </a>
   <a href="tel:0700527433" class="support-quick-card">
-    <span class="support-quick-card__icon support-quick-card__icon--green">📞</span>
+    <span class="support-quick-card__icon support-quick-card__icon--green" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    </span>
     <div>
       <strong>Call Center</strong>
       <span>0700-JCRIDE</span>
@@ -20,15 +24,17 @@
     <span class="support-quick-card__chev" aria-hidden="true">›</span>
   </a>
   <a href="#" class="support-quick-card">
-    <span class="support-quick-card__icon support-quick-card__icon--green">📖</span>
+    <span class="support-quick-card__icon support-quick-card__icon--green" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </span>
     <div>
       <strong>Help Center</strong>
       <span>Browse articles</span>
     </div>
     <span class="support-quick-card__chev" aria-hidden="true">›</span>
   </a>
-  <a href="#" class="support-quick-card support-quick-card--emergency">
-    <span class="support-quick-card__icon support-quick-card__icon--red">!</span>
+  <a href="tel:112" class="support-quick-card support-quick-card--emergency">
+    <span class="support-quick-card__icon support-quick-card__icon--red" aria-hidden="true">!</span>
     <div>
       <strong>Emergency</strong>
       <span>Tap to call NSCDC</span>
@@ -58,7 +64,7 @@
         <span>Describe the issue</span>
         <textarea name="description" rows="5" placeholder="Tell us what happened..."></textarea>
       </label>
-      <button type="submit" class="rider-btn rider-btn--request support-submit">Submit ticket</button>
+      <button type="submit" class="rider-btn rider-btn--dark support-submit">Submit ticket</button>
     </form>
   </section>
 
@@ -66,7 +72,7 @@
     <h2 class="rider-panel__title">Frequently asked</h2>
     <div class="faq-list" id="faq-list">
       {% for item in faq_items %}
-      <details class="faq-item"{% if loop.first %} open{% endif %}>
+      <details class="faq-item">
         <summary>{{ item.question }}</summary>
         <p>{{ item.answer }}</p>
       </details>
