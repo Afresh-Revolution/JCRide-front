@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create rider account — JosRide</title>
-  {% from "includes/brand_assets.html" import favicon_links, brand_stylesheet, brand_mark, brand_hero %}
+  {% from "includes/brand_assets.html" import favicon_links, brand_stylesheet, brand_mark %}
   {{ favicon_links() }}
   {{ brand_stylesheet() }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +19,6 @@
 <body class="auth-login-page auth-login-page--rider auth-signup-page">
   <div class="auth-login">
     <aside class="auth-login__brand" aria-label="JosRide">
-      {{ brand_hero() }}
       <div class="auth-login__brand-top">
         <a href="{{ url_for('main.home') }}" class="auth-login__logo">
           <span class="auth-login__logo-icon" aria-hidden="true">

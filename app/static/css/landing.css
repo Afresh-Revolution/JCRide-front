@@ -25,6 +25,7 @@
   --shadow-lg: 0 20px 50px rgba(15, 23, 42, 0.1);
   --font: "Inter", system-ui, -apple-system, sans-serif;
   --container: 1180px;
+  --layout-gutter: 1.25rem;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,8 +51,10 @@ img { max-width: 100%; height: auto; display: block; }
 a { color: inherit; text-decoration: none; }
 
 .landing-container {
-  width: min(100% - 2.5rem, var(--container));
+  width: min(calc(100% - 2 * var(--layout-gutter)), var(--container));
+  max-width: var(--container);
   margin-inline: auto;
+  box-sizing: border-box;
 }
 
 /* ── Header ── */
@@ -68,8 +71,10 @@ a { color: inherit; text-decoration: none; }
 }
 
 .landing-header__inner {
-  width: min(100% - 2.5rem, var(--container));
+  width: min(calc(100% - 2 * var(--layout-gutter)), var(--container));
+  max-width: var(--container);
   margin-inline: auto;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -310,7 +315,6 @@ a { color: inherit; text-decoration: none; }
   grid-template-columns: 1fr 1fr;
   gap: 2.5rem 3rem;
   align-items: center;
-  width: 100%;
   min-width: 0;
 }
 
@@ -418,7 +422,7 @@ a { color: inherit; text-decoration: none; }
 /* Hero mockup panel */
 .landing-hero__visual {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   width: 100%;
   min-width: 0;
 }
@@ -1614,8 +1618,31 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ── Responsive ── */
+@media (min-width: 1024px) {
+  :root {
+    --layout-gutter: clamp(2.5rem, 6vw, 6rem);
+  }
+
+  .landing-hero__grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 2.5rem clamp(2rem, 4vw, 4rem);
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --container: 1240px;
+    --layout-gutter: clamp(3rem, 7vw, 8rem);
+  }
+}
+
+@media (min-width: 1680px) {
+  :root {
+    --layout-gutter: clamp(4rem, 8vw, 10rem);
+  }
+}
+
 @media (max-width: 1200px) {
-  .landing-container { width: min(100% - 2rem, var(--container)); }
   .landing-pricing { grid-template-columns: repeat(2, 1fr); }
   .landing-price-card--featured { grid-column: span 2; }
   .landing-hero__ui-card--where { right: 0.5rem; }
@@ -1632,10 +1659,10 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 768px) {
+  :root { --layout-gutter: 0.75rem; }
+
   .landing-section { padding: 3.5rem 0; }
   .landing-section__header { margin-bottom: 2rem; }
-
-  .landing-container { width: min(100% - 1.5rem, var(--container)); }
 
   .landing-nav {
     display: none;
@@ -1889,11 +1916,11 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 540px) {
+  :root { --layout-gutter: 0.75rem; }
+
   .landing-features,
   .landing-steps,
   .landing-testimonials { grid-template-columns: 1fr; }
-
-  .landing-container { width: min(100% - 1.5rem, var(--container)); }
 
   .landing-hero__mockup {
     border-radius: clamp(16px, 4.5vw, 22px);
@@ -1957,16 +1984,13 @@ a { color: inherit; text-decoration: none; }
   .landing-footer__grid { grid-template-columns: 1fr; }
   .landing-cta__stats { grid-template-columns: 1fr; }
   .landing-faq__item summary { padding: 1rem 0.25rem; }
-  .landing-header__inner { gap: 0.75rem; width: min(100% - 1.5rem, var(--container)); }
+  .landing-header__inner { gap: 0.75rem; }
   .landing-header__actions .landing-btn--sm span { display: none; }
   .landing-header__actions .landing-btn--sm { padding: 0.55rem 0.85rem; }
 }
 
 @media (max-width: 430px) {
-  .landing-container,
-  .landing-header__inner {
-    width: min(100% - 1.25rem, var(--container));
-  }
+  :root { --layout-gutter: 0.625rem; }
 
   .landing-hero { padding: 1.35rem 0 2.25rem; }
   .landing-hero__grid { gap: 1.35rem; }
@@ -1992,10 +2016,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (max-width: 380px) {
-  .landing-container,
-  .landing-header__inner {
-    width: min(100% - 1rem, var(--container));
-  }
+  :root { --layout-gutter: 0.5rem; }
 
   .landing-hero__badge { font-size: 0.68rem; }
   .landing-btn { font-size: 0.85rem; padding: 0.7rem 1.1rem; }
