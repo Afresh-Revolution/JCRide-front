@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Choose your portal — JCRide</title>
+  <title>Choose your portal — JosRide</title>
+  {% from "includes/brand_assets.html" import favicon_links, brand_stylesheet, brand_mark %}
+  {{ favicon_links() }}
+  {{ brand_stylesheet() }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,15 +18,10 @@
     <div class="portal-header__inner">
       <a href="{{ url_for('main.home') }}" class="portal-brand">
         <span class="portal-brand__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
-            <circle cx="7.5" cy="17" r="2"/>
-            <circle cx="16.5" cy="17" r="2"/>
-            <path d="M5 11h14"/>
-          </svg>
+          {{ brand_mark('portal-brand__logo-img', 40) }}
         </span>
         <span class="portal-brand__text">
-          <span class="portal-brand__name">JCRide</span>
+          <span class="portal-brand__name">JosRide</span>
           <span class="portal-brand__tag">NAIJA</span>
         </span>
       </a>
@@ -41,15 +39,8 @@
     </div>
   </header>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="portal-flashes">
-        {% for category, message in messages %}
-          <div class="portal-flash portal-flash--{{ category }}">{{ message }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
+  {% from "includes/flashes.html" import dismissible_flashes %}
+  {{ dismissible_flashes('portal-flashes', 'portal-flash', 'portal-flash--') }}
 
   <main class="portal-main">
     <a href="{{ url_for('main.home') }}" class="portal-back">
@@ -60,14 +51,14 @@
     <div class="portal-hero">
       <span class="portal-welcome-badge">
         <span aria-hidden="true">&#10022;</span>
-        Welcome to JCRide
+        Welcome to JosRide
       </span>
       <h1 class="portal-hero__title">
         Choose how you want to<br>
         <span class="portal-hero__accent">access the platform</span>
       </h1>
       <p class="portal-hero__subtitle">
-        JCRide is Nigeria&rsquo;s premium ride-hailing network &mdash; pay per kilometer with live GPS metering and instant paystack payments.
+        JosRide is Nigeria&rsquo;s premium ride-hailing network &mdash; pay per kilometer with live GPS metering and instant paystack payments.
       </p>
     </div>
 
@@ -93,13 +84,8 @@
 
       <a href="{{ url_for('main.driver_login_page') }}" class="portal-card">
         <span class="portal-card__glow" aria-hidden="true"></span>
-        <span class="portal-card__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
-            <circle cx="7.5" cy="17" r="2"/>
-            <circle cx="16.5" cy="17" r="2"/>
-            <path d="M5 11h14"/>
-          </svg>
+        <span class="portal-card__icon portal-card__icon--logo" aria-hidden="true">
+          {{ brand_mark('portal-card__logo-img', 52) }}
         </span>
         <p class="portal-card__eyebrow">For drivers</p>
         <h2 class="portal-card__title">Driver Portal</h2>
@@ -154,7 +140,7 @@
       </div>
 
       <footer class="portal-footer portal-footer--in-lower">
-        <p>&copy; 2026 JCRide Technologies &mdash; Lagos, Nigeria.</p>
+        <p>&copy; 2026 JosRide Technologies &mdash; Lagos, Nigeria.</p>
         <nav aria-label="Legal">
           <a href="{{ url_for('main.home') }}#top">Privacy</a>
           <a href="{{ url_for('main.home') }}#top">Terms</a>
@@ -163,5 +149,6 @@
       </footer>
     </div>
   </main>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 </body>
 </html>

@@ -1,0 +1,79 @@
+{% extends "layouts/portal_layout.html" %}
+{% block page_title %}Profile{% endblock %}
+
+{% block portal_content %}
+<section class="driver-profile-page" aria-label="Driver profile">
+  <div class="driver-profile-layout">
+    <article class="driver-profile-summary">
+      <div class="driver-profile-summary__avatar" aria-hidden="true">{{ driver_profile.initials }}</div>
+      <h1 class="driver-profile-summary__name">{{ driver_profile.name }}</h1>
+      <p class="driver-profile-summary__since">Driver since {{ driver_profile.since }}</p>
+      <span class="driver-profile-summary__badge" role="status">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="driver-profile-summary__badge-text">{{ driver_profile.rating }} · {{ "{:,}".format(driver_profile.trips) }} trips</span>
+      </span>
+      <div class="driver-profile-summary__stats">
+        <div class="driver-profile-stat">
+          <span class="driver-profile-stat__value">{{ driver_profile.acceptance }}</span>
+          <span class="driver-profile-stat__label">Acceptance</span>
+        </div>
+        <div class="driver-profile-stat">
+          <span class="driver-profile-stat__value">{{ driver_profile.completion }}</span>
+          <span class="driver-profile-stat__label">Completion</span>
+        </div>
+        <div class="driver-profile-stat">
+          <span class="driver-profile-stat__value">{{ driver_profile.on_time }}</span>
+          <span class="driver-profile-stat__label">On-time</span>
+        </div>
+      </div>
+    </article>
+
+    <div class="driver-profile-main">
+      <article class="driver-profile-card">
+        <h2 class="driver-profile-card__title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+          Vehicle
+        </h2>
+        <dl class="driver-profile-vehicle-grid">
+          <div>
+            <dt>Make &amp; model</dt>
+            <dd>{{ driver_profile.vehicle.make_model }}</dd>
+          </div>
+          <div>
+            <dt>Color</dt>
+            <dd>{{ driver_profile.vehicle.color }}</dd>
+          </div>
+          <div>
+            <dt>Plate number</dt>
+            <dd>{{ driver_profile.vehicle.plate }}</dd>
+          </div>
+          <div>
+            <dt>Vehicle category</dt>
+            <dd>{{ driver_profile.vehicle.category }}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="driver-profile-card">
+        <h2 class="driver-profile-card__title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Documents
+        </h2>
+        <ul class="driver-profile-docs">
+          {% for doc in driver_profile.documents %}
+            <li class="driver-profile-doc">
+              <div>
+                <p class="driver-profile-doc__name">{{ doc.name }}</p>
+                <p class="driver-profile-doc__detail">{{ doc.detail }}</p>
+              </div>
+              <span class="driver-profile-doc__status driver-profile-doc__status--{{ doc.status }}">
+                {{ doc.status|title }}
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+{% endblock %}

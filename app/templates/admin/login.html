@@ -1,24 +1,21 @@
 {% extends "admin/base.html" %}
-{% block title %}Admin Portal — JCRide NAIJA{% endblock %}
+{% block title %}Admin Portal — JosRide NAIJA{% endblock %}
 {% block head %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth-loading.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
 {% endblock %}
 {% block body %}
 <div class="admin-split">
-  <aside class="admin-panel-left" aria-label="JCRide NAIJA">
+  <aside class="admin-panel-left" aria-label="JosRide NAIJA">
+    {% from "includes/brand_assets.html" import brand_mark, brand_hero %}
+    {{ brand_hero('admin-panel-left__mascot') }}
     <div class="admin-panel-left__top">
       <div class="admin-brand">
         <div class="admin-brand__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 17h10M5 11l1.5-4h11L19 11"/>
-            <circle cx="7.5" cy="17" r="2"/>
-            <circle cx="16.5" cy="17" r="2"/>
-            <path d="M5 11h14"/>
-          </svg>
+          {{ brand_mark('admin-brand__logo-img', 40) }}
         </div>
         <div class="admin-brand__text">
-          <span class="admin-brand__name">JCRide</span>
+          <span class="admin-brand__name">JosRide</span>
           <span class="admin-brand__tag">NAIJA</span>
         </div>
       </div>
@@ -50,7 +47,7 @@
     </div>
 
     <footer class="admin-panel-left__footer">
-      &copy; 2026 JCRide Technologies Ltd.
+      &copy; 2026 JosRide Technologies Ltd.
     </footer>
   </aside>
 
@@ -63,13 +60,8 @@
         <p>Sign in to manage operations.</p>
       </header>
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="admin-flash admin-flash-{{ category }}">{{ message }}</div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('', 'admin-flash', 'admin-flash-') }}
 
       <form method="post" class="admin-form" id="admin-login-form" novalidate>
         <div class="admin-field">
@@ -78,7 +70,7 @@
             type="email"
             id="email"
             name="email"
-            placeholder="ops@jcride.ng"
+            placeholder="ops@josride.ng"
             value="{{ email or '' }}"
             autocomplete="username"
             required
@@ -133,4 +125,5 @@
 {% block scripts %}
   <script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 {% endblock %}

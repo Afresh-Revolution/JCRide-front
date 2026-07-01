@@ -1,0 +1,33 @@
+{# Trip status + rider card + call/chat #}
+<section class="active-trip-card active-trip-card--status">
+  <p class="active-trip-status">
+    <span class="active-trip-status__dot" aria-hidden="true"></span>
+    {{ trip.status_label }}
+  </p>
+
+  <div class="active-trip-rider">
+    <div class="active-trip-rider__avatar" aria-hidden="true">{{ trip.rider_initials }}</div>
+    <div class="active-trip-rider__info">
+      <p class="active-trip-rider__name">{{ trip.rider_name }}</p>
+      <p class="active-trip-rider__meta">
+        {{ trip.rider_tier }}
+        <span class="active-trip-rider__sep" aria-hidden="true">·</span>
+        <span class="active-trip-rider__rating">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          {{ trip.rating }}
+        </span>
+      </p>
+    </div>
+  </div>
+
+  <div class="active-trip-comms" role="group" aria-label="Contact rider">
+    <a href="tel:{{ trip.rider_phone|default('+2348000000000') }}" class="active-trip-comms__btn active-trip-comms__btn--call">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      <span>Call</span>
+    </a>
+    <button type="button" class="active-trip-comms__btn active-trip-comms__btn--chat" data-chat-rider="{{ trip.rider_name }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Chat</span>
+    </button>
+  </div>
+</section>

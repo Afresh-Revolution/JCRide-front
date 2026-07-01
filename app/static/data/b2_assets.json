@@ -1,10 +1,5 @@
 {
-  "cbfc_logo": "https://gwcontest-videos.s3.us-west-004.backblazeb2.com/jcride/assets/CBFC-Logo.jpg",
-  "chocho_action": "https://gwcontest-videos.s3.us-west-004.backblazeb2.com/jcride/assets/Chocho-action.png",
-  "chocho_side": "https://gwcontest-videos.s3.us-west-004.backblazeb2.com/jcride/assets/Chocho-side.png",
-  "chocho_back": "https://gwcontest-videos.s3.us-west-004.backblazeb2.com/jcride/assets/Chocho-back.png",
-  "tata_action": "https://gwcontest-videos.s3.us-west-004.backblazeb2.com/jcride/assets/Tata-action.png",
-  "tata_action2": "https://gwcontest-videos.s3.us-west-004.backblazeb2.com/jcride/assets/Tata-action2.png",
-  "tata_side": "https://gwcontest-videos.s3.us-west-004.backblazeb2.com/jcride/assets/Tata-side.png",
-  "tata_back": "https://gwcontest-videos.s3.us-west-004.backblazeb2.com/jcride/assets/Tata-back.png"
+  "logo_main": "/static/images/logo-main.png",
+  "logo_secondary": "/static/images/logo-secondary.png",
+  "hero": "/static/images/hero.png"
 }

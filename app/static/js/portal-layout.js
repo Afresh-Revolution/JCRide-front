@@ -1,4 +1,5 @@
 (function () {
+
   "use strict";
 
   var configs = [
@@ -6,18 +7,42 @@
       toggleId: "admin-menu-toggle",
       sidebarId: "admin-sidebar",
       backdropId: "admin-sidebar-backdrop",
+      bodyClass: "admin-nav-open",
     },
     {
       toggleId: "driver-menu-toggle",
       sidebarId: "driver-sidebar",
       backdropId: "driver-sidebar-backdrop",
+      bodyClass: "admin-nav-open",
     },
     {
       toggleId: "user-menu-toggle",
       sidebarId: "user-sidebar",
       backdropId: "user-sidebar-backdrop",
+      bodyClass: "admin-nav-open",
     },
   ];
+
+  var lockedScrollY = 0;
+
+  function lockBodyScroll() {
+    lockedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.position = "fixed";
+    document.body.style.top = "-" + lockedScrollY + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+  }
+
+  function unlockBodyScroll() {
+    if (document.body.style.position !== "fixed") return;
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    window.scrollTo(0, lockedScrollY);
+  }
 
   configs.forEach(function (cfg) {
     var toggle = document.getElementById(cfg.toggleId);
@@ -28,6 +53,15 @@
     var desktopQuery = window.matchMedia("(min-width: 901px)");
 
     function setOpen(open) {
+      var isMobile = !desktopQuery.matches;
+
+      if (open && isMobile) {
+        lockBodyScroll();
+        sidebar.scrollTop = 0;
+      } else if (!open) {
+        unlockBodyScroll();
+      }
+
       sidebar.classList.toggle("is-open", open);
       if (backdrop) {
         backdrop.classList.toggle("is-visible", open);
@@ -35,8 +69,12 @@
       }
       toggle.setAttribute("aria-expanded", open ? "true" : "false");
       toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
-      document.body.classList.toggle("admin-nav-open", open);
-      document.body.classList.toggle("user-nav-open", open);
+      if (cfg.bodyClass) {
+        document.body.classList.toggle(cfg.bodyClass, open);
+      }
+      if (cfg.sidebarId === "user-sidebar") {
+        document.body.classList.toggle("user-nav-open", open);
+      }
     }
 
     toggle.addEventListener("click", function () {
