@@ -16,6 +16,9 @@ html {
     --green-50: rgba(6, 78, 59, 0.35);
     --green-100: rgba(6, 95, 70, 0.4);
     --green-800: #6ee7b7;
+    --green-brand: #047857;
+    --green-brand-hover: #059669;
+    --green-brand-text: #ecfdf5;
     --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.45);
 
@@ -197,11 +200,6 @@ html {
 
   .landing-header {
     background: rgba(15, 23, 42, 0.92);
-    border-bottom-color: var(--border);
-  }
-
-  .landing-nav {
-    background: var(--surface);
     border-bottom-color: var(--border);
   }
 
@@ -1877,6 +1875,69 @@ html {
   .landing-btn--outline {
     color: var(--ink);
     border-color: var(--border);
+  }
+
+  /* Landing buttons — --green-800 is a mint accent in dark mode, not a fill color */
+  body.landing .landing-btn--primary {
+    background: var(--green-brand);
+    color: var(--green-brand-text);
+  }
+
+  body.landing .landing-btn--primary:hover {
+    background: var(--green-brand-hover);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  body.landing .landing-btn--accent {
+    background: #bef264;
+    color: #14532d;
+  }
+
+  body.landing .landing-btn--accent:hover {
+    background: #a3e635;
+    color: #052e16;
+  }
+
+  body.landing .landing-btn--ghost {
+    color: var(--ink);
+    border-color: var(--border);
+  }
+
+  body.landing .landing-btn--ghost:hover {
+    background: var(--surface-muted);
+  }
+
+  body.landing .landing-price-card--featured {
+    background: linear-gradient(165deg, #065f46 0%, #064e3b 100%);
+    border-color: #047857;
+    color: #f0fdf4;
+  }
+
+  body.landing .landing-price-card--featured .landing-price-card__tier {
+    color: #bef264;
+  }
+
+  body.landing .landing-price-card--featured .landing-price-card__desc {
+    color: rgba(240, 253, 244, 0.82);
+  }
+
+  body.landing .landing-price-card__badge {
+    background: #bef264;
+    color: #14532d;
+  }
+
+  body.landing .landing-brand__icon {
+    background: #065f46;
+  }
+
+  body.landing .landing-audience-card--driver .landing-btn--accent {
+    background: #bef264;
+    color: #14532d;
+  }
+
+  body.landing .landing-audience-card--driver .landing-btn--accent:hover {
+    background: #a3e635;
+    color: #052e16;
   }
 
   .landing-link {
