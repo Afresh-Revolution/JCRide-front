@@ -2,6 +2,7 @@
   "use strict";
 
   var STORAGE_KEY = "jcride_tracking_active";
+  var matchTimer = null;
 
   function encodeShareText(message, url) {
     return encodeURIComponent((message || "Follow my JCRide trip live:") + " " + url);
@@ -45,16 +46,32 @@
     document.body.removeChild(input);
   }
 
+  function refreshTrackingMap() {
+    if (!window.RiderRouteMap) return;
+    if (typeof window.RiderRouteMap.refresh === "function") {
+      window.RiderRouteMap.refresh();
+      return;
+    }
+    if (typeof window.RiderRouteMap.init === "function") {
+      window.RiderRouteMap.init();
+    }
+  }
+
   function showActiveTracking() {
     var finding = document.getElementById("tracking-finding");
     var active = document.getElementById("tracking-active");
     if (!finding || !active) return;
 
+    matchTimer = null;
     finding.classList.add("is-hidden");
     finding.setAttribute("hidden", "");
     active.classList.remove("is-hidden");
     active.removeAttribute("hidden");
     sessionStorage.setItem(STORAGE_KEY, "1");
+
+    refreshTrackingMap();
+    window.setTimeout(refreshTrackingMap, 180);
+    window.setTimeout(refreshTrackingMap, 480);
   }
 
   function initFindingDriver() {
@@ -75,19 +92,64 @@
       finding.setAttribute("hidden", "");
       active.classList.remove("is-hidden");
       active.removeAttribute("hidden");
+      refreshTrackingMap();
+      window.setTimeout(refreshTrackingMap, 180);
       return;
     }
 
     var delay = Number(finding.getAttribute("data-match-delay") || 3200);
-    window.setTimeout(showActiveTracking, delay);
+    matchTimer = window.setTimeout(showActiveTracking, delay);
 
     var cancelBtn = document.getElementById("tracking-cancel-request");
     if (cancelBtn) {
       cancelBtn.addEventListener("click", function () {
+        if (matchTimer) {
+          window.clearTimeout(matchTimer);
+          matchTimer = null;
+        }
         sessionStorage.removeItem(STORAGE_KEY);
-        window.location.href = cancelBtn.getAttribute("data-cancel-url") || "/user/dashboard";
+        window.location.href =
+          cancelBtn.getAttribute("data-cancel-url") || "/user/live-tracking/cancel";
       });
     }
+  }
+
+  function setTrackingStep(stepIndex) {
+    var steps = document.querySelectorAll(".tracking-step");
+    steps.forEach(function (step, index) {
+      var stepNum = index + 1;
+      var dot = step.querySelector(".tracking-step__dot");
+      step.classList.remove("is-done", "is-current");
+      if (stepNum < stepIndex) {
+        step.classList.add("is-done");
+        if (dot) {
+          dot.innerHTML =
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+        }
+      } else if (stepNum === stepIndex) {
+        step.classList.add("is-current");
+        if (dot) dot.textContent = String(stepNum);
+      } else if (dot) {
+        dot.textContent = String(stepNum);
+      }
+    });
+
+    document.querySelectorAll(".tracking-step__line").forEach(function (line, index) {
+      line.classList.toggle("is-done", index + 1 < stepIndex);
+    });
+  }
+
+  function initTrackingActions() {
+    var simulateBtn = document.getElementById("tracking-simulate-pickup");
+    if (!simulateBtn) return;
+
+    simulateBtn.addEventListener("click", function () {
+      setTrackingStep(3);
+      var status = document.querySelector(".tracking-driver__status");
+      if (status) status.textContent = "• TRIP IN PROGRESS";
+      simulateBtn.textContent = "Trip started";
+      simulateBtn.disabled = true;
+    });
   }
 
   function initShareRide() {
@@ -136,5 +198,6 @@
   }
 
   initFindingDriver();
+  initTrackingActions();
   initShareRide();
 })();

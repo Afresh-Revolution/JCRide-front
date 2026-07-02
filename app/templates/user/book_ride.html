@@ -1,17 +1,11 @@
 {% extends "user/layout.html" %}
 {% set active_page = 'book_ride' %}
+{% set user_leaflet = true %}
 
 {% block user_content %}
 <div class="book-ride-layout">
   <section class="rider-panel rider-panel--map book-ride-map">
-    <div class="rider-map">
-      <span class="rider-map__badge">Pickup → Destination</span>
-      <div class="rider-map__zoom" aria-hidden="true">
-        <button type="button" disabled>+</button>
-        <button type="button" disabled>−</button>
-      </div>
-      {% include "user/includes/map_placeholder.html" %}
-    </div>
+    {% include "user/includes/route_map.html" %}
   </section>
 
   <section class="rider-panel book-ride-panel">
@@ -56,7 +50,9 @@
           {% for tier in ride_tiers %}
           <label class="ride-tier{% if tier.selected %} is-selected{% endif %}">
             <input type="radio" name="tier" value="{{ tier.id }}" data-fare="{{ tier.fare }}" data-fare-num="{{ tier.fare_num }}"{% if tier.selected %} checked{% endif %}>
-            <span class="ride-tier__icon ride-tier__icon--{{ tier.icon }}" aria-hidden="true">🚗</span>
+            <span class="ride-tier__icon ride-tier__icon--{{ tier.icon }}" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M5 11h14"/></svg>
+            </span>
             <span class="ride-tier__body">
               <span class="ride-tier__top">
                 <span class="ride-tier__name">{{ tier.name }}</span>
@@ -66,8 +62,14 @@
               </span>
               <span class="ride-tier__desc">{{ tier.description }}</span>
               <span class="ride-tier__meta">
-                <span>👤 {{ tier.seats }}</span>
-                <span>⏱ {{ tier.eta }}</span>
+                <span class="ride-tier__meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {{ tier.seats }}
+                </span>
+                <span class="ride-tier__meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {{ tier.eta }}
+                </span>
               </span>
             </span>
             <span class="ride-tier__fare">{{ tier.fare }} est.</span>
@@ -85,5 +87,7 @@
 {% endblock %}
 
 {% block page_scripts %}
+<script type="application/json" id="rider-route-map-data">{{ route_map | tojson }}</script>
+<script src="{{ url_for('static', filename='js/user-route-map.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-book-ride.js') }}"></script>
 {% endblock %}
