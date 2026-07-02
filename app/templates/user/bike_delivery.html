@@ -1,0 +1,93 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'bike_delivery' %}
+{% set user_leaflet = true %}
+
+{% block user_content %}
+<div class="book-ride-layout bike-delivery-layout">
+  <section class="rider-panel rider-panel--map book-ride-map">
+    {% include "user/includes/route_map.html" %}
+  </section>
+
+  <section class="rider-panel bike-delivery-panel">
+    <form method="post" class="bike-delivery-form" id="bike-delivery-form">
+      <article class="bike-delivery-hero">
+        <span class="bike-delivery-hero__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M15 6a1 1 0 0 0-1-1H9l-2 4h11l-2-5Z"/><path d="M8 17.5h8"/></svg>
+        </span>
+        <div>
+          <h2 class="bike-delivery-hero__title">JCRide Delivery · Bike</h2>
+          <p class="bike-delivery-hero__sub">Fastest in traffic · ETA {{ delivery.pickup_eta }} pickup</p>
+        </div>
+      </article>
+
+      <div class="bike-delivery-form__section">
+        <h3 class="bike-delivery-form__label">Pickup &amp; Drop-off</h3>
+        <div class="route-inputs">
+          <label class="route-input">
+            <span class="route-input__dot route-input__dot--pickup" aria-hidden="true"></span>
+            <input type="text" name="pickup" value="{{ delivery.pickup }}" placeholder="Pickup location" required>
+          </label>
+          <label class="route-input">
+            <span class="route-input__dot route-input__dot--dropoff" aria-hidden="true"></span>
+            <input type="text" name="dropoff" value="{{ delivery.dropoff }}" placeholder="Drop-off location" required>
+          </label>
+        </div>
+      </div>
+
+      <div class="bike-delivery-form__section">
+        <label class="bike-delivery-form__label" for="package_notes">Package details</label>
+        <textarea
+          id="package_notes"
+          name="package_notes"
+          class="bike-delivery-notes"
+          rows="3"
+          placeholder="Delivery notes (e.g. fragile, leave at gate)"
+        >{{ delivery.package_notes }}</textarea>
+      </div>
+
+      <div class="bike-delivery-form__section">
+        <h3 class="bike-delivery-form__label">Recipient</h3>
+        <div class="bike-delivery-recipient">
+          <label class="route-input">
+            <input type="text" name="recipient_name" value="{{ delivery.recipient_name }}" placeholder="Recipient name" required>
+          </label>
+          <label class="route-input">
+            <input type="tel" name="recipient_phone" value="{{ delivery.recipient_phone }}" placeholder="Phone number" required>
+          </label>
+        </div>
+      </div>
+
+      <div class="trip-stats bike-delivery-stats">
+        <div class="trip-stat">
+          <span class="trip-stat__label">Distance</span>
+          <span class="trip-stat__value" id="bike-delivery-distance">{{ delivery.distance }}</span>
+        </div>
+        <div class="trip-stat">
+          <span class="trip-stat__label">ETA</span>
+          <span class="trip-stat__value" id="bike-delivery-eta">{{ delivery.eta }}</span>
+        </div>
+        <div class="trip-stat">
+          <span class="trip-stat__label">Fare</span>
+          <span class="trip-stat__value" id="bike-delivery-fare">{{ delivery.fare }}</span>
+        </div>
+      </div>
+
+      <div class="bike-delivery-insurance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Insured up to {{ delivery.insurance_cap }} · Live tracking included</span>
+      </div>
+
+      <button type="submit" class="rider-btn rider-btn--request rider-btn--icon" id="bike-delivery-submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M15 6a1 1 0 0 0-1-1H9l-2 4h11l-2-5Z"/><path d="M8 17.5h8"/></svg>
+        Request bike — {{ delivery.fare }}
+      </button>
+    </form>
+  </section>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script type="application/json" id="rider-route-map-data">{{ route_map | tojson }}</script>
+<script src="{{ url_for('static', filename='js/user-route-map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-bike-delivery.js') }}"></script>
+{% endblock %}

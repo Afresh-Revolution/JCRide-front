@@ -1,0 +1,107 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'notifications' %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-notifications.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<div class="rider-notifications-layout">
+  <article class="rider-panel rider-notifications-inbox">
+    <header class="rider-notifications-inbox__header">
+      <div>
+        <h2 class="rider-notifications-inbox__title">Inbox</h2>
+        <p class="rider-notifications-inbox__sub" id="notifications-inbox-sub">
+          {{ inbox_meta.unread_count }} unread · last 7 days
+        </p>
+      </div>
+      <button type="button" class="rider-notifications-mark-read" id="notifications-mark-all"{% if inbox_meta.unread_count == 0 %} disabled{% endif %}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/><polyline points="20 12 9 23 4 18" transform="translate(-4 -6)"/></svg>
+        Mark all read
+      </button>
+    </header>
+
+    <div class="rider-notifications-list" id="notifications-list" aria-live="polite">
+      {% for item in notifications %}
+      <article
+        class="rider-notification-item{% if item.unread %} is-unread{% endif %}"
+        data-id="{{ item.id }}"
+        data-unread="{{ 'true' if item.unread else 'false' }}"
+      >
+        <span class="rider-notification-item__icon rider-notification-item__icon--{{ item.kind }}" aria-hidden="true">
+          {% if item.kind == 'ride' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+          {% elif item.kind == 'wallet' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+          {% elif item.kind == 'promo' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          {% elif item.kind == 'security' %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          {% else %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          {% endif %}
+        </span>
+        <div class="rider-notification-item__body">
+          <div class="rider-notification-item__title-row">
+            <h3 class="rider-notification-item__title">{{ item.title }}</h3>
+            {% if item.unread %}
+            <span class="rider-notification-item__dot" aria-label="Unread"></span>
+            {% endif %}
+          </div>
+          <p class="rider-notification-item__text">{{ item.body }}</p>
+        </div>
+        <time class="rider-notification-item__time">{{ item.time }}</time>
+      </article>
+      {% endfor %}
+    </div>
+  </article>
+
+  <aside class="rider-notifications-settings">
+    <article class="rider-panel settings-card">
+      <h2 class="settings-card__title">Notification channels</h2>
+      {% for channel in notification_channels %}
+      <div class="settings-toggle settings-toggle--compact">
+        <div class="settings-toggle__body">
+          <strong>{{ channel.label }}</strong>
+        </div>
+        <label class="user-toggle">
+          <input
+            type="checkbox"
+            class="notification-pref-toggle"
+            data-group="channels"
+            data-id="{{ channel.id }}"
+            {% if channel.enabled %} checked{% endif %}
+          >
+          <span class="user-toggle__slider"></span>
+        </label>
+      </div>
+      {% endfor %}
+    </article>
+
+    <article class="rider-panel settings-card">
+      <h2 class="settings-card__title">What you receive</h2>
+      {% for topic in notification_topics %}
+      <div class="settings-toggle settings-toggle--compact">
+        <div class="settings-toggle__body">
+          <strong>{{ topic.label }}</strong>
+        </div>
+        <label class="user-toggle">
+          <input
+            type="checkbox"
+            class="notification-pref-toggle"
+            data-group="topics"
+            data-id="{{ topic.id }}"
+            {% if topic.enabled %} checked{% endif %}
+          >
+          <span class="user-toggle__slider"></span>
+        </label>
+      </div>
+      {% endfor %}
+    </article>
+  </aside>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-notifications.js') }}"></script>
+{% endblock %}

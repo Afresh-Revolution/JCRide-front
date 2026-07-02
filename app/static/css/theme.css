@@ -29,6 +29,8 @@ html {
     --dash-border: #374151;
     --dash-card: #111827;
     --dash-input-bg: #1f2937;
+    --user-field-bg: #1f2937;
+    --user-field-icon-bg: #243044;
     --dash-green: #4ade80;
     --dash-green-dark: #065f46;
     --dash-green-active: #047857;
@@ -81,6 +83,7 @@ html {
     --user-green-active: #047857;
     --user-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
     --user-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --user-surface-subtle: #1f2937;
 
     /* Driver portal auth */
     --text: #f1f5f9;
@@ -1360,7 +1363,6 @@ html {
   .rider-panel,
   .ride-tier,
   .trip-stat,
-  .wallet-balance-card,
   .wallet-method,
   .wallet-tx,
   .profile-menu__item,
@@ -1460,6 +1462,7 @@ html {
   }
 
   .history-search,
+  .schedule-field__control,
   .schedule-select select,
   .support-field input,
   .support-field select,
@@ -1477,6 +1480,24 @@ html {
     background: rgba(6, 95, 70, 0.25);
     border-color: rgba(16, 185, 129, 0.45);
     color: #6ee7b7;
+  }
+
+  .schedule-class.is-selected .schedule-class__name,
+  .schedule-class.is-selected .schedule-class__rate {
+    color: var(--user-text);
+  }
+
+  .schedule-class.is-selected .schedule-class__rate {
+    color: var(--user-muted);
+  }
+
+  .schedule-class.is-selected .schedule-class__icon {
+    background: var(--user-green-dark);
+    color: #fff;
+  }
+
+  .schedule-field__control input::placeholder {
+    color: #94a3b8;
   }
 
   .wallet-tx--credit .wallet-tx__amount strong {
@@ -1568,7 +1589,6 @@ html {
   .kpi-card__value,
   .rider-kpi-card__value,
   .metric-card__value,
-  .wallet-balance-card__value,
   .trip-stat__value,
   .ride-tier__name,
   .admin-profile__name {
@@ -1580,11 +1600,22 @@ html {
   body.user-body .rider-panel__title,
   body.user-body .book-ride-form__title,
   body.user-body .rider-kpi-card__value,
-  body.user-body .wallet-balance-card__value,
   body.user-body .trip-stat__value,
   body.user-body .ride-tier__name,
   body.user-body .user-profile__name {
     color: var(--user-text);
+  }
+
+  .wallet-balance-card {
+    background: linear-gradient(135deg, var(--user-green) 0%, var(--user-green-dark) 100%);
+    color: #fff;
+    border: none;
+  }
+
+  .wallet-balance-card__label,
+  .wallet-balance-card__value,
+  .wallet-balance-card__sub {
+    color: #fff;
   }
 
   .kpi-card__trend,
@@ -1798,6 +1829,44 @@ html {
   body.admin-body .ride-request-card__route,
   body.admin-body .ride-request-card strong {
     color: var(--dash-text);
+  }
+
+  .wallet-amount__quick button:not(.is-active) {
+    background: var(--user-field-bg);
+    color: var(--user-text);
+    border-color: var(--user-border);
+  }
+
+  .history-filters {
+    background: var(--user-surface-subtle, #1f2937);
+  }
+
+  .history-filter:hover:not(.is-active) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .share-contact__avatar,
+  .share-privacy-card__icon,
+  .settings-toggle__icon {
+    background: var(--user-field-icon-bg);
+  }
+
+  .tracking-step__dot {
+    background: #374151;
+    color: var(--user-muted);
+  }
+
+  .rider-notification-item__icon--ride,
+  .rider-notification-item__icon--wallet,
+  .rider-notification-item__icon--promo,
+  .rider-notification-item__icon--schedule {
+    background: rgba(6, 95, 70, 0.25);
+    color: #6ee7b7;
+  }
+
+  .rider-notification-item__icon--security {
+    background: rgba(194, 65, 12, 0.2);
+    color: #fdba74;
   }
 
   .wallet-balance-card__btn:not(.wallet-balance-card__btn--ghost) {
@@ -2179,6 +2248,120 @@ html[data-user-theme="dark"] {
   --user-green: #4ade80;
   --user-green-dark: #065f46;
   --user-green-active: #047857;
+  --user-field-bg: #1f2937;
+  --user-field-icon-bg: #243044;
+  --user-surface-subtle: #1f2937;
+}
+
+html[data-user-theme="dark"] .wallet-balance-card {
+  background: linear-gradient(135deg, var(--user-green) 0%, var(--user-green-dark) 100%);
+  color: #fff;
+  border: none;
+}
+
+html[data-user-theme="dark"] .wallet-balance-card__label,
+html[data-user-theme="dark"] .wallet-balance-card__value,
+html[data-user-theme="dark"] .wallet-balance-card__sub {
+  color: #fff;
+}
+
+html[data-user-theme="dark"] .wallet-amount__quick button:not(.is-active) {
+  background: var(--user-field-bg);
+  color: var(--user-text);
+  border-color: var(--user-border);
+}
+
+html[data-user-theme="dark"] .history-filters {
+  background: var(--user-surface-subtle);
+}
+
+html[data-user-theme="dark"] .history-filter:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html[data-user-theme="dark"] .bike-delivery-notes,
+html[data-user-theme="dark"] .schedule-select select,
+html[data-user-theme="dark"] .share-link-field__input,
+html[data-user-theme="dark"] .profile-form input,
+html[data-user-theme="dark"] .settings-field select,
+html[data-user-theme="dark"] .support-field select,
+html[data-user-theme="dark"] .support-field input,
+html[data-user-theme="dark"] .support-field textarea {
+  background: var(--user-field-bg);
+  color: var(--user-text);
+  border-color: var(--user-border);
+}
+
+html[data-user-theme="dark"] .share-contact__avatar,
+html[data-user-theme="dark"] .share-privacy-card__icon,
+html[data-user-theme="dark"] .settings-toggle__icon {
+  background: var(--user-field-icon-bg);
+}
+
+html[data-user-theme="dark"] .schedule-form-footer,
+html[data-user-theme="dark"] .settings-toggle,
+html[data-user-theme="dark"] .settings-action-row {
+  border-color: var(--user-border);
+}
+
+html[data-user-theme="dark"] .rider-notifications-mark-read:hover:not(:disabled) {
+  background: var(--user-field-bg);
+  border-color: var(--user-border);
+}
+
+html[data-user-theme="dark"] .tracking-step__dot {
+  background: #374151;
+}
+
+html[data-user-theme="dark"] .rider-notification-item__icon--ride,
+html[data-user-theme="dark"] .rider-notification-item__icon--wallet,
+html[data-user-theme="dark"] .rider-notification-item__icon--promo,
+html[data-user-theme="dark"] .rider-notification-item__icon--schedule {
+  background: rgba(6, 95, 70, 0.25);
+  color: #6ee7b7;
+}
+
+html[data-user-theme="dark"] .rider-notification-item__icon--security {
+  background: rgba(194, 65, 12, 0.2);
+  color: #fdba74;
+}
+
+html[data-user-theme="dark"] .schedule-field__control,
+html[data-user-theme="dark"] .schedule-select select {
+  background: var(--user-field-bg);
+  border-color: var(--user-border);
+  color: var(--user-text);
+}
+
+html[data-user-theme="dark"] .schedule-field__control input {
+  color: var(--user-text);
+}
+
+html[data-user-theme="dark"] .schedule-field__control input::placeholder {
+  color: #94a3b8;
+}
+
+html[data-user-theme="dark"] .schedule-class__icon {
+  background: var(--user-field-icon-bg);
+  color: #94a3b8;
+}
+
+html[data-user-theme="dark"] .schedule-class.is-selected {
+  background: rgba(6, 95, 70, 0.25);
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+html[data-user-theme="dark"] .schedule-class.is-selected .schedule-class__name {
+  color: var(--user-text);
+}
+
+html[data-user-theme="dark"] .schedule-class.is-selected .schedule-class__rate {
+  color: var(--user-muted);
+}
+
+html[data-user-theme="dark"] .schedule-class.is-selected .schedule-class__icon {
+  background: var(--user-green-dark);
+  color: #fff;
 }
 
 html[data-user-theme="light"] {
@@ -2199,6 +2382,9 @@ html[data-user-theme="light"] {
   --user-green: #0d6b38;
   --user-green-dark: #0a4f2a;
   --user-green-active: #0a4f2a;
+  --user-field-bg: #f9fafb;
+  --user-field-icon-bg: #f3f4f6;
+  --user-surface-subtle: #f3f4f6;
 }
 
 .flash-dismissible {

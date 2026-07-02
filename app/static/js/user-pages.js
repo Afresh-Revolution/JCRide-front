@@ -33,12 +33,26 @@
     });
   });
 
+  var historySearch = document.querySelector(".history-search input");
+  var historyRows = document.querySelectorAll(".rider-table--history tbody tr");
+  if (historySearch && historyRows.length) {
+    historySearch.addEventListener("input", function () {
+      var query = historySearch.value.trim().toLowerCase();
+      historyRows.forEach(function (row) {
+        var text = row.textContent.toLowerCase();
+        row.hidden = query.length > 0 && text.indexOf(query) === -1;
+      });
+    });
+  }
+
   document.querySelectorAll("#wallet-methods .wallet-method").forEach(function (card) {
     card.addEventListener("click", function () {
       document.querySelectorAll("#wallet-methods .wallet-method").forEach(function (el) {
         el.classList.remove("is-selected");
       });
       card.classList.add("is-selected");
+      var input = card.querySelector('input[type="radio"]');
+      if (input) input.checked = true;
     });
   });
 
@@ -53,6 +67,20 @@
         var amount = Number(btn.getAttribute("data-amount") || 0);
         amountDisplay.textContent = "₦ " + amount.toLocaleString("en-NG");
       }
+    });
+  });
+
+  document.querySelectorAll(".schedule-item__delete").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var item = btn.closest(".schedule-item");
+      if (item) item.remove();
+    });
+  });
+
+  document.querySelectorAll(".schedule-item__actions .rider-btn--danger-text").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var item = btn.closest(".schedule-item");
+      if (item) item.remove();
     });
   });
 

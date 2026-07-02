@@ -8,7 +8,10 @@
       <span class="profile-summary__avatar">{{ rider_initials }}</span>
       <h2 class="profile-summary__name">{{ profile.full_name }}</h2>
       <p class="profile-summary__since">Member since {{ profile.member_since }}</p>
-      <span class="profile-summary__badge">★ {{ profile.badge }}</span>
+      <span class="profile-summary__badge">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        {{ profile.badge }}
+      </span>
     </div>
     <nav class="profile-menu" aria-label="Profile sections">
       {% for item in profile_menu %}
@@ -23,9 +26,9 @@
   <section class="rider-panel profile-form-panel">
     <div class="profile-form-header">
       <h2 class="rider-panel__title">Personal information</h2>
-      <button type="button" class="rider-btn rider-btn--dark-sm">Save changes</button>
+      <button type="submit" class="rider-btn rider-btn--dark-sm" form="profile-form">Save changes</button>
     </div>
-    <form class="profile-form" method="post">
+    <form class="profile-form" method="post" id="profile-form">
       <div class="profile-form__grid">
         <label>
           <span>FULL NAME</span>

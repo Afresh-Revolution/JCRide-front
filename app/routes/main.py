@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, get_flashed_messages, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, get_flashed_messages, jsonify, redirect, render_template, request, session, url_for
 from datetime import datetime
 import re
 import uuid
@@ -18,15 +18,19 @@ from app.services.api_client import (
     verify_otp,
 )
 from app.rider_defaults import (
+    BIKE_DELIVERY_DEFAULTS,
     BOOK_RIDE_DEFAULTS,
     LIVE_AREA,
     LIVE_TRACKING,
+    NOTIFICATION_CHANNELS,
+    NOTIFICATION_TOPICS,
     PROFILE_DEFAULTS,
     PROFILE_MENU,
     RECENT_TRIPS,
     RIDE_HISTORY_TRIPS,
     RIDE_TIERS,
     RIDER_STATS,
+    RIDER_NOTIFICATIONS,
     SCHEDULE_CLASS_LABELS,
     SCHEDULE_FARE_RANGES,
     SCHEDULE_FORM,
@@ -39,6 +43,7 @@ from app.rider_defaults import (
     WALLET_SUMMARY,
     WALLET_TRANSACTIONS,
     build_live_area_map,
+    build_route_map,
 )
 from app.services.landing_content import load_landing_page
 
@@ -46,6 +51,8 @@ main_bp = Blueprint("main", __name__)
 
 DRIVER_SIGNUP_KEY = "driver_signup"
 RIDER_SIGNUP_KEY = "rider_signup"
+RIDER_NOTIFICATION_STATES_KEY = "rider_notification_states"
+RIDER_NOTIFICATION_PREFS_KEY = "rider_notification_prefs"
 DRIVER_SIGNUP_STEPS = {
     1: "Personal info",
     2: "Documents",
@@ -147,10 +154,85 @@ def _profile_context() -> dict:
     return profile
 
 
+def _tracking_page_context() -> dict:
+    active = session.get("active_trip") or {}
+    tracking = dict(LIVE_TRACKING)
+    finding = dict(TRACKING_FINDING)
+    vehicle_type = active.get("vehicle_type") or "car"
+
+    if active.get("pickup"):
+        tracking["pickup"] = active["pickup"]
+        finding["pickup"] = active["pickup"]
+    if active.get("dropoff"):
+        tracking["destination"] = active["dropoff"]
+        finding["destination"] = active["dropoff"]
+    if active.get("fare"):
+        finding["fare_estimate"] = active["fare"]
+
+    route_map = build_route_map(
+        tracking["pickup"],
+        tracking["destination"],
+        badge_label=tracking.get("status_label", "Live trip"),
+        vehicle_type=vehicle_type,
+    )
+    return {
+        "tracking": tracking,
+        "finding": finding,
+        "route_map": route_map,
+    }
+
+
+def _notifications_inbox() -> list[dict]:
+    overrides = session.get(RIDER_NOTIFICATION_STATES_KEY) or {}
+    items = []
+    for row in RIDER_NOTIFICATIONS:
+        item = dict(row)
+        state = overrides.get(item["id"])
+        if state and "read" in state:
+            item["unread"] = not state["read"]
+        else:
+            item["unread"] = bool(row.get("unread"))
+        items.append(item)
+    return items
+
+
+def _notification_channels() -> list[dict]:
+    stored = (session.get(RIDER_NOTIFICATION_PREFS_KEY) or {}).get("channels") or {}
+    channels = []
+    for row in NOTIFICATION_CHANNELS:
+        item = dict(row)
+        if row["id"] in stored:
+            item["enabled"] = bool(stored[row["id"]])
+        channels.append(item)
+    return channels
+
+
+def _notification_topics() -> list[dict]:
+    stored = (session.get(RIDER_NOTIFICATION_PREFS_KEY) or {}).get("topics") or {}
+    topics = []
+    for row in NOTIFICATION_TOPICS:
+        item = dict(row)
+        if row["id"] in stored:
+            item["enabled"] = bool(stored[row["id"]])
+        topics.append(item)
+    return topics
+
+
+def _notifications_inbox_meta(notifications: list[dict]) -> dict:
+    unread_count = sum(1 for item in notifications if item.get("unread"))
+    return {"unread_count": unread_count}
+
+
 def _require_rider():
     if not session.get("token"):
         flash("Please sign in to access your rider dashboard.", "error")
         return redirect(url_for("main.rider_login_page"))
+    return None
+
+
+def _require_rider_api():
+    if not session.get("token"):
+        return jsonify({"error": "unauthorized"}), 401
     return None
 
 
@@ -925,18 +1007,81 @@ def user_book_ride():
         dropoff = request.form.get("dropoff", "").strip()
         tier = request.form.get("tier", "economy")
         booking.update({"pickup": pickup, "dropoff": dropoff})
+        session["active_trip"] = {
+            "pickup": pickup,
+            "dropoff": dropoff,
+            "tier": tier,
+            "vehicle_type": "car",
+        }
         try:
             request_ride(session["token"], pickup, dropoff)
             flash(f"Ride requested ({tier}) — waiting for a driver.", "success")
-            return redirect(url_for("main.user_live_tracking", reset=1))
         except ApiError as exc:
-            flash(exc.message, "error")
+            flash(
+                f"Demo mode: could not reach the ride API ({exc.message}). "
+                "Showing live tracking preview.",
+                "info",
+            )
+        return redirect(url_for("main.user_live_tracking", reset=1))
 
     return render_template(
         "user/book_ride.html",
         active_page="book_ride",
         booking=booking,
         ride_tiers=RIDE_TIERS,
+        route_map=build_route_map(
+            booking["pickup"],
+            booking["dropoff"],
+            badge_label="Pickup → Destination",
+            vehicle_type="car",
+        ),
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/bike-delivery", methods=["GET", "POST"])
+def user_bike_delivery():
+    guard = _require_rider()
+    if guard:
+        return guard
+
+    delivery = dict(BIKE_DELIVERY_DEFAULTS)
+
+    if request.method == "POST":
+        pickup = request.form.get("pickup", "").strip()
+        dropoff = request.form.get("dropoff", "").strip()
+        delivery.update({
+            "pickup": pickup,
+            "dropoff": dropoff,
+            "package_notes": request.form.get("package_notes", "").strip(),
+            "recipient_name": request.form.get("recipient_name", "").strip(),
+            "recipient_phone": request.form.get("recipient_phone", "").strip(),
+        })
+
+        if not pickup or not dropoff:
+            flash("Enter both pickup and drop-off locations.", "error")
+        elif not delivery["recipient_name"] or not delivery["recipient_phone"]:
+            flash("Enter recipient name and phone number.", "error")
+        else:
+            session["active_trip"] = {
+                "pickup": pickup,
+                "dropoff": dropoff,
+                "fare": delivery["fare"],
+                "vehicle_type": "bike",
+            }
+            flash(f"Bike delivery requested — {delivery['fare']}. Courier on the way.", "success")
+            return redirect(url_for("main.user_live_tracking", reset=1))
+
+    return render_template(
+        "user/bike_delivery.html",
+        active_page="bike_delivery",
+        delivery=delivery,
+        route_map=build_route_map(
+            delivery["pickup"],
+            delivery["dropoff"],
+            badge_label="Pickup — Drop-off · Bike courier",
+            vehicle_type="bike",
+        ),
         **_rider_context(),
     )
 
@@ -1031,10 +1176,19 @@ def user_live_tracking():
     return render_template(
         "user/live_tracking.html",
         active_page="live_tracking",
-        tracking=LIVE_TRACKING,
-        finding=TRACKING_FINDING,
+        **_tracking_page_context(),
         **_rider_context(),
     )
+
+
+@main_bp.route("/user/live-tracking/cancel")
+def user_cancel_ride_request():
+    guard = _require_rider()
+    if guard:
+        return guard
+    session.pop("active_trip", None)
+    flash("Ride request cancelled.", "info")
+    return redirect(url_for("main.user_dashboard"))
 
 
 @main_bp.route("/user/live-tracking/share")
@@ -1120,6 +1274,89 @@ def user_settings():
         settings=SETTINGS_DEFAULTS,
         **_rider_context(),
     )
+
+
+@main_bp.route("/user/notifications")
+def user_notifications():
+    guard = _require_rider()
+    if guard:
+        return guard
+
+    notifications = _notifications_inbox()
+    return render_template(
+        "user/notifications.html",
+        active_page="notifications",
+        notifications=notifications,
+        inbox_meta=_notifications_inbox_meta(notifications),
+        notification_channels=_notification_channels(),
+        notification_topics=_notification_topics(),
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/api/notifications/<notification_id>/read", methods=["POST"])
+def user_notification_mark_read(notification_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+
+    known_ids = {row["id"] for row in RIDER_NOTIFICATIONS}
+    if notification_id not in known_ids:
+        return jsonify({"error": "not_found"}), 404
+
+    states = dict(session.get(RIDER_NOTIFICATION_STATES_KEY) or {})
+    states[notification_id] = {"read": True}
+    session[RIDER_NOTIFICATION_STATES_KEY] = states
+
+    notifications = _notifications_inbox()
+    return jsonify({
+        "ok": True,
+        "inbox_meta": _notifications_inbox_meta(notifications),
+    })
+
+
+@main_bp.route("/user/api/notifications/read-all", methods=["POST"])
+def user_notifications_mark_all_read():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+
+    states = dict(session.get(RIDER_NOTIFICATION_STATES_KEY) or {})
+    for row in RIDER_NOTIFICATIONS:
+        states[row["id"]] = {"read": True}
+    session[RIDER_NOTIFICATION_STATES_KEY] = states
+
+    notifications = _notifications_inbox()
+    return jsonify({
+        "ok": True,
+        "inbox_meta": _notifications_inbox_meta(notifications),
+    })
+
+
+@main_bp.route("/user/api/notifications/preferences", methods=["PATCH"])
+def user_notifications_preferences():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+
+    payload = request.get_json(silent=True) or {}
+    group = payload.get("group")
+    pref_id = payload.get("id")
+    enabled = bool(payload.get("enabled"))
+
+    valid_groups = {
+        "channels": {row["id"] for row in NOTIFICATION_CHANNELS},
+        "topics": {row["id"] for row in NOTIFICATION_TOPICS},
+    }
+    if group not in valid_groups or pref_id not in valid_groups[group]:
+        return jsonify({"error": "invalid_preference"}), 400
+
+    prefs = dict(session.get(RIDER_NOTIFICATION_PREFS_KEY) or {})
+    prefs.setdefault(group, {})
+    prefs[group][pref_id] = enabled
+    session[RIDER_NOTIFICATION_PREFS_KEY] = prefs
+
+    return jsonify({"ok": True})
 
 
 @main_bp.route("/user/support", methods=["GET", "POST"])

@@ -71,6 +71,74 @@ def build_live_area_map(location_label: str = "Lekki, Lagos", driver_count: int 
         "drivers": drivers,
     }
 
+
+LOCATION_ALIASES = (
+    ("lekki", "lekki, lagos"),
+    ("victoria island", "victoria island, lagos"),
+    ("vi", "victoria island, lagos"),
+    ("yaba", "yaba, lagos"),
+    ("ikeja", "ikeja, lagos"),
+    ("surulere", "surulere, lagos"),
+    ("lagos", "lagos"),
+    ("abuja", "abuja"),
+    ("port harcourt", "port harcourt"),
+    ("ibadan", "ibadan"),
+)
+
+
+def resolve_location_coords(label: str) -> dict:
+    """Resolve a free-text address to demo coordinates."""
+    key = label.strip().lower()
+    if key in RIDER_LOCATION_COORDS:
+        return dict(RIDER_LOCATION_COORDS[key])
+
+    for part in key.split(","):
+        part = part.strip()
+        if part in RIDER_LOCATION_COORDS:
+            return dict(RIDER_LOCATION_COORDS[part])
+
+    for alias, coord_key in LOCATION_ALIASES:
+        if alias in key:
+            return dict(RIDER_LOCATION_COORDS[coord_key])
+
+    return dict(RIDER_LOCATION_COORDS["lekki, lagos"])
+
+
+def build_route_map(
+    pickup_label: str,
+    dropoff_label: str,
+    *,
+    badge_label: str | None = None,
+    vehicle_type: str = "car",
+) -> dict:
+    """Build Leaflet route map config for book ride and bike delivery."""
+    pickup = resolve_location_coords(pickup_label)
+    dropoff = resolve_location_coords(dropoff_label)
+    vehicle = {
+        "lat": round((pickup["lat"] + dropoff["lat"]) / 2 + 0.002, 6),
+        "lng": round((pickup["lng"] + dropoff["lng"]) / 2 - 0.001, 6),
+    }
+    mid_route = {
+        "lat": round((pickup["lat"] + dropoff["lat"]) / 2 + 0.001, 6),
+        "lng": round((pickup["lng"] + dropoff["lng"]) / 2 + 0.0015, 6),
+    }
+
+    return {
+        "pickup_label": pickup_label,
+        "dropoff_label": dropoff_label,
+        "badge_label": badge_label or "Pickup — Drop-off",
+        "pickup": pickup,
+        "dropoff": dropoff,
+        "vehicle_position": vehicle,
+        "vehicle_type": vehicle_type,
+        "map_zoom": 13,
+        "route": [
+            [pickup["lat"], pickup["lng"]],
+            [mid_route["lat"], mid_route["lng"]],
+            [dropoff["lat"], dropoff["lng"]],
+        ],
+    }
+
 RECENT_TRIPS = [
     {
         "date": "Today",
@@ -107,6 +175,20 @@ BOOK_RIDE_DEFAULTS = {
     "distance": "8.2 km",
     "duration": "22 min",
     "est_fare": "₦3,450",
+}
+
+BIKE_DELIVERY_DEFAULTS = {
+    "pickup": "Lekki Phase 1, Lagos",
+    "dropoff": "Yaba Tech, Lagos",
+    "package_notes": "",
+    "recipient_name": "Chinedu A.",
+    "recipient_phone": "+234 803 000 0000",
+    "distance": "9.4 km",
+    "eta": "24 min",
+    "fare": "₦2,200",
+    "fare_num": 2200,
+    "insurance_cap": "₦50,000",
+    "pickup_eta": "6 min",
 }
 
 RIDE_TIERS = [
@@ -267,7 +349,7 @@ WALLET_SUMMARY = {
 
 WALLET_TRANSACTIONS = [
     {"type": "debit", "title": "Trip JCR-29481 · Lekki → V.I.", "time": "Today · 09:22", "amount": "-₦3,450", "status": "Success"},
-    {"type": "credit", "title": "Monnify Bank Transfer", "time": "Today · 08:10", "amount": "+₦20,000", "status": "Success"},
+    {"type": "credit", "title": "Paystack Bank Transfer", "time": "Today · 08:10", "amount": "+₦20,000", "status": "Success"},
     {"type": "debit", "title": "Trip JCR-29478 · Yaba → Ikeja", "time": "Mar 24 · 19:08", "amount": "-₦5,820", "status": "Success"},
     {"type": "refund", "title": "Refund · Trip JCR-29470", "time": "Mar 22 · 15:01", "amount": "+₦780", "status": "Refunded"},
     {"type": "credit", "title": "Card Top-up · **** 4521", "time": "Mar 21 · 10:34", "amount": "+₦10,000", "status": "Success"},
@@ -323,3 +405,69 @@ SETTINGS_DEFAULTS = {
     "distance_units": "Kilometers (km)",
     "timezone": "WAT · Africa/Lagos (UTC+1)",
 }
+
+RIDER_NOTIFICATIONS = [
+    {
+        "id": "ntf-001",
+        "kind": "ride",
+        "title": "Driver arriving in 2 min",
+        "body": "Tunde B. is approaching pickup at 14 Admiralty Way.",
+        "time": "Just now",
+        "unread": True,
+    },
+    {
+        "id": "ntf-002",
+        "kind": "wallet",
+        "title": "Wallet top-up successful",
+        "body": "₦10,000 credited via Paystack · Ref PS-998213",
+        "time": "12 min ago",
+        "unread": True,
+    },
+    {
+        "id": "ntf-003",
+        "kind": "promo",
+        "title": "Promo: 20% off weekend rides",
+        "body": "Use code WEEKEND20 — valid until Sun 23:59 WAT.",
+        "time": "2 h ago",
+        "unread": True,
+    },
+    {
+        "id": "ntf-004",
+        "kind": "security",
+        "title": "New device sign-in",
+        "body": "Chrome on Windows · Lagos, NG. Was this you?",
+        "time": "Yesterday",
+        "unread": False,
+    },
+    {
+        "id": "ntf-005",
+        "kind": "ride",
+        "title": "Trip receipt available",
+        "body": "Lekki → Ikeja · ₦4,820 · Rate your driver.",
+        "time": "Yesterday",
+        "unread": False,
+    },
+    {
+        "id": "ntf-006",
+        "kind": "schedule",
+        "title": "Scheduled ride reminder",
+        "body": "Airport pickup on Fri 06:30 AM is confirmed.",
+        "time": "2 d ago",
+        "unread": False,
+    },
+]
+
+NOTIFICATION_CHANNELS = [
+    {"id": "push", "label": "Push notifications", "enabled": True},
+    {"id": "sms", "label": "SMS alerts", "enabled": True},
+    {"id": "email", "label": "Email updates", "enabled": False},
+    {"id": "whatsapp", "label": "WhatsApp messages", "enabled": True},
+]
+
+NOTIFICATION_TOPICS = [
+    {"id": "ride_status", "label": "Ride status updates", "enabled": True},
+    {"id": "driver_arrival", "label": "Driver arrival alerts", "enabled": True},
+    {"id": "receipts", "label": "Receipts & payments", "enabled": True},
+    {"id": "promotions", "label": "Promotions & offers", "enabled": False},
+    {"id": "security", "label": "Security alerts", "enabled": True},
+]

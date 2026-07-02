@@ -33,28 +33,34 @@
 <div class="wallet-layout">
   <section class="rider-panel wallet-fund">
     <h2 class="rider-panel__title">Fund wallet</h2>
-    <p class="rider-panel__subtitle">Powered by Monnify · Instant credit</p>
+    <p class="rider-panel__subtitle">Powered by Paystack · Instant credit</p>
 
     <div class="wallet-methods" id="wallet-methods">
       <label class="wallet-method">
         <input type="radio" name="payment_method" value="transfer">
-        <span class="wallet-method__icon">🏦</span>
+        <span class="wallet-method__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
+        </span>
         <span class="wallet-method__body">
-          <strong>Monnify Bank Transfer</strong>
+          <strong>Paystack Bank Transfer</strong>
           <span>0% fee · Instant</span>
         </span>
       </label>
       <label class="wallet-method">
         <input type="radio" name="payment_method" value="virtual">
-        <span class="wallet-method__icon">👛</span>
+        <span class="wallet-method__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+        </span>
         <span class="wallet-method__body">
-          <strong>Monnify Virtual Account</strong>
-          <span>Dedicated account number</span>
+          <strong>Paystack USSD</strong>
+          <span>Dial code · Instant confirmation</span>
         </span>
       </label>
       <label class="wallet-method is-selected">
         <input type="radio" name="payment_method" value="card" checked>
-        <span class="wallet-method__icon">💳</span>
+        <span class="wallet-method__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </span>
         <span class="wallet-method__body">
           <strong>Debit Card</strong>
           <span>Visa · Verve · Mastercard</span>
@@ -73,7 +79,7 @@
       </div>
     </div>
 
-    <button type="button" class="rider-btn rider-btn--request">Continue with Monnify</button>
+    <button type="button" class="rider-btn rider-btn--request">Continue with Paystack</button>
   </section>
 
   <section class="rider-panel wallet-transactions">
