@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Choose your portal — JosRide</title>
   {% from "includes/brand_assets.html" import brand_stylesheet, brand_mark %}
-  {% from "includes/pwa_head.html" import pwa_head, pwa_scripts %}
+  {% from "includes/pwa_head.html" import pwa_head, pwa_scripts, pwa_body_start %}
   {{ pwa_head() }}
   {{ brand_stylesheet() }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
 </head>
 <body class="portal-page">
+  {{ pwa_body_start() }}
   <header class="portal-header">
     <div class="portal-header__inner">
       <a href="{{ url_for('main.home') }}" class="portal-brand">
