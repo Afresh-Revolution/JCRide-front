@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{% block title %}Driver Portal — JosRide NAIJA{% endblock %}</title>
-  {% from "includes/brand_assets.html" import favicon_links, brand_stylesheet %}
-  {{ favicon_links() }}
+  {% from "includes/brand_assets.html" import brand_stylesheet %}
+  {% from "includes/pwa_head.html" import pwa_head, pwa_scripts %}
+  {{ pwa_head() }}
   {{ brand_stylesheet() }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,5 +16,6 @@
 <body class="admin-body driver-portal">
   {% block body %}{% endblock %}
   {% block scripts %}{% endblock %}
+  {{ pwa_scripts() }}
 </body>
 </html>

@@ -105,6 +105,70 @@ body.admin-body a {
   transform: translateY(-7px) rotate(-45deg);
 }
 
+.admin-topbar__brand {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-topbar__logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--dash-green);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.admin-topbar__logo img,
+.admin-topbar__logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-topbar__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.admin-topbar__brand-name {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--dash-text);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-topbar__brand-naija {
+  font-weight: 600;
+}
+
+.admin-topbar__badge {
+  display: inline-block;
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
+  width: fit-content;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dash-green);
+  background: rgba(13, 107, 56, 0.12);
+  padding: 0.125rem 0.4rem;
+  border-radius: 999px;
+}
+
 .admin-sidebar__brand {
   display: flex;
   align-items: center;
@@ -731,7 +795,7 @@ body.admin-body a {
   position: absolute;
   top: 1rem;
   left: 1rem;
-  z-index: 450;
+  z-index: 10;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--dash-text);
@@ -822,6 +886,14 @@ body.admin-body a {
     display: flex;
   }
 
+  .admin-topbar__brand {
+    display: flex;
+  }
+
+  .admin-sidebar__brand {
+    display: none;
+  }
+
   .admin-sidebar-backdrop {
     display: block;
   }
@@ -855,6 +927,10 @@ body.admin-body a {
     flex-wrap: wrap;
     gap: 0.75rem;
     padding: 0.875rem 1rem;
+  }
+
+  .admin-topbar__actions {
+    margin-left: auto;
   }
 
   .admin-topbar__search {
