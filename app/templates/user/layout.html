@@ -33,4 +33,6 @@
 <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 {% block page_scripts %}{% endblock %}
 <script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
+{% from "includes/pwa_head.html" import pwa_scripts %}
+{{ pwa_scripts() }}
 {% endblock %}
