@@ -1,4 +1,4 @@
-"""Map JCRide-back admin API payloads to the shapes expected by admin UI templates/JS."""
+"""Map JosRide-back admin API payloads to the shapes expected by admin UI templates/JS."""
 
 from __future__ import annotations
 

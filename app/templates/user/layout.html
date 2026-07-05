@@ -9,12 +9,14 @@
 {% endblock %}
 
 {% block body %}
-<div class="user-app">
-  <div class="user-sidebar-backdrop" id="user-sidebar-backdrop" aria-hidden="true"></div>
+<div class="admin-app">
+  <div class="admin-sidebar-backdrop" id="user-sidebar-backdrop" aria-hidden="true"></div>
   {% include "user/includes/sidebar.html" %}
-  <div class="user-main">
+  <div class="admin-main">
     {% include "user/includes/header.html" %}
-    <div class="user-content">
+    <div class="admin-content">
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('user-flash-container', 'user-flash', 'user-flash--') }}
       {% block user_content %}{% endblock %}
     </div>
   </div>
@@ -22,9 +24,13 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/user-layout.js') }}"></script>
 {% if user_leaflet %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 {% endif %}
+<script src="{{ url_for('static', filename='js/user-geolocation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 {% block page_scripts %}{% endblock %}
+<script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
 {% endblock %}

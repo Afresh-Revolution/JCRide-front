@@ -2,14 +2,19 @@
 {% set active_page = 'wallet' %}
 
 {% block user_content %}
+<script type="application/json" id="wallet-api-config">{{ {
+  "email": user_email,
+  "callbackUrl": url_for('main.user_wallet', _external=True)
+} | tojson }}</script>
+
 <section class="wallet-kpi-grid">
   <article class="wallet-balance-card">
     <span class="wallet-balance-card__label">JosRide Wallet</span>
     <p class="wallet-balance-card__value">{{ wallet.balance }}</p>
     <p class="wallet-balance-card__sub">{{ wallet.balance_sub }}</p>
     <div class="wallet-balance-card__actions">
-      <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost">+ Fund wallet</button>
-      <button type="button" class="wallet-balance-card__btn">Withdraw</button>
+      <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost" id="wallet-manual-fund-btn">+ Fund wallet</button>
+      <button type="button" class="wallet-balance-card__btn" id="wallet-withdraw-btn">Withdraw</button>
     </div>
   </article>
   <article class="rider-kpi-card">
@@ -33,28 +38,34 @@
 <div class="wallet-layout">
   <section class="rider-panel wallet-fund">
     <h2 class="rider-panel__title">Fund wallet</h2>
-    <p class="rider-panel__subtitle">Powered by Monnify · Instant credit</p>
+    <p class="rider-panel__subtitle">Powered by Paystack · Instant credit</p>
 
     <div class="wallet-methods" id="wallet-methods">
       <label class="wallet-method">
         <input type="radio" name="payment_method" value="transfer">
-        <span class="wallet-method__icon">🏦</span>
+        <span class="wallet-method__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
+        </span>
         <span class="wallet-method__body">
-          <strong>Monnify Bank Transfer</strong>
+          <strong>Paystack Bank Transfer</strong>
           <span>0% fee · Instant</span>
         </span>
       </label>
       <label class="wallet-method">
         <input type="radio" name="payment_method" value="virtual">
-        <span class="wallet-method__icon">👛</span>
+        <span class="wallet-method__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+        </span>
         <span class="wallet-method__body">
-          <strong>Monnify Virtual Account</strong>
-          <span>Dedicated account number</span>
+          <strong>Paystack USSD</strong>
+          <span>Dial code · Instant confirmation</span>
         </span>
       </label>
       <label class="wallet-method is-selected">
         <input type="radio" name="payment_method" value="card" checked>
-        <span class="wallet-method__icon">💳</span>
+        <span class="wallet-method__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </span>
         <span class="wallet-method__body">
           <strong>Debit Card</strong>
           <span>Visa · Verve · Mastercard</span>
@@ -73,13 +84,34 @@
       </div>
     </div>
 
-    <button type="button" class="rider-btn rider-btn--request">Continue with Monnify</button>
+    <button type="button" class="rider-btn rider-btn--request" id="wallet-paystack-btn">Continue with Paystack</button>
+
+    <div class="wallet-withdraw-panel" id="wallet-withdraw-panel" hidden>
+      <h3 class="rider-panel__subtitle">Withdraw to bank</h3>
+      <label class="support-field">
+        <span>Amount (₦)</span>
+        <input type="number" id="wallet-withdraw-amount" min="100" step="100" placeholder="5000">
+      </label>
+      <label class="support-field">
+        <span>Bank name</span>
+        <input type="text" id="wallet-withdraw-bank" placeholder="GTBank">
+      </label>
+      <label class="support-field">
+        <span>Account number</span>
+        <input type="text" id="wallet-withdraw-account-number" placeholder="0123456789">
+      </label>
+      <label class="support-field">
+        <span>Account name</span>
+        <input type="text" id="wallet-withdraw-account-name" placeholder="Jane Doe">
+      </label>
+      <button type="button" class="rider-btn rider-btn--dark" id="wallet-withdraw-submit">Submit withdrawal</button>
+    </div>
   </section>
 
   <section class="rider-panel wallet-transactions">
     <div class="rider-panel__header">
       <h2 class="rider-panel__title">Transactions</h2>
-      <button type="button" class="rider-link">↻ Refresh</button>
+      <button type="button" class="rider-link" id="wallet-refresh-btn">↻ Refresh</button>
     </div>
     <ul class="wallet-tx-list">
       {% for tx in transactions %}
@@ -104,4 +136,5 @@
 
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-wallet.js') }}"></script>
 {% endblock %}

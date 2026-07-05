@@ -8,55 +8,77 @@
       <span class="profile-summary__avatar">{{ rider_initials }}</span>
       <h2 class="profile-summary__name">{{ profile.full_name }}</h2>
       <p class="profile-summary__since">Member since {{ profile.member_since }}</p>
-      <span class="profile-summary__badge">★ {{ profile.badge }}</span>
+      <span class="profile-summary__badge">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        {{ profile.badge }}
+      </span>
     </div>
     <nav class="profile-menu" aria-label="Profile sections">
-      {% for item in profile_menu %}
-      <a href="#" class="profile-menu__item{% if item.active %} is-active{% endif %}">
-        <span>{{ item.label }}</span>
-        <span aria-hidden="true">›</span>
-      </a>
-      {% endfor %}
+      <a href="#personal" class="profile-menu__item is-active"><span>Personal</span><span aria-hidden="true">›</span></a>
+      <a href="#saved-locations" class="profile-menu__item"><span>Saved locations</span><span aria-hidden="true">›</span></a>
     </nav>
   </aside>
 
-  <section class="rider-panel profile-form-panel">
-    <div class="profile-form-header">
-      <h2 class="rider-panel__title">Personal information</h2>
-      <button type="button" class="rider-btn rider-btn--dark-sm">Save changes</button>
-    </div>
-    <form class="profile-form" method="post">
-      <div class="profile-form__grid">
-        <label>
-          <span>FULL NAME</span>
-          <input type="text" name="full_name" value="{{ profile.full_name }}">
-        </label>
-        <label>
-          <span>PHONE</span>
-          <input type="tel" name="phone" value="{{ profile.phone }}">
-        </label>
-        <label>
-          <span>EMAIL</span>
-          <input type="email" name="email" value="{{ profile.email }}">
-        </label>
-        <label>
-          <span>DATE OF BIRTH</span>
-          <input type="text" name="dob" value="{{ profile.dob }}">
-        </label>
-        <label class="profile-form__full">
-          <span>EMERGENCY CONTACT</span>
-          <input type="text" name="emergency_contact" value="{{ profile.emergency_contact }}">
-        </label>
-        <label>
-          <span>NIN</span>
-          <input type="text" name="nin" value="{{ profile.nin }}" readonly>
-        </label>
+  <div class="profile-main">
+    <section class="rider-panel profile-form-panel" id="personal">
+      <div class="profile-form-header">
+        <h2 class="rider-panel__title">Personal information</h2>
+        <button type="submit" class="rider-btn rider-btn--dark-sm" form="profile-form">Save changes</button>
       </div>
-    </form>
-  </section>
+      <form class="profile-form" method="post" id="profile-form">
+        <div class="profile-form__grid">
+          <label>
+            <span>FULL NAME</span>
+            <input type="text" name="full_name" value="{{ profile.full_name }}">
+          </label>
+          <label>
+            <span>PHONE</span>
+            <input type="tel" name="phone" value="{{ profile.phone }}">
+          </label>
+          <label>
+            <span>EMAIL</span>
+            <input type="email" name="email" value="{{ profile.email }}">
+          </label>
+          <label>
+            <span>DATE OF BIRTH</span>
+            <input type="date" name="dob" value="{{ profile.dob_iso or '' }}">
+          </label>
+          <label>
+            <span>EMERGENCY CONTACT NAME</span>
+            <input type="text" name="emergency_contact_name" value="{{ profile.emergency_contact_name or '' }}">
+          </label>
+          <label>
+            <span>EMERGENCY CONTACT PHONE</span>
+            <input type="tel" name="emergency_contact_phone" value="{{ profile.emergency_contact_phone or '' }}">
+          </label>
+          <label>
+            <span>NIN</span>
+            <input type="text" name="nin" value="{{ profile.nin }}" readonly>
+          </label>
+        </div>
+      </form>
+    </section>
+
+    <section class="rider-panel profile-form-panel" id="saved-locations">
+      <div class="profile-form-header">
+        <h2 class="rider-panel__title">Saved locations</h2>
+        <button type="button" class="rider-btn rider-btn--outline-sm" id="profile-add-location">+ Add location</button>
+      </div>
+      <ul class="profile-locations-list" id="profile-locations-list">
+        {% for loc in profile.saved_locations %}
+        <li class="profile-location-item">
+          <strong>{{ loc.label }}</strong>
+          <span>{{ loc.address }}</span>
+        </li>
+        {% else %}
+        <li class="profile-location-item profile-location-item--empty">No saved locations yet.</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
 </div>
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-profile.js') }}"></script>
 {% endblock %}

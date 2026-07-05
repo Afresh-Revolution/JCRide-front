@@ -1,17 +1,43 @@
 {% extends "user/layout.html" %}
 {% set active_page = 'live_tracking' %}
+{% set user_leaflet = true %}
 
 {% block user_content %}
-<div class="tracking-layout">
-  <section class="rider-panel rider-panel--map tracking-map">
-    <div class="rider-map">
-      <span class="rider-map__badge">{{ tracking.status_label }}</span>
-      <div class="rider-map__zoom" aria-hidden="true">
-        <button type="button" disabled>+</button>
-        <button type="button" disabled>−</button>
-      </div>
-      {% include "user/includes/map_placeholder.html" %}
+<script type="application/json" id="tracking-api-config">{{ {
+  "rideId": ride_id,
+  "token": session.get("token"),
+  "wsUrl": ws_url,
+  "showFinding": show_finding
+} | tojson }}</script>
+
+<section class="tracking-finding{% if not show_finding %} is-hidden{% endif %}" id="tracking-finding" data-match-delay="{{ finding.match_delay_ms }}"{% if not show_finding %} hidden{% endif %}>
+  <article class="tracking-finding__card rider-panel">
+    <div class="tracking-finding__spinner-wrap" aria-hidden="true">
+      <span class="tracking-finding__spinner"></span>
     </div>
+    <h1 class="tracking-finding__title">Finding your driver…</h1>
+    <p class="tracking-finding__subtitle">Matching you with the closest available driver in {{ finding.area }}</p>
+    <div class="tracking-finding__trip">
+      <div class="tracking-finding__trip-col">
+        <span class="tracking-finding__label">Pickup</span>
+        <strong>{{ finding.pickup }}</strong>
+      </div>
+      <div class="tracking-finding__trip-col">
+        <span class="tracking-finding__label">Drop-off</span>
+        <strong>{{ finding.destination }}</strong>
+      </div>
+      <div class="tracking-finding__trip-col">
+        <span class="tracking-finding__label">Fare est.</span>
+        <strong>{{ finding.fare_estimate }}</strong>
+      </div>
+    </div>
+    <button type="button" class="rider-btn rider-btn--outline tracking-finding__cancel" id="tracking-cancel-request" data-cancel-url="{{ url_for('main.user_cancel_ride_request') }}">Cancel request</button>
+  </article>
+</section>
+
+<div class="tracking-layout{% if show_finding %} is-hidden{% endif %}" id="tracking-active"{% if show_finding %} hidden{% endif %}>
+  <section class="rider-panel rider-panel--map tracking-map">
+    {% include "user/includes/route_map.html" %}
   </section>
 
   <aside class="tracking-sidebar">
@@ -19,7 +45,7 @@
       {% for i in range(tracking.steps|length) %}
       {% set step_num = i + 1 %}
       <div class="tracking-step{% if step_num < tracking.step %} is-done{% elif step_num == tracking.step %} is-current{% endif %}">
-        <span class="tracking-step__dot">{% if step_num < tracking.step %}✓{% else %}{{ step_num }}{% endif %}</span>
+        <span class="tracking-step__dot">{% if step_num < tracking.step %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>{% else %}{{ step_num }}{% endif %}</span>
         <span class="tracking-step__label">{{ tracking.steps[i] }}</span>
       </div>
       {% if not loop.last %}<span class="tracking-step__line{% if step_num < tracking.step %} is-done{% endif %}"></span>{% endif %}
@@ -32,7 +58,10 @@
         <span class="tracking-driver__avatar">{{ tracking.driver.initials }}</span>
         <div>
           <strong>{{ tracking.driver.name }}</strong>
-          <span>★ {{ tracking.driver.rating }} · {{ tracking.driver.trips }} trips</span>
+          <span class="tracking-driver__rating">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            {{ tracking.driver.rating }} · {{ tracking.driver.trips }} trips
+          </span>
         </div>
       </div>
       <div class="tracking-driver__vehicle">
@@ -40,10 +69,23 @@
         <span>{{ tracking.driver.vehicle }}</span>
       </div>
       <div class="tracking-driver__actions">
-        <button type="button" class="rider-btn rider-btn--outline-sm">📞 Call</button>
-        <button type="button" class="rider-btn rider-btn--outline-sm">💬 Chat</button>
-        <button type="button" class="rider-btn rider-btn--outline-sm">🧭 Track</button>
+        <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--icon" id="tracking-call-driver">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Call
+        </button>
+        <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--icon" id="tracking-chat-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Chat
+        </button>
       </div>
+    </article>
+
+    <article class="rider-panel tracking-details" id="tracking-chat-panel" hidden>
+      <h2 class="rider-panel__title">In-ride messages</h2>
+      <ul id="tracking-chat-list" class="tracking-chat-list"></ul>
+      <form id="tracking-chat-form">
+        <button type="submit" class="rider-btn rider-btn--outline-sm">Refresh messages</button>
+      </form>
     </article>
 
     <article class="rider-panel tracking-details">
@@ -69,10 +111,19 @@
     </article>
 
     <div class="tracking-bottom-actions">
-      <button type="button" class="rider-btn rider-btn--outline-sm tracking-share">↗ Share ride</button>
-      <button type="button" class="rider-btn rider-btn--sos">🆘 SOS</button>
+      <a href="{{ url_for('main.user_share_ride') }}" class="rider-btn rider-btn--outline-sm tracking-share">↗ Share ride</a>
+      <button type="button" class="rider-btn rider-btn--sos rider-btn--icon" id="tracking-sos-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        SOS
+      </button>
     </div>
-    <button type="button" class="rider-btn rider-btn--request">Start trip (simulate driver pickup)</button>
+    <button type="button" class="rider-btn rider-btn--request" id="tracking-start-trip">Start trip</button>
   </aside>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script type="application/json" id="rider-route-map-data">{{ route_map | tojson }}</script>
+<script src="{{ url_for('static', filename='js/user-route-map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-tracking.js') }}"></script>
 {% endblock %}

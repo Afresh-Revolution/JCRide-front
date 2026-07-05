@@ -199,6 +199,32 @@ body.admin-body a {
   color: #fff;
 }
 
+.admin-nav-item--soon {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.admin-sidebar__footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.admin-sidebar__logout--inline {
+  margin-top: 0;
+}
+
+.admin-sidebar__help-btn {
+  text-decoration: none;
+  text-align: center;
+}
+
+.admin-sidebar__help-btn:hover {
+  opacity: 0.92;
+}
+
 .admin-sidebar__logout {
   display: inline-flex;
   align-items: center;

@@ -2,53 +2,142 @@
 {% set active_page = 'schedule_ride' %}
 
 {% block user_content %}
+<header class="schedule-page-header">
+  <div class="schedule-page-header__copy">
+    <div class="schedule-page-badges">
+      <span class="schedule-page-badge">BETA</span>
+      <span class="schedule-page-badge__dot" aria-hidden="true">·</span>
+      <span class="schedule-page-badge">AUTO-DISPATCH</span>
+    </div>
+    <h1 class="schedule-page-title">Schedule a ride</h1>
+    <p class="schedule-page-subtitle">Lock in a driver ahead of time — perfect for airport runs and the morning commute.</p>
+  </div>
+  <a href="{{ url_for('main.user_book_ride') }}" class="rider-btn rider-btn--outline schedule-page-cta">Book a ride now ↗</a>
+</header>
+
+{% if schedule_success %}
+<article class="schedule-success" role="status">
+  <span class="schedule-success__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+  </span>
+  <div class="schedule-success__copy">
+    <p class="schedule-success__title">Ride scheduled · {{ schedule_success.when }}</p>
+    <p class="schedule-success__text">We&rsquo;ll dispatch a {{ schedule_success.class }} driver and remind you {{ schedule_success.reminder }}.</p>
+  </div>
+  <a href="{{ url_for('main.user_schedule_ride', dismiss=1) }}" class="schedule-success__dismiss">Dismiss</a>
+</article>
+{% endif %}
+
 <div class="schedule-layout">
-  <section class="rider-panel schedule-main">
-    <div class="schedule-class-grid" id="schedule-classes">
-      {% for vehicle in vehicle_classes %}
-      <label class="schedule-class{% if vehicle.selected %} is-selected{% endif %}">
-        <input type="radio" name="vehicle_class" value="{{ vehicle.id }}"{% if vehicle.selected %} checked{% endif %}>
-        <span class="schedule-class__icon" aria-hidden="true">🚗</span>
-        <span class="schedule-class__name">{{ vehicle.name }}</span>
-        <span class="schedule-class__rate">{{ vehicle.rate }} · {{ vehicle.seats }} seats{% if vehicle.vehicle %} · {{ vehicle.vehicle }}{% endif %}</span>
+  <form class="rider-panel schedule-form" id="schedule-ride-form" method="post" action="{{ url_for('main.user_schedule_ride') }}">
+    <div class="schedule-fields-row">
+      <label class="schedule-field">
+        <span class="schedule-field__label">Pickup location</span>
+        <span class="schedule-field__control">
+          <svg class="schedule-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <input type="text" name="pickup" value="{{ schedule_form.pickup }}" placeholder="Pickup location">
+        </span>
       </label>
-      {% endfor %}
+      <label class="schedule-field">
+        <span class="schedule-field__label">Destination</span>
+        <span class="schedule-field__control">
+          <svg class="schedule-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <input type="text" name="destination" value="{{ schedule_form.destination }}" placeholder="Where to?">
+        </span>
+      </label>
+    </div>
+
+    <div class="schedule-fields-row">
+      <label class="schedule-field">
+        <span class="schedule-field__label">Date</span>
+        <span class="schedule-field__control">
+          <svg class="schedule-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <input type="text" name="date" value="{{ schedule_form.date }}" placeholder="MM/DD/YYYY">
+        </span>
+      </label>
+      <label class="schedule-field">
+        <span class="schedule-field__label">Pickup time</span>
+        <span class="schedule-field__control">
+          <svg class="schedule-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <input type="text" name="time" value="{{ schedule_form.time }}" placeholder="08:00 AM">
+        </span>
+      </label>
+    </div>
+
+    <div class="schedule-form-section">
+      <span class="schedule-form-section__label">Vehicle class</span>
+      <div class="schedule-class-grid" id="schedule-classes">
+        {% for vehicle in vehicle_classes %}
+        <label class="schedule-class schedule-class--{{ vehicle.id }}{% if vehicle.selected %} is-selected{% endif %}">
+          <input type="radio" name="vehicle_class" value="{{ vehicle.id }}"{% if vehicle.selected %} checked{% endif %}>
+          <span class="schedule-class__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+          </span>
+          <span class="schedule-class__name">{{ vehicle.name }}</span>
+          <span class="schedule-class__rate">{{ vehicle.rate }} · {{ vehicle.seats }} seats{% if vehicle.vehicle %} · {{ vehicle.vehicle }}{% endif %}</span>
+        </label>
+        {% endfor %}
+      </div>
     </div>
 
     <div class="schedule-options">
       <label class="schedule-select">
-        <span>Repeat</span>
-        <select>
-          <option selected>Once</option>
-          <option>Weekdays</option>
-          <option>Weekly</option>
+        <span class="schedule-select__label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Repeat
+        </span>
+        <select name="repeat">
+          <option value="Once"{% if schedule_form.get('repeat', 'Once') == 'Once' %} selected{% endif %}>Once</option>
+          <option value="Daily"{% if schedule_form.get('repeat') == 'Daily' %} selected{% endif %}>Daily</option>
+          <option value="Weekdays"{% if schedule_form.get('repeat') == 'Weekdays' %} selected{% endif %}>Weekdays</option>
+          <option value="Weekly"{% if schedule_form.get('repeat') == 'Weekly' %} selected{% endif %}>Weekly</option>
+          <option value="Custom"{% if schedule_form.get('repeat') == 'Custom' %} selected{% endif %}>Custom</option>
         </select>
       </label>
       <label class="schedule-select">
-        <span>Reminder</span>
-        <select>
-          <option>15 min before</option>
-          <option selected>30 min before</option>
-          <option>1 hour before</option>
+        <span class="schedule-select__label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Reminder
+        </span>
+        <select name="reminder">
+          <option value="15 min before"{% if schedule_form.get('reminder') == '15 min before' %} selected{% endif %}>15 min before</option>
+          <option value="30 min before"{% if schedule_form.get('reminder', '30 min before') == '30 min before' %} selected{% endif %}>30 min before</option>
+          <option value="1 hour before"{% if schedule_form.get('reminder') == '1 hour before' %} selected{% endif %}>1 hour before</option>
+          <option value="2 hours before"{% if schedule_form.get('reminder') == '2 hours before' %} selected{% endif %}>2 hours before</option>
         </select>
       </label>
     </div>
 
-    <div class="schedule-fare">
-      <p class="schedule-fare__value">₦6,400 – ₦7,900</p>
-      <p class="schedule-fare__note">Final fare based on actual distance &amp; traffic surcharge.</p>
+    <div class="schedule-form-footer">
+      <div class="schedule-fare">
+        <span class="schedule-fare__label">Fare estimate</span>
+        <p class="schedule-fare__value" id="schedule-fare-value">{{ schedule_form.fare_low }} – {{ schedule_form.fare_high }}</p>
+        <p class="schedule-fare__note">Final fare based on actual distance &amp; traffic surcharge.</p>
+      </div>
+      <button type="submit" class="rider-btn rider-btn--dark schedule-submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Schedule ride
+      </button>
     </div>
+  </form>
 
-    <button type="button" class="rider-btn rider-btn--request schedule-submit">📅 Schedule ride</button>
-  </section>
+  <aside class="schedule-aside">
+    <article class="schedule-promo">
+      <span class="schedule-promo__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </span>
+      <h2 class="schedule-promo__title">Guaranteed pickup window</h2>
+      <p class="schedule-promo__text">A driver is assigned 15 minutes before your scheduled time. You&rsquo;ll get SMS, push, and WhatsApp notifications.</p>
+    </article>
 
-  <aside class="rider-panel schedule-aside">
-    <h2 class="rider-panel__title">How scheduling works</h2>
-    <ol class="schedule-steps">
-      <li>Pick your time, route, and vehicle class.</li>
-      <li>JosRide holds a driver and locks the fare estimate.</li>
-      <li>You get a reminder + live tracking link before pickup.</li>
-    </ol>
+    <article class="rider-panel schedule-guide">
+      <h2 class="rider-panel__title">How scheduling works</h2>
+      <ol class="schedule-steps">
+        <li>Pick your time, route, and vehicle class.</li>
+        <li>JosRide holds a driver and locks the fare estimate.</li>
+        <li>You get a reminder + live tracking link before pickup.</li>
+      </ol>
+    </article>
   </aside>
 </div>
 
@@ -56,7 +145,7 @@
   <div class="rider-panel__header">
     <div>
       <h2 class="rider-panel__title">Upcoming scheduled rides</h2>
-      <p class="rider-panel__subtitle">2 active · auto-dispatch enabled</p>
+      <p class="rider-panel__subtitle">{{ upcoming_count }} active · auto-dispatch enabled</p>
     </div>
     <span class="rider-live-pill">● LIVE</span>
   </div>
@@ -64,23 +153,48 @@
   <div class="schedule-list">
     {% for ride in upcoming_rides %}
     <article class="schedule-item">
-      <div class="schedule-item__route">
-        <strong>{{ ride.pickup }}</strong>
-        <span class="schedule-item__arrow">→</span>
-        <strong>{{ ride.destination }}</strong>
+      <span class="schedule-item__calendar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      </span>
+      <div class="schedule-item__body">
+        <div class="schedule-item__route">
+          <strong>{{ ride.pickup }}</strong>
+          <span class="schedule-item__arrow">→</span>
+          <strong>{{ ride.destination }}</strong>
+        </div>
+        <div class="schedule-item__meta">
+          <span class="schedule-item__meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {{ ride.datetime }}
+          </span>
+          <span class="schedule-item__meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+            {{ ride.class }}
+          </span>
+          <span class="schedule-item__meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            {{ ride.repeat }}
+          </span>
+          <span class="schedule-item__meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            {{ ride.reminder }}
+          </span>
+        </div>
       </div>
-      <div class="schedule-item__meta">
-        <span>📅 {{ ride.datetime }}</span>
-        <span>🚗 {{ ride.class }}</span>
-        <span>🔁 {{ ride.repeat }}</span>
-        <span>🔔 {{ ride.reminder }}</span>
-      </div>
-      <div class="schedule-item__footer">
-        <span class="schedule-item__fare">{{ ride.fare }} est. fare</span>
+      <div class="schedule-item__aside">
+        <span class="schedule-item__fare">{{ ride.fare }} <span>est. fare</span></span>
         <div class="schedule-item__actions">
-          <button type="button" class="rider-btn rider-btn--outline-sm">✏ Edit</button>
-          <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--danger-text">✕ Cancel</button>
-          <button type="button" class="schedule-item__delete" aria-label="Delete">🗑</button>
+          <button type="button" class="rider-btn rider-btn--outline-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--danger-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Cancel
+          </button>
+          <button type="button" class="schedule-item__delete" aria-label="Delete ride">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
         </div>
       </div>
     </article>

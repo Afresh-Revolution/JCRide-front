@@ -1,6 +1,6 @@
-# JC-Ride Frontend (Flask)
+# JosRide Frontend (Flask)
 
-Python frontend for **JC-Ride**, a ride-sharing platform. Flask serves server-rendered HTML pages (Jinja2 templates) and communicates with the backend API ([JCRide-back](https://github.com/Afresh-Revolution/JCRide-back)).
+Python frontend for **JosRide**, a ride-sharing platform. Flask serves server-rendered HTML pages (Jinja2 templates) and communicates with the backend API ([JCRide-back](https://github.com/Afresh-Revolution/JCRide-back)).
 
 ## Tech Stack
 
@@ -295,8 +295,8 @@ Start the app and open **http://localhost:5000/driver-portal/login**
 
 | Repo | Purpose |
 |------|---------|
-| [JCRide-front](https://github.com/Afresh-Revolution/JCRide-front) | Flask frontend (this repo) |
-| [JCRide-back](https://github.com/Afresh-Revolution/JCRide-back) | Backend API |
+| [JCRide-front](https://github.com/Afresh-Revolution/JCRide-front) | JosRide Flask frontend (this repo) |
+| [JCRide-back](https://github.com/Afresh-Revolution/JCRide-back) | JosRide backend API |
 
 ## License
 
