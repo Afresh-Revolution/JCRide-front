@@ -1,0 +1,75 @@
+{
+  "id": "/",
+  "name": "JosRide NAIJA",
+  "short_name": "JosRide",
+  "description": "Nigeria's premium ride-hailing platform. Book rides, track drivers, manage your wallet, and ride across Lagos, Abuja, and more.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "background_color": "#065f46",
+  "theme_color": "#065f46",
+  "orientation": "portrait-primary",
+  "lang": "en-NG",
+  "dir": "ltr",
+  "categories": ["travel", "navigation", "business", "lifestyle"],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "icons": [
+    { "src": "/static/pwa/icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "/static/pwa/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/static/pwa/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/static/pwa/icons/icon-monochrome-192.png", "sizes": "192x192", "type": "image/png", "purpose": "monochrome" },
+    { "src": "/static/pwa/icons/icon-monochrome-512.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Book a ride",
+      "short_name": "Book",
+      "description": "Request a ride now",
+      "url": "/user/book-ride?source=pwa-shortcut",
+      "icons": [{ "src": "/static/pwa/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Rider dashboard",
+      "short_name": "Dashboard",
+      "description": "Open your rider dashboard",
+      "url": "/user/dashboard?source=pwa-shortcut",
+      "icons": [{ "src": "/static/pwa/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Live tracking",
+      "short_name": "Track",
+      "description": "Track your active trip",
+      "url": "/user/live-tracking?source=pwa-shortcut",
+      "icons": [{ "src": "/static/pwa/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Driver portal",
+      "short_name": "Drive",
+      "description": "Open the driver portal",
+      "url": "/driver/dashboard?source=pwa-shortcut",
+      "icons": [{ "src": "/static/pwa/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/images/hero.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "JosRide home"
+    }
+  ]
+}

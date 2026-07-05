@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{% block title %}JosRide — Nigeria's Premium Ride-hailing Platform{% endblock %}</title>
-  {% from "includes/brand_assets.html" import favicon_links, brand_stylesheet, brand_mark %}
-  {{ favicon_links() }}
+  {% from "includes/brand_assets.html" import brand_stylesheet, brand_mark %}
+  {% from "includes/pwa_head.html" import pwa_head, pwa_scripts %}
+  {{ pwa_head() }}
   {{ brand_stylesheet() }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,5 +130,6 @@
   <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
   <script src="{{ url_for('static', filename='js/auth-loading.js') }}"></script>
   <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
+  {{ pwa_scripts() }}
 </body>
 </html>

@@ -260,6 +260,8 @@ button.rider-link:hover {
 /* Map */
 .rider-map {
   position: relative;
+  isolation: isolate;
+  z-index: 0;
   border-radius: var(--user-radius-sm);
   overflow: hidden;
   background: #eef2f0;
@@ -322,7 +324,7 @@ button.rider-link:hover {
   position: absolute;
   top: 1rem;
   left: 1rem;
-  z-index: 1000;
+  z-index: 10;
   background: var(--user-card);
   border: 1px solid var(--user-border);
   border-radius: 999px;

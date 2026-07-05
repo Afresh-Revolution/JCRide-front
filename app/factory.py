@@ -10,6 +10,7 @@ from app.config import SECRET_KEY, get_api_url
 from app.driver_portal.routes import driver_portal_bp
 from app.routes.admin import admin_bp
 from app.routes.main import main_bp
+from app.routes.pwa import pwa_bp
 from app.static_utils import static_url
 
 
@@ -18,6 +19,7 @@ def create_app() -> Flask:
     app.secret_key = SECRET_KEY
     app.config["API_URL"] = get_api_url()
     app.register_blueprint(main_bp)
+    app.register_blueprint(pwa_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(driver_portal_bp)
 
