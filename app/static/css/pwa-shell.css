@@ -1,0 +1,425 @@
+/* JosRide PWA shell — splash, skeleton, navbar offset */
+
+:root {
+  --pwa-nav-offset: 10px;
+  --pwa-splash-green: #065f46;
+  --pwa-skeleton-base: #e5e7eb;
+  --pwa-skeleton-highlight: #f3f4f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pwa-skeleton-base: #1e293b;
+    --pwa-skeleton-highlight: #334155;
+  }
+}
+
+/* ── PWA navbar offset (standalone / installed) ── */
+
+html.is-pwa .landing-header {
+  top: var(--pwa-nav-offset);
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+}
+
+html.is-pwa .admin-topbar {
+  top: var(--pwa-nav-offset);
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+}
+
+@media (max-width: 900px) {
+  html.is-pwa .admin-topbar {
+    padding-top: calc(0.875rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+  }
+}
+
+@media (max-width: 480px) {
+  html.is-pwa .admin-topbar {
+    padding-top: calc(0.75rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+  }
+}
+
+html.is-pwa .landing-flashes {
+  margin-top: var(--pwa-nav-offset);
+}
+
+/* ── Splash screen ── */
+
+.pwa-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 30%, #0d6b38 0%, var(--pwa-splash-green) 45%, #064e3b 100%);
+  color: #fff;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  opacity: 1;
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+
+html.pwa-booting .pwa-splash {
+  display: flex;
+}
+
+.pwa-splash.is-hiding {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pwa-splash__inner {
+  text-align: center;
+  animation: pwaSplashFadeIn 0.6s ease both;
+}
+
+.pwa-splash__logo-wrap {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 1.25rem;
+}
+
+.pwa-splash__logo {
+  position: relative;
+  z-index: 2;
+  width: 96px;
+  height: 96px;
+  margin: 8px auto 0;
+  border-radius: 22px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.28),
+    0 0 0 4px rgba(255, 255, 255, 0.15);
+  animation: pwaLogoPulse 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.pwa-splash__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  animation: pwaRingExpand 3s ease-out infinite;
+}
+
+.pwa-splash__name {
+  margin: 0;
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.pwa-splash__name span {
+  font-weight: 600;
+  opacity: 0.92;
+}
+
+.pwa-splash__tagline {
+  margin: 0.375rem 0 0;
+  font-size: 0.9375rem;
+  opacity: 0.82;
+}
+
+@keyframes pwaLogoPulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.08) rotate(-2deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(0deg);
+  }
+  75% {
+    transform: scale(1.06) rotate(2deg);
+  }
+}
+
+@keyframes pwaRingExpand {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes pwaSplashFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Skeleton overlay ── */
+
+.pwa-skeleton {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  display: none;
+  flex-direction: column;
+  background: var(--dash-bg, #f4f6f8);
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+html.is-pwa.pwa-loading .pwa-skeleton {
+  display: flex;
+}
+
+html.is-pwa.pwa-loading body.landing .pwa-skeleton {
+  background: #ffffff;
+}
+
+.pwa-skeleton.is-hiding {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.pwa-skeleton__nav {
+  height: calc(56px + var(--pwa-nav-offset) + env(safe-area-inset-top, 0px));
+  margin-bottom: 1rem;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+
+.pwa-skeleton__body {
+  flex: 1;
+  padding: 0 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.pwa-skeleton__hero {
+  height: 180px;
+  border-radius: 16px;
+}
+
+.pwa-skeleton__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.pwa-skeleton__card {
+  height: 88px;
+  border-radius: 14px;
+}
+
+.pwa-skeleton__block {
+  height: 120px;
+  border-radius: 14px;
+}
+
+.pwa-skeleton__block--short {
+  height: 72px;
+  width: 70%;
+}
+
+.pwa-skeleton__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.pwa-skeleton__line {
+  height: 14px;
+  border-radius: 999px;
+}
+
+.pwa-skeleton__line--short {
+  width: 55%;
+}
+
+.pwa-skeleton__shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--pwa-skeleton-base) 0%,
+    var(--pwa-skeleton-highlight) 45%,
+    var(--pwa-skeleton-base) 90%
+  );
+  background-size: 200% 100%;
+  animation: pwaShimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes pwaShimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Content reveal after boot */
+
+html.is-pwa:not(.pwa-ready):not(.pwa-booting) body {
+  opacity: 0;
+}
+
+html.is-pwa.pwa-ready body {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+html.pwa-booting body {
+  overflow: hidden;
+}
+
+/* ── PWA reload FAB ── */
+
+.pwa-reload-btn {
+  position: fixed;
+  right: calc(1rem + env(safe-area-inset-right, 0px));
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: 99980;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px) saturate(1.5);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  color: #065f46;
+  cursor: pointer;
+  box-shadow:
+    0 10px 28px rgba(6, 95, 70, 0.22),
+    0 0 0 1px rgba(6, 95, 70, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    opacity 0.22s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]) {
+  display: flex;
+  animation: pwaReloadEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pwa-reload-btn__glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.pwa-reload-btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+}
+
+.pwa-reload-btn__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.pwa-reload-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow:
+    0 14px 34px rgba(6, 95, 70, 0.28),
+    0 0 0 1px rgba(6, 95, 70, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.pwa-reload-btn:hover .pwa-reload-btn__glow {
+  opacity: 1;
+}
+
+.pwa-reload-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.pwa-reload-btn.is-spinning .pwa-reload-btn__icon {
+  animation: pwaReloadSpin 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pwa-reload-btn:disabled {
+  cursor: wait;
+  opacity: 0.88;
+}
+
+@keyframes pwaReloadEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pwaReloadSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .pwa-reload-btn {
+    background: rgba(30, 41, 59, 0.88);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #6ee7b7;
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(110, 231, 183, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]) {
+    animation: none;
+  }
+
+  .pwa-reload-btn.is-spinning .pwa-reload-btn__icon {
+    animation: none;
+  }
+
+  .pwa-splash__logo,
+  .pwa-splash__ring,
+  .pwa-skeleton__shimmer,
+  .pwa-splash__inner {
+    animation: none !important;
+  }
+
+  .pwa-splash,
+  .pwa-skeleton,
+  html.is-pwa.pwa-ready body {
+    transition: none !important;
+  }
+}

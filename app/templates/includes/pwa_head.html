@@ -1,7 +1,12 @@
 {# JosRide PWA — manifest, icons, splash, meta #}
 
 {% macro pwa_head() -%}
+<script>
+(function(){var d=window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: window-controls-overlay)').matches||window.navigator.standalone===true;if(d)document.documentElement.classList.add('is-pwa');})();
+</script>
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" href="{{ static_url('pwa/icons/icon-192.png') }}" as="image" type="image/png">
+<link rel="preload" href="{{ static_url('css/pwa-shell.css') }}" as="style">
 <meta name="application-name" content="JosRide">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,7 +30,14 @@
 <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" href="{{ static_url('pwa/icons/icon-512.png') }}">
 <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="{{ static_url('pwa/icons/icon-512.png') }}">
 
+<link rel="stylesheet" href="{{ static_url('css/pwa-shell.css') }}">
 <link rel="stylesheet" href="{{ static_url('css/pwa-install.css') }}">
+{%- endmacro %}
+
+{% macro pwa_body_start() -%}
+{% from "includes/pwa_boot.html" import pwa_boot_shell %}
+{{ pwa_boot_shell() }}
+<script src="{{ static_url('js/pwa-boot.js') }}"></script>
 {%- endmacro %}
 
 {% macro pwa_scripts() -%}
