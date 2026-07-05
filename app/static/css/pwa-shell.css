@@ -1,7 +1,8 @@
 /* JosRide PWA shell — splash, skeleton, navbar offset */
 
 :root {
-  --pwa-nav-offset: 10px;
+  --pwa-nav-offset: 5px;
+  --pwa-topbar-height: 4.25rem;
   --pwa-splash-green: #065f46;
   --pwa-skeleton-base: #e5e7eb;
   --pwa-skeleton-highlight: #f3f4f6;
@@ -16,30 +17,67 @@
 
 /* ── PWA navbar offset (standalone / installed) ── */
 
+html.is-pwa body.landing {
+  padding-top: calc(
+    var(--landing-header-height) + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset)
+  );
+}
+
 html.is-pwa .landing-header {
-  top: var(--pwa-nav-offset);
-  padding-top: calc(env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+  left: 0;
+  right: 0;
+  padding-top: 0;
+  z-index: 1000;
 }
 
 html.is-pwa .admin-topbar {
-  top: var(--pwa-nav-offset);
-  padding-top: calc(1rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+  left: 0;
+  right: 0;
+  z-index: 200;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+@media (min-width: 901px) {
+  html.is-pwa .admin-topbar {
+    left: calc(var(--dash-sidebar-w) + var(--dash-layout-gap));
+  }
+}
+
+html.is-pwa .admin-main {
+  padding-top: calc(
+    var(--pwa-topbar-height) + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset)
+  );
 }
 
 @media (max-width: 900px) {
   html.is-pwa .admin-topbar {
-    padding-top: calc(0.875rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+  }
+
+  html.is-pwa .admin-main {
+    padding-top: calc(
+      3.75rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset)
+    );
   }
 }
 
 @media (max-width: 480px) {
   html.is-pwa .admin-topbar {
-    padding-top: calc(0.75rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
   }
 }
 
 html.is-pwa .landing-flashes {
-  margin-top: var(--pwa-nav-offset);
+  margin-top: 0;
 }
 
 /* ── Splash screen ── */
@@ -270,15 +308,26 @@ html.is-pwa.pwa-loading body.landing .pwa-skeleton {
   }
 }
 
-/* Content reveal after boot */
+/* Content reveal after boot — never fade the fixed navbars */
 
-html.is-pwa:not(.pwa-ready):not(.pwa-booting) body {
+html.is-pwa:not(.pwa-ready):not(.pwa-booting) body.landing > main,
+html.is-pwa:not(.pwa-ready):not(.pwa-booting) body.landing > .landing-footer,
+html.is-pwa:not(.pwa-ready):not(.pwa-booting) body.landing > .landing-flashes,
+html.is-pwa:not(.pwa-ready):not(.pwa-booting) body .admin-main {
   opacity: 0;
 }
 
-html.is-pwa.pwa-ready body {
+html.is-pwa.pwa-ready body.landing > main,
+html.is-pwa.pwa-ready body.landing > .landing-footer,
+html.is-pwa.pwa-ready body.landing > .landing-flashes,
+html.is-pwa.pwa-ready body .admin-main {
   opacity: 1;
   transition: opacity 0.3s ease;
+}
+
+html.is-pwa .landing-header,
+html.is-pwa .admin-topbar {
+  opacity: 1 !important;
 }
 
 html.pwa-booting body {
@@ -419,7 +468,8 @@ html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]) {
 
   .pwa-splash,
   .pwa-skeleton,
-  html.is-pwa.pwa-ready body {
+  html.is-pwa.pwa-ready body.landing > main,
+  html.is-pwa.pwa-ready body .admin-main {
     transition: none !important;
   }
 }

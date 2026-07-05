@@ -31,7 +31,6 @@ body.admin-body {
   min-height: 100vh;
   background: var(--admin-white);
   -webkit-font-smoothing: antialiased;
-  overflow-x: clip;
 }
 
 a {
