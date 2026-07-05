@@ -85,13 +85,47 @@
   });
 
   document.querySelectorAll(".support-form").forEach(function (form) {
-    form.addEventListener("submit", function (event) {
-      event.preventDefault();
-      var btn = form.querySelector(".support-submit");
-      if (btn) {
-        btn.textContent = "Ticket submitted";
-        btn.disabled = true;
-      }
+    /* server-side POST handles ticket creation */
+  });
+
+  document.querySelectorAll(".history-rate-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (!window.UserApi) return;
+      var rideId = btn.getAttribute("data-ride-id");
+      if (!rideId) return;
+      var rating = Number(window.prompt("Rate your driver (1-5 stars):", "5") || 0);
+      if (rating < 1 || rating > 5) return;
+      var comment = window.prompt("Optional comment:") || "";
+      UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/rate", {
+        rating: rating,
+        comment: comment,
+      })
+        .then(function () {
+          btn.textContent = "Rated";
+          btn.disabled = true;
+        })
+        .catch(function (err) {
+          alert(err.message || "Could not submit rating.");
+        });
     });
   });
+
+  var historyExport = document.getElementById("history-export-btn");
+  if (historyExport && window.UserApi) {
+    historyExport.addEventListener("click", function () {
+      UserApi.request("/user/api/settings/data-export")
+        .then(function (data) {
+          var rides = data.rides || data;
+          var blob = new Blob([JSON.stringify(rides, null, 2)], { type: "application/json" });
+          var link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = "josride-ride-history.json";
+          link.click();
+          URL.revokeObjectURL(link.href);
+        })
+        .catch(function (err) {
+          alert(err.message || "Export failed.");
+        });
+    });
+  }
 })();

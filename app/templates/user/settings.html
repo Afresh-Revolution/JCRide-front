@@ -27,7 +27,7 @@
         <span>Improve pickup accuracy</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox"{% if settings.use_location %} checked{% endif %}>
+        <input type="checkbox" id="settings-use-location"{% if settings.use_location %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
@@ -40,7 +40,7 @@
         <span>Display per-kilometer breakdown</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox"{% if settings.show_fare_per_km %} checked{% endif %}>
+        <input type="checkbox" id="settings-show-fare-km"{% if settings.show_fare_per_km %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
@@ -86,7 +86,7 @@
         <span>Anonymised usage only</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox"{% if settings.share_analytics %} checked{% endif %}>
+        <input type="checkbox" id="settings-share-analytics"{% if settings.share_analytics %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
@@ -106,7 +106,7 @@
         <span>First name only</span>
       </div>
       <label class="user-toggle">
-        <input type="checkbox"{% if settings.share_name_with_driver %} checked{% endif %}>
+        <input type="checkbox" id="settings-share-name"{% if settings.share_name_with_driver %} checked{% endif %}>
         <span class="user-toggle__slider"></span>
       </label>
     </div>
@@ -119,21 +119,21 @@
         <strong>Download my data</strong>
         <span>Receive a copy by email within 24 h</span>
       </div>
-      <button type="button" class="rider-btn rider-btn--outline-sm">Request</button>
+      <button type="button" class="rider-btn rider-btn--outline-sm" id="settings-export-btn">Request</button>
     </div>
     <div class="settings-action-row">
       <div>
         <strong>Pause my account</strong>
         <span>Temporarily disable bookings</span>
       </div>
-      <button type="button" class="rider-btn rider-btn--outline-sm">Pause</button>
+      <button type="button" class="rider-btn rider-btn--outline-sm" id="settings-pause-btn">Pause</button>
     </div>
     <div class="settings-action-row">
       <div>
         <strong>Delete account</strong>
         <span>Permanent · cannot be undone</span>
       </div>
-      <button type="button" class="rider-btn rider-btn--danger-sm settings-delete-btn">
+      <button type="button" class="rider-btn rider-btn--danger-sm" id="settings-delete-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         Delete
       </button>

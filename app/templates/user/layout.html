@@ -1,5 +1,5 @@
 {% extends "user/base.html" %}
-{% block title %}{% block page_title %}Dashboard{% endblock %} — JCRide NAIJA{% endblock %}
+{% block title %}{% block page_title %}Dashboard{% endblock %} — JosRide NAIJA{% endblock %}
 
 {% block head %}
 {% if user_leaflet %}
@@ -15,6 +15,8 @@
   <div class="admin-main">
     {% include "user/includes/header.html" %}
     <div class="admin-content">
+      {% from "includes/flashes.html" import dismissible_flashes %}
+      {{ dismissible_flashes('user-flash-container', 'user-flash', 'user-flash--') }}
       {% block user_content %}{% endblock %}
     </div>
   </div>
@@ -25,6 +27,10 @@
 {% if user_leaflet %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 {% endif %}
+<script src="{{ url_for('static', filename='js/user-geolocation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-search.js') }}"></script>
+<script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 {% block page_scripts %}{% endblock %}
 <script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
 {% endblock %}

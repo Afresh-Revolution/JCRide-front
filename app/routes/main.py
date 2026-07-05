@@ -5,17 +5,100 @@ import uuid
 
 from app.services.api_client import (
     ApiError,
+    cancel_delivery,
+    cancel_ride,
+    cancel_scheduled_ride,
+    create_scheduled_ride,
+    create_support_ticket,
+    create_wallet_funding_request,
+    estimate_delivery,
+    estimate_ride,
+    estimate_ride_coords,
+    get_current_delivery,
+    get_current_ride,
     get_driver_profile,
+    get_notification_preferences,
     get_profile,
+    get_ride_messages,
+    get_rider_data_export,
+    get_user_settings,
+    get_wallet,
+    get_wallet_transactions,
+    initialize_paystack,
+    list_notifications,
+    list_scheduled_rides,
+    list_support_tickets,
     login,
     login_with_joscity_fallback,
+    mark_all_notifications_read,
+    mark_notification_read,
+    pause_account,
+    rate_driver,
     register,
+    create_ride_share_link,
+    create_live_chat_session,
+    create_saved_location,
+    create_trusted_contact,
+    delete_saved_location,
+    delete_trusted_contact,
+    forgot_password,
+    get_customer_dashboard,
+    get_nearby_drivers,
+    get_referral_info,
+    get_support_faq,
+    list_customer_rides,
+    list_saved_locations,
+    list_trusted_contacts,
+    reset_password,
+    search_rider,
+    register_device,
     register_driver,
+    request_account_deletion,
+    request_delivery,
     request_ride,
+    request_ride_coords,
     resend_otp,
+    ride_call_intent,
     set_availability,
+    start_ride,
+    trigger_ride_sos,
+    update_notification_preferences,
+    update_profile,
+    update_user_settings,
     upload_driver_document,
     verify_otp,
+    verify_paystack,
+    withdraw_wallet,
+)
+from app.config import get_ws_url
+from app.rider_api_transforms import (
+    contacts_to_share_ui,
+    dashboard_stats_from_api,
+    faq_from_api,
+    nearby_drivers_to_map,
+    build_dashboard_stats,
+    build_wallet_summary,
+    delivery_estimate_to_defaults,
+    estimate_to_booking_fields,
+    estimate_to_tiers,
+    live_area_from_location,
+    live_area_map_for_location,
+    notifications_to_ui,
+    notification_channels_from_api,
+    notification_topics_from_api,
+    prefs_update_from_ui,
+    profile_from_api,
+    ride_to_active_trip,
+    ride_to_history_trip,
+    ride_to_recent_trip,
+    ride_to_tracking,
+    rider_location_from_rides,
+    scheduled_ride_to_ui,
+    settings_from_api,
+    support_category_slug,
+    support_ticket_to_ui,
+    tracking_step_for_status,
+    wallet_transactions_to_ui,
 )
 from app.rider_defaults import (
     BIKE_DELIVERY_DEFAULTS,
@@ -134,31 +217,110 @@ def _rider_initials(name: str) -> str:
     return f"{parts[0][0]}{parts[-1][0]}".upper()
 
 
+def _rider_token() -> str | None:
+    return session.get("token")
+
+
+def _safe_rider_api(callable_fn, default=None):
+    token = _rider_token()
+    if not token:
+        return default, False
+    try:
+        return callable_fn(token), True
+    except ApiError:
+        return default, False
+
+
+def _rider_rides_export() -> tuple[list[dict], bool]:
+    def _fetch(token):
+        payload = list_customer_rides(token, limit=100) or {}
+        rides = payload.get("rides") or []
+        if rides:
+            return rides
+        export = get_rider_data_export(token) or {}
+        return list(export.get("rides") or [])
+
+    return _safe_rider_api(_fetch, [])
+
+
+def _sync_rider_wallet_session(wallet: dict | None) -> None:
+    if wallet and wallet.get("balance") is not None:
+        session["wallet_balance_ngn"] = wallet.get("balance")
+
+
+def _parse_schedule_time(date_str: str, time_str: str) -> datetime:
+    parsed_date = _parse_schedule_date(date_str)
+    time_str = (time_str or "08:00 AM").strip()
+    for fmt in ("%I:%M %p", "%H:%M"):
+        try:
+            parsed_time = datetime.strptime(time_str, fmt).time()
+            return datetime.combine(parsed_date.date(), parsed_time)
+        except ValueError:
+            continue
+    return parsed_date
+
+
+def _schedule_reminder_minutes(label: str) -> int:
+    digits = re.findall(r"\d+", label or "")
+    if digits:
+        return max(5, min(int(digits[0]), 1440))
+    return 30
+
+
 def _rider_context() -> dict:
     name = session.get("name") or PROFILE_DEFAULTS["full_name"]
+    has_gps = session.get("rider_lat") is not None and session.get("rider_lng") is not None
+    location = session.get("rider_location") if has_gps else "Detecting location…"
+    badge = session.get("rider_badge") or "Rider"
     return {
         "rider_name": name,
         "rider_initials": _rider_initials(name),
-        "rider_location": RIDER_STATS["location"]["value"],
+        "rider_location": location,
+        "rider_meta": f"{location} · {badge}",
     }
 
 
 def _profile_context() -> dict:
-    profile = dict(PROFILE_DEFAULTS)
-    if session.get("name"):
-        profile["full_name"] = session["name"]
-    if session.get("email"):
-        profile["email"] = session["email"]
-    if session.get("phone"):
-        profile["phone"] = session["phone"]
-    return profile
+    profile, ok = _safe_rider_api(get_profile)
+    if ok:
+        mapped = profile_from_api(profile)
+        session["name"] = mapped["full_name"]
+        session["email"] = mapped["email"]
+        session["phone"] = mapped["phone"]
+        session["rider_badge"] = mapped.get("badge") or "Rider"
+        return mapped
+    return profile_from_api(
+        {
+            "user": {
+                "full_name": session.get("name"),
+                "email": session.get("email"),
+                "phone": session.get("phone"),
+            }
+        }
+    )
 
 
 def _tracking_page_context() -> dict:
     active = session.get("active_trip") or {}
-    tracking = dict(LIVE_TRACKING)
-    finding = dict(TRACKING_FINDING)
+
+    def _load_current(token):
+        ride = get_current_ride(token)
+        if ride:
+            return ride
+        return get_current_delivery(token)
+
+    ride, ok = _safe_rider_api(_load_current)
+    if ok and ride:
+        active = ride_to_active_trip(ride)
+        session["active_trip"] = active
+
+    tracking, finding = ride_to_tracking(ride if ok else None)
     vehicle_type = active.get("vehicle_type") or "car"
+    status = (ride or {}).get("status") if ok and ride else active.get("status")
+    driver_ready = status in ("driver_assigned", "driver_arrived", "in_progress", "completed")
+
+    if ok and ride:
+        tracking["step"] = tracking_step_for_status(status)
 
     if active.get("pickup"):
         tracking["pickup"] = active["pickup"]
@@ -168,6 +330,8 @@ def _tracking_page_context() -> dict:
         finding["destination"] = active["dropoff"]
     if active.get("fare"):
         finding["fare_estimate"] = active["fare"]
+    if active.get("booking_id"):
+        tracking["booking_id"] = active["booking_id"]
 
     route_map = build_route_map(
         tracking["pickup"],
@@ -179,10 +343,27 @@ def _tracking_page_context() -> dict:
         "tracking": tracking,
         "finding": finding,
         "route_map": route_map,
+        "tracking_live": bool(ok and ride),
+        "show_finding": not (ok and ride and driver_ready),
+        "ride_id": active.get("ride_id") or ((ride or {}).get("id") if ok else None),
+        "ride_status": status,
+        "ws_url": get_ws_url(),
     }
 
 
+def _user_api_error(exc: ApiError):
+    return jsonify({"error": exc.message}), exc.status_code
+
+
 def _notifications_inbox() -> list[dict]:
+    def _fetch(token):
+        payload = list_notifications(token) or {}
+        return notifications_to_ui(payload.get("notifications") or [])
+
+    notifications, ok = _safe_rider_api(_fetch, [])
+    if ok:
+        return notifications
+
     overrides = session.get(RIDER_NOTIFICATION_STATES_KEY) or {}
     items = []
     for row in RIDER_NOTIFICATIONS:
@@ -197,6 +378,13 @@ def _notifications_inbox() -> list[dict]:
 
 
 def _notification_channels() -> list[dict]:
+    def _fetch(token):
+        return get_notification_preferences(token)
+
+    prefs, ok = _safe_rider_api(_fetch)
+    if ok:
+        return notification_channels_from_api(prefs)
+
     stored = (session.get(RIDER_NOTIFICATION_PREFS_KEY) or {}).get("channels") or {}
     channels = []
     for row in NOTIFICATION_CHANNELS:
@@ -208,6 +396,13 @@ def _notification_channels() -> list[dict]:
 
 
 def _notification_topics() -> list[dict]:
+    def _fetch(token):
+        return get_notification_preferences(token)
+
+    prefs, ok = _safe_rider_api(_fetch)
+    if ok:
+        return notification_topics_from_api(prefs)
+
     stored = (session.get(RIDER_NOTIFICATION_PREFS_KEY) or {}).get("topics") or {}
     topics = []
     for row in NOTIFICATION_TOPICS:
@@ -263,7 +458,14 @@ def _schedule_fare_display(vehicle_class: str) -> str:
     return f"{low} – {high}"
 
 
-def _upcoming_scheduled_rides() -> list:
+def _upcoming_scheduled_rides() -> list[dict]:
+    def _fetch(token):
+        payload = list_scheduled_rides(token) or {}
+        return [scheduled_ride_to_ui(item) for item in payload.get("scheduled_rides") or []]
+
+    rides, ok = _safe_rider_api(_fetch, [])
+    if ok:
+        return rides
     user_rides = list(session.get("rider_scheduled_rides") or [])
     return user_rides + list(UPCOMING_SCHEDULED_RIDES)
 
@@ -805,10 +1007,40 @@ def driver_register_page():
     )
 
 
-@main_bp.route("/forgot-password")
+@main_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password_page():
-    flash("Password reset is coming soon. Contact support if you need help.", "error")
-    return redirect(request.referrer or url_for("main.portals_page"))
+    if request.method == "POST":
+        email_or_phone = request.form.get("email_or_phone", "").strip()
+        step = request.form.get("step", "request")
+        if step == "reset":
+            try:
+                reset_password(
+                    email_or_phone,
+                    request.form.get("code", "").strip(),
+                    request.form.get("new_password", ""),
+                    request.form.get("confirm_password", ""),
+                )
+                flash("Password updated. You can sign in now.", "success")
+                return redirect(url_for("main.rider_login_page"))
+            except ApiError as exc:
+                flash(exc.message, "error")
+        else:
+            try:
+                forgot_password(email_or_phone)
+                flash("Reset code sent to your email.", "success")
+                return render_template(
+                    "auth/forgot_password.html",
+                    email_or_phone=email_or_phone,
+                    step="reset",
+                )
+            except ApiError as exc:
+                flash(exc.message, "error")
+        return render_template(
+            "auth/forgot_password.html",
+            email_or_phone=email_or_phone,
+            step=step,
+        )
+    return render_template("auth/forgot_password.html", step="request")
 
 
 def _get_rider_signup() -> dict:
@@ -851,6 +1083,10 @@ def user_register_page():
             signup["step"] = step - 1
             _save_rider_signup(signup)
             return redirect(url_for("main.user_register_page"))
+        ref = request.args.get("ref")
+        if ref:
+            signup["referral_code"] = ref.strip().upper()
+            _save_rider_signup(signup)
 
     if request.method == "POST":
         posted_step = request.form.get("step", type=int) or step
@@ -913,6 +1149,7 @@ def user_register_page():
                             signup["phone"],
                             signup["email"],
                             password,
+                            referral_code=signup.get("referral_code"),
                         )
                         signup["access_token"] = result.get("access_token", "")
                         user = result.get("user") or {}
@@ -981,14 +1218,61 @@ def user_dashboard():
     guard = _require_rider()
     if guard:
         return guard
+
+    wallet, wallet_ok = _safe_rider_api(get_wallet)
+    rides, rides_ok = _rider_rides_export()
+    dashboard_data, dashboard_ok = _safe_rider_api(get_customer_dashboard)
+    referral_data, referral_ok = _safe_rider_api(get_referral_info)
+    if wallet_ok:
+        _sync_rider_wallet_session(wallet)
+
+    profile, profile_ok = _safe_rider_api(get_profile)
+    if profile_ok:
+        mapped = profile_from_api(profile)
+        session["name"] = mapped["full_name"]
+        session["rider_badge"] = mapped.get("badge") or "Rider"
+
+    has_gps = session.get("rider_lat") is not None and session.get("rider_lng") is not None
+    display_location = session.get("rider_location") if has_gps else "Detecting location…"
+
+    if dashboard_ok and dashboard_data:
+        stats = dashboard_stats_from_api(dashboard_data)
+    else:
+        stats = build_dashboard_stats(wallet if wallet_ok else None, rides if rides_ok else [])
+        if not rides_ok and not dashboard_ok:
+            stats = dict(RIDER_STATS)
+            if wallet_ok:
+                stats = build_dashboard_stats(wallet, [])
+
+    stats["location"] = {"value": display_location}
+
+    recent_trips = (
+        [ride_to_recent_trip(item) for item in rides[:3]]
+        if rides_ok and rides
+        else RECENT_TRIPS
+    )
+    live_area = live_area_from_location(display_location)
+    map_config = live_area_map_for_location(display_location)
+    map_config["location_label"] = display_location
+    map_config["live_drivers_api"] = True
+    map_config["avg_pickup_minutes"] = 4
     rider_ctx = _rider_context()
     return render_template(
         "user/dashboard.html",
         active_page="dashboard",
-        stats=RIDER_STATS,
-        live_area=LIVE_AREA,
-        live_area_map=build_live_area_map(rider_ctx["rider_location"]),
-        recent_trips=RECENT_TRIPS,
+        stats=stats,
+        live_area=live_area,
+        live_area_map=map_config,
+        recent_trips=recent_trips,
+        referral=referral_data if referral_ok else None,
+        api_connected={
+            "wallet": wallet_ok,
+            "rides": rides_ok,
+            "profile": profile_ok,
+            "dashboard": dashboard_ok,
+            "live_drivers": True,
+            "referral": referral_ok,
+        },
         **rider_ctx,
     )
 
@@ -1000,41 +1284,105 @@ def user_book_ride():
     if guard:
         return guard
 
-    booking = dict(BOOK_RIDE_DEFAULTS)
+    booking = {
+        "pickup": "",
+        "dropoff": "",
+        "distance": "—",
+        "duration": "—",
+        "est_fare": "—",
+    }
+    ride_tiers = [dict(item) for item in RIDE_TIERS]
+    token = _rider_token()
 
     if request.method == "POST":
         pickup = request.form.get("pickup", "").strip()
         dropoff = request.form.get("dropoff", "").strip()
         tier = request.form.get("tier", "economy")
-        booking.update({"pickup": pickup, "dropoff": dropoff})
-        session["active_trip"] = {
-            "pickup": pickup,
-            "dropoff": dropoff,
-            "tier": tier,
-            "vehicle_type": "car",
-        }
+        pickup_lat = request.form.get("pickup_lat", type=float)
+        pickup_lng = request.form.get("pickup_lng", type=float)
+        dest_lat = request.form.get("destination_lat", type=float)
+        dest_lng = request.form.get("destination_lng", type=float)
+        stop_addresses = request.form.getlist("stop_address")
+        stop_lats = request.form.getlist("stop_lat")
+        stop_lngs = request.form.getlist("stop_lng")
+        stops = []
+        for idx, address in enumerate(stop_addresses):
+            address = address.strip()
+            if not address:
+                continue
+            try:
+                stops.append(
+                    {
+                        "address": address,
+                        "lat": float(stop_lats[idx]),
+                        "lng": float(stop_lngs[idx]),
+                    }
+                )
+            except (TypeError, ValueError, IndexError):
+                continue
+
+        if not pickup or not dropoff:
+            flash("Enter both pickup and destination.", "error")
+            return redirect(url_for("main.user_book_ride"))
+        if None in (pickup_lat, pickup_lng, dest_lat, dest_lng):
+            flash("Select locations from the suggestions so we can route your trip.", "error")
+            return redirect(url_for("main.user_book_ride"))
+
         try:
-            request_ride(session["token"], pickup, dropoff)
+            if stops:
+                result = request_ride_coords(
+                    token,
+                    pickup,
+                    dropoff,
+                    pickup_lat,
+                    pickup_lng,
+                    dest_lat,
+                    dest_lng,
+                    tier=tier,
+                    stops=stops,
+                )
+            else:
+                result = request_ride_coords(
+                    token,
+                    pickup,
+                    dropoff,
+                    pickup_lat,
+                    pickup_lng,
+                    dest_lat,
+                    dest_lng,
+                    tier=tier,
+                )
+            ride = (result or {}).get("ride") or result or {}
+            session["active_trip"] = ride_to_active_trip(ride)
             flash(f"Ride requested ({tier}) — waiting for a driver.", "success")
         except ApiError as exc:
-            flash(
-                f"Demo mode: could not reach the ride API ({exc.message}). "
-                "Showing live tracking preview.",
-                "info",
-            )
+            session["active_trip"] = {
+                "pickup": pickup,
+                "dropoff": dropoff,
+                "tier": tier,
+                "vehicle_type": "car",
+            }
+            flash(exc.message, "error")
         return redirect(url_for("main.user_live_tracking", reset=1))
+
+    empty_map = {
+        "pickup": None,
+        "dropoff": None,
+        "route": [],
+        "drivers": [],
+        "map_zoom": 12,
+        "pickup_label": "",
+        "dropoff_label": "",
+        "badge_label": "Enter pickup & destination",
+        "map_center": {"lat": 6.5244, "lng": 3.3792},
+    }
 
     return render_template(
         "user/book_ride.html",
         active_page="book_ride",
         booking=booking,
-        ride_tiers=RIDE_TIERS,
-        route_map=build_route_map(
-            booking["pickup"],
-            booking["dropoff"],
-            badge_label="Pickup → Destination",
-            vehicle_type="car",
-        ),
+        ride_tiers=ride_tiers,
+        route_map=empty_map,
         **_rider_context(),
     )
 
@@ -1046,31 +1394,57 @@ def user_bike_delivery():
         return guard
 
     delivery = dict(BIKE_DELIVERY_DEFAULTS)
+    token = _rider_token()
 
     if request.method == "POST":
         pickup = request.form.get("pickup", "").strip()
         dropoff = request.form.get("dropoff", "").strip()
+        package_notes = request.form.get("package_notes", "").strip()
+        recipient_name = request.form.get("recipient_name", "").strip()
+        recipient_phone = request.form.get("recipient_phone", "").strip()
         delivery.update({
             "pickup": pickup,
             "dropoff": dropoff,
-            "package_notes": request.form.get("package_notes", "").strip(),
-            "recipient_name": request.form.get("recipient_name", "").strip(),
-            "recipient_phone": request.form.get("recipient_phone", "").strip(),
+            "package_notes": package_notes,
+            "recipient_name": recipient_name,
+            "recipient_phone": recipient_phone,
         })
 
         if not pickup or not dropoff:
             flash("Enter both pickup and drop-off locations.", "error")
-        elif not delivery["recipient_name"] or not delivery["recipient_phone"]:
+        elif not recipient_name or not recipient_phone:
             flash("Enter recipient name and phone number.", "error")
         else:
-            session["active_trip"] = {
-                "pickup": pickup,
-                "dropoff": dropoff,
-                "fare": delivery["fare"],
-                "vehicle_type": "bike",
-            }
-            flash(f"Bike delivery requested — {delivery['fare']}. Courier on the way.", "success")
+            try:
+                result = request_delivery(
+                    token,
+                    pickup,
+                    dropoff,
+                    package_notes or "Package delivery",
+                    recipient_name,
+                    recipient_phone,
+                )
+                ride = (result or {}).get("delivery") or result or {}
+                session["active_trip"] = ride_to_active_trip(ride)
+                flash("Bike delivery requested — courier on the way.", "success")
+            except ApiError as exc:
+                session["active_trip"] = {
+                    "pickup": pickup,
+                    "dropoff": dropoff,
+                    "fare": delivery["fare"],
+                    "vehicle_type": "bike",
+                }
+                flash(exc.message, "error")
             return redirect(url_for("main.user_live_tracking", reset=1))
+
+    if token and delivery["pickup"] and delivery["dropoff"]:
+        try:
+            estimate = estimate_delivery(token, delivery["pickup"], delivery["dropoff"])
+            delivery.update(
+                delivery_estimate_to_defaults(estimate, delivery["pickup"], delivery["dropoff"])
+            )
+        except ApiError:
+            pass
 
     return render_template(
         "user/bike_delivery.html",
@@ -1129,31 +1503,48 @@ def user_schedule_ride():
         if not pickup or not destination:
             flash("Enter both pickup and destination.", "error")
         else:
-            parsed_date = _parse_schedule_date(date_str or schedule_form["date"])
-            class_label = SCHEDULE_CLASS_LABELS.get(vehicle_class, "Comfort")
-            new_ride = {
-                "id": f"sch-user-{uuid.uuid4().hex[:8]}",
-                "pickup": pickup,
-                "destination": destination,
-                "datetime": _format_schedule_list_datetime(
-                    parsed_date, time_str or schedule_form["time"]
-                ),
-                "class": class_label,
-                "repeat": repeat,
-                "reminder": reminder,
-                "fare": _schedule_fare_display(vehicle_class),
-            }
-            scheduled = list(session.get("rider_scheduled_rides") or [])
-            scheduled.insert(0, new_ride)
-            session["rider_scheduled_rides"] = scheduled
-            session["schedule_success"] = {
-                "when": _format_schedule_success_when(
-                    parsed_date, time_str or schedule_form["time"]
-                ),
-                "class": class_label,
-                "reminder": reminder,
-            }
-            return redirect(url_for("main.user_schedule_ride"))
+            token = _rider_token()
+            scheduled_for = _parse_schedule_time(
+                date_str or schedule_form["date"],
+                time_str or schedule_form["time"],
+            )
+            from app.rider_defaults import resolve_location_coords
+            from app.rider_api_transforms import infer_city
+
+            pickup_coords = resolve_location_coords(pickup)
+            dest_coords = resolve_location_coords(destination)
+            api_ok = False
+            try:
+                create_scheduled_ride(
+                    token,
+                    {
+                        "pickup_address": pickup,
+                        "pickup_lat": pickup_coords["lat"],
+                        "pickup_lng": pickup_coords["lng"],
+                        "destination_address": destination,
+                        "destination_lat": dest_coords["lat"],
+                        "destination_lng": dest_coords["lng"],
+                        "city": infer_city(pickup or destination),
+                        "service_tier": vehicle_class,
+                        "scheduled_for": scheduled_for.isoformat(),
+                        "reminder_minutes_before": _schedule_reminder_minutes(reminder),
+                    },
+                )
+                api_ok = True
+            except ApiError as exc:
+                flash(exc.message, "error")
+
+            if api_ok:
+                parsed_date = _parse_schedule_date(date_str or schedule_form["date"])
+                class_label = SCHEDULE_CLASS_LABELS.get(vehicle_class, "Comfort")
+                session["schedule_success"] = {
+                    "when": _format_schedule_success_when(
+                        parsed_date, time_str or schedule_form["time"]
+                    ),
+                    "class": class_label,
+                    "reminder": reminder,
+                }
+                return redirect(url_for("main.user_schedule_ride"))
 
     upcoming_rides = _upcoming_scheduled_rides()
     return render_template(
@@ -1186,6 +1577,18 @@ def user_cancel_ride_request():
     guard = _require_rider()
     if guard:
         return guard
+    active = session.get("active_trip") or {}
+    ride_id = active.get("ride_id")
+    token = _rider_token()
+    if token and ride_id:
+        try:
+            if active.get("request_type") == "delivery" or active.get("vehicle_type") == "bike":
+                cancel_delivery(token, ride_id)
+            else:
+                cancel_ride(token, ride_id)
+        except ApiError as exc:
+            flash(exc.message, "error")
+            return redirect(url_for("main.user_live_tracking"))
     session.pop("active_trip", None)
     flash("Ride request cancelled.", "info")
     return redirect(url_for("main.user_dashboard"))
@@ -1198,14 +1601,41 @@ def user_share_ride():
         return guard
     share = dict(SHARE_RIDE)
     rider_name = session.get("name") or PROFILE_DEFAULTS["full_name"]
-    share["share_url"] = (
-        f"https://jcride.ng/t/{LIVE_TRACKING['booking_id']}"
-        f"?s={rider_name.split()[0].lower()}"
-    )
+    active = session.get("active_trip") or {}
+    ride_id = active.get("ride_id")
+    token = _rider_token()
+
+    contacts_data, contacts_ok = _safe_rider_api(list_trusted_contacts, [])
+    if contacts_ok and contacts_data:
+        share["contacts"] = contacts_to_share_ui(contacts_data)
+    else:
+        share["contacts"] = SHARE_RIDE.get("contacts", [])
+
+    share_url = None
+    if token and ride_id:
+        try:
+            link = create_ride_share_link(token, ride_id)
+            share_url = link.get("share_url")
+            share["share_message"] = (
+                f"I'm sharing my JosRide trip with you. Track live: {share_url}"
+            )
+        except ApiError:
+            pass
+
+    if not share_url:
+        booking_id = active.get("booking_id") or LIVE_TRACKING["booking_id"]
+        share_url = f"https://josride.ng/t/{booking_id}?s={rider_name.split()[0].lower()}"
+        share["share_message"] = SHARE_RIDE.get("share_message", "").replace(
+            "JCR-29481", booking_id
+        )
+    share["share_url"] = share_url
+    tracking = dict(LIVE_TRACKING)
+    if active.get("booking_id"):
+        tracking["booking_id"] = active["booking_id"]
     return render_template(
         "user/share_ride.html",
         active_page="live_tracking",
-        tracking=LIVE_TRACKING,
+        tracking=tracking,
         share=share,
         **_rider_context(),
     )
@@ -1216,10 +1646,17 @@ def user_ride_history():
     guard = _require_rider()
     if guard:
         return guard
+    rides, ok = _rider_rides_export()
+    history_trips = (
+        [ride_to_history_trip(item) for item in rides]
+        if ok and rides
+        else RIDE_HISTORY_TRIPS
+    )
     return render_template(
         "user/ride_history.html",
         active_page="ride_history",
-        history_trips=RIDE_HISTORY_TRIPS,
+        history_trips=history_trips,
+        api_connected=ok,
         **_rider_context(),
     )
 
@@ -1229,15 +1666,23 @@ def user_wallet():
     guard = _require_rider()
     if guard:
         return guard
-    wallet = dict(WALLET_SUMMARY)
-    if session.get("wallet_balance_ngn") is not None:
-        balance = session["wallet_balance_ngn"]
-        wallet["balance"] = f"₦{balance:,.2f}"
+    wallet_data, wallet_ok = _safe_rider_api(get_wallet)
+    tx_data, tx_ok = _safe_rider_api(lambda token: get_wallet_transactions(token, limit=20))
+    if wallet_ok:
+        _sync_rider_wallet_session(wallet_data)
+    wallet = build_wallet_summary(wallet_data if wallet_ok else None)
+    transactions = (
+        wallet_transactions_to_ui((tx_data or {}).get("transactions") or [])
+        if tx_ok
+        else list(WALLET_TRANSACTIONS)
+    )
     return render_template(
         "user/wallet.html",
         active_page="wallet",
         wallet=wallet,
-        transactions=WALLET_TRANSACTIONS,
+        transactions=transactions,
+        api_connected=wallet_ok,
+        user_email=session.get("email") or "",
         **_rider_context(),
     )
 
@@ -1249,16 +1694,34 @@ def user_profile():
         return guard
     profile = _profile_context()
     if request.method == "POST":
-        session["name"] = request.form.get("full_name", profile["full_name"]).strip()
-        session["email"] = request.form.get("email", profile["email"]).strip()
-        session["phone"] = request.form.get("phone", profile["phone"]).strip()
-        flash("Profile updated.", "success")
+        payload = {
+            "full_name": request.form.get("full_name", profile["full_name"]).strip(),
+            "email": request.form.get("email", profile["email"]).strip(),
+            "phone": request.form.get("phone", profile["phone"]).strip(),
+        }
+        dob = request.form.get("dob", "").strip()
+        if dob:
+            payload["date_of_birth"] = dob
+        ec_name = request.form.get("emergency_contact_name", "").strip()
+        ec_phone = request.form.get("emergency_contact_phone", "").strip()
+        if ec_name:
+            payload["emergency_contact_name"] = ec_name
+        if ec_phone:
+            payload["emergency_contact_phone"] = ec_phone
+        token = _rider_token()
+        try:
+            update_profile(token, payload)
+            session["name"] = payload["full_name"]
+            session["email"] = payload["email"]
+            session["phone"] = payload["phone"]
+            flash("Profile updated.", "success")
+        except ApiError as exc:
+            flash(exc.message, "error")
         return redirect(url_for("main.user_profile"))
     return render_template(
         "user/profile.html",
         active_page="profile",
         profile=profile,
-        profile_menu=PROFILE_MENU,
         **_rider_context(),
     )
 
@@ -1268,10 +1731,13 @@ def user_settings():
     guard = _require_rider()
     if guard:
         return guard
+    settings_data, ok = _safe_rider_api(get_user_settings)
+    settings = settings_from_api(settings_data if ok else None)
     return render_template(
         "user/settings.html",
         active_page="settings",
-        settings=SETTINGS_DEFAULTS,
+        settings=settings,
+        api_connected=ok,
         **_rider_context(),
     )
 
@@ -1300,13 +1766,16 @@ def user_notification_mark_read(notification_id):
     if guard:
         return guard
 
-    known_ids = {row["id"] for row in RIDER_NOTIFICATIONS}
-    if notification_id not in known_ids:
-        return jsonify({"error": "not_found"}), 404
-
-    states = dict(session.get(RIDER_NOTIFICATION_STATES_KEY) or {})
-    states[notification_id] = {"read": True}
-    session[RIDER_NOTIFICATION_STATES_KEY] = states
+    token = _rider_token()
+    try:
+        mark_notification_read(token, notification_id)
+    except ApiError:
+        known_ids = {row["id"] for row in RIDER_NOTIFICATIONS}
+        if notification_id not in known_ids:
+            return jsonify({"error": "not_found"}), 404
+        states = dict(session.get(RIDER_NOTIFICATION_STATES_KEY) or {})
+        states[notification_id] = {"read": True}
+        session[RIDER_NOTIFICATION_STATES_KEY] = states
 
     notifications = _notifications_inbox()
     return jsonify({
@@ -1321,10 +1790,14 @@ def user_notifications_mark_all_read():
     if guard:
         return guard
 
-    states = dict(session.get(RIDER_NOTIFICATION_STATES_KEY) or {})
-    for row in RIDER_NOTIFICATIONS:
-        states[row["id"]] = {"read": True}
-    session[RIDER_NOTIFICATION_STATES_KEY] = states
+    token = _rider_token()
+    try:
+        mark_all_notifications_read(token)
+    except ApiError:
+        states = dict(session.get(RIDER_NOTIFICATION_STATES_KEY) or {})
+        for row in RIDER_NOTIFICATIONS:
+            states[row["id"]] = {"read": True}
+        session[RIDER_NOTIFICATION_STATES_KEY] = states
 
     notifications = _notifications_inbox()
     return jsonify({
@@ -1351,6 +1824,15 @@ def user_notifications_preferences():
     if group not in valid_groups or pref_id not in valid_groups[group]:
         return jsonify({"error": "invalid_preference"}), 400
 
+    token = _rider_token()
+    update_payload = prefs_update_from_ui(group, pref_id, enabled)
+    if update_payload:
+        try:
+            update_notification_preferences(token, update_payload)
+            return jsonify({"ok": True})
+        except ApiError:
+            pass
+
     prefs = dict(session.get(RIDER_NOTIFICATION_PREFS_KEY) or {})
     prefs.setdefault(group, {})
     prefs[group][pref_id] = enabled
@@ -1365,14 +1847,425 @@ def user_support():
     if guard:
         return guard
     if request.method == "POST":
-        flash("Support ticket submitted. Our team will respond shortly.", "success")
+        category = request.form.get("category", "Other").strip()
+        description = request.form.get("description", "").strip()
+        trip_id = request.form.get("trip_id", "").strip()
+        if not description:
+            flash("Describe the issue before submitting.", "error")
+            return redirect(url_for("main.user_support"))
+        try:
+            create_support_ticket(
+                _rider_token(),
+                {
+                    "category": support_category_slug(category),
+                    "subject": category,
+                    "description": description,
+                    "ride_id": trip_id or None,
+                },
+            )
+            flash("Support ticket submitted. Our team will respond shortly.", "success")
+        except ApiError as exc:
+            flash(exc.message, "error")
         return redirect(url_for("main.user_support"))
+
+    tickets_data, tickets_ok = _safe_rider_api(lambda token: list_support_tickets(token, limit=10))
+    support_tickets = (
+        [support_ticket_to_ui(item) for item in (tickets_data or {}).get("tickets") or []]
+        if tickets_ok
+        else []
+    )
+    faq_data, faq_ok = _safe_rider_api(lambda token: get_support_faq(), None)
+    faq_items = faq_from_api(faq_data) if faq_ok and faq_data else SUPPORT_FAQ
     return render_template(
         "user/support.html",
         active_page="support",
-        faq_items=SUPPORT_FAQ,
+        faq_items=faq_items,
+        support_tickets=support_tickets,
+        api_connected=tickets_ok,
         **_rider_context(),
     )
+
+
+# ── Rider JSON API (proxies to JosRide-back) ──
+
+
+@main_bp.route("/user/api/rides/current")
+def user_api_current_ride():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        ride = get_current_ride(_rider_token())
+        if not ride:
+            ride = get_current_delivery(_rider_token())
+        return jsonify({"ride": ride})
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/start", methods=["POST"])
+def user_api_start_ride(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(start_ride(_rider_token(), ride_id))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/rate", methods=["POST"])
+def user_api_rate_ride(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        rating = int(payload.get("rating", 0))
+        return jsonify(
+            rate_driver(_rider_token(), ride_id, rating, payload.get("comment"))
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/sos", methods=["POST"])
+def user_api_ride_sos(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            trigger_ride_sos(
+                _rider_token(),
+                ride_id,
+                payload.get("lat"),
+                payload.get("lng"),
+                payload.get("message"),
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/call", methods=["POST"])
+def user_api_ride_call(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            ride_call_intent(_rider_token(), ride_id, payload.get("target", "driver"))
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/messages")
+def user_api_ride_messages(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(get_ride_messages(_rider_token(), ride_id))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/paystack/initialize", methods=["POST"])
+def user_api_paystack_initialize():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        amount = float(payload.get("amount_ngn", 0))
+        callback = payload.get("callback_url") or url_for("main.user_wallet", _external=True)
+        return jsonify(
+            initialize_paystack(
+                _rider_token(),
+                amount,
+                email=payload.get("email") or session.get("email"),
+                callback_url=callback,
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/paystack/verify", methods=["POST"])
+def user_api_paystack_verify():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(verify_paystack(_rider_token(), payload.get("reference", "")))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/fund-request", methods=["POST"])
+def user_api_wallet_fund_request():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            create_wallet_funding_request(
+                _rider_token(),
+                float(payload.get("amount_ngn", 0)),
+                payload.get("bank_name", ""),
+                payload.get("account_name", ""),
+                payload.get("proof_url"),
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/withdraw", methods=["POST"])
+def user_api_wallet_withdraw():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            withdraw_wallet(
+                _rider_token(),
+                float(payload.get("amount_ngn", 0)),
+                payload.get("bank_name", ""),
+                payload.get("account_number", ""),
+                payload.get("account_name", ""),
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/settings", methods=["PATCH"])
+def user_api_settings():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(update_user_settings(_rider_token(), payload))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/settings/pause", methods=["POST"])
+def user_api_settings_pause():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(pause_account(_rider_token(), payload.get("pause_until")))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/settings/delete-request", methods=["POST"])
+def user_api_settings_delete():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(request_account_deletion(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/settings/data-export")
+def user_api_settings_export():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(get_rider_data_export(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/support/tickets")
+def user_api_support_tickets():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(list_support_tickets(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/devices/register", methods=["POST"])
+def user_api_register_device():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            register_device(
+                _rider_token(),
+                payload.get("device_token", ""),
+                payload.get("platform", "web"),
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/estimate", methods=["POST"])
+def user_api_ride_estimate():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        estimate = estimate_ride_coords(
+            _rider_token(),
+            payload.get("pickup_address", ""),
+            payload.get("destination_address", ""),
+            payload.get("pickup_lat"),
+            payload.get("pickup_lng"),
+            payload.get("destination_lat"),
+            payload.get("destination_lng"),
+            tier=payload.get("service_tier", "economy"),
+            stops=payload.get("stops"),
+            city=payload.get("city"),
+        )
+        return jsonify(estimate)
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/location", methods=["POST"])
+def user_api_save_location():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    label = (payload.get("label") or "").strip()
+    lat = payload.get("lat")
+    lng = payload.get("lng")
+    if label and lat is not None and lng is not None:
+        session["rider_location"] = label
+        session["rider_lat"] = float(lat)
+        session["rider_lng"] = float(lng)
+    return jsonify({"ok": True, "label": label, "lat": lat, "lng": lng})
+
+
+@main_bp.route("/user/api/nearby-drivers")
+def user_api_nearby_drivers():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    lat = request.args.get("lat", type=float)
+    lng = request.args.get("lng", type=float)
+    if lat is None or lng is None:
+        return jsonify({"error": "lat and lng required"}), 400
+    try:
+        return jsonify(
+            get_nearby_drivers(
+                _rider_token(),
+                lat,
+                lng,
+                radius_km=request.args.get("radius_km", 8, type=float),
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/search")
+def user_api_search():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    query = (request.args.get("q") or "").strip()
+    if not query:
+        return jsonify({"error": "q required"}), 400
+    try:
+        return jsonify(search_rider(_rider_token(), query))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/referral")
+def user_api_referral():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(get_referral_info(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/support/live-chat", methods=["POST"])
+def user_api_live_chat():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(create_live_chat_session(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/contacts", methods=["GET", "POST"])
+def user_api_contacts():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    token = _rider_token()
+    if request.method == "GET":
+        try:
+            return jsonify({"contacts": list_trusted_contacts(token)})
+        except ApiError as exc:
+            return _user_api_error(exc)
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(create_trusted_contact(token, payload))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/contacts/<contact_id>", methods=["DELETE"])
+def user_api_delete_contact(contact_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        delete_trusted_contact(_rider_token(), contact_id)
+        return jsonify({"ok": True})
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/saved-locations", methods=["GET", "POST"])
+def user_api_saved_locations():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    token = _rider_token()
+    if request.method == "GET":
+        try:
+            return jsonify({"locations": list_saved_locations(token)})
+        except ApiError as exc:
+            return _user_api_error(exc)
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(create_saved_location(token, payload))
+    except ApiError as exc:
+        return _user_api_error(exc)
 
 
 @main_bp.route("/driver", methods=["GET", "POST"])

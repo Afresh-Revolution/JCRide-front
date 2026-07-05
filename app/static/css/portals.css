@@ -155,8 +155,15 @@ a { color: inherit; text-decoration: none; }
 
 /* ── Flashes ── */
 .portal-flashes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   width: min(100% - 2.5rem, var(--portal-container));
   margin: 1rem auto 0;
+}
+
+.portal-flashes .portal-flash {
+  margin-bottom: 0;
 }
 
 .portal-flash {

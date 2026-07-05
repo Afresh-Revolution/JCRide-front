@@ -5,6 +5,7 @@
 {% block page_scripts %}
 <script type="application/json" id="rider-area-map-data">{{ live_area_map | tojson }}</script>
 <script src="{{ url_for('static', filename='js/user-map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-dashboard.js') }}"></script>
 {% endblock %}
 
 {% block user_content %}
@@ -49,7 +50,7 @@
     <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Current Location</span>
-      <span class="rider-kpi-card__value rider-kpi-card__value--sm">{{ stats.location.value }}</span>
+      <span class="rider-kpi-card__value rider-kpi-card__value--sm" id="rider-location-label">{{ stats.location.value }}</span>
     </div>
     <div class="rider-kpi-card__icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -62,7 +63,7 @@
     <div class="rider-panel__header">
       <div>
         <h2 class="rider-panel__title">{{ live_area.title }}</h2>
-        <p class="rider-panel__subtitle">{{ live_area.subtitle }}</p>
+        <p class="rider-panel__subtitle" id="rider-live-area-subtitle">{{ live_area.subtitle }}</p>
       </div>
       <a href="{{ url_for('main.user_book_ride') }}" class="rider-btn rider-btn--dark">Book Now ↗</a>
     </div>
@@ -76,7 +77,7 @@
     <article class="rider-panel rider-panel--promo">
       <h2 class="rider-promo__title">Earn ₦500 wallet credit</h2>
       <p class="rider-promo__text">Invite a friend and get credit on their first ride.</p>
-      <button type="button" class="rider-btn rider-btn--lime" disabled>Get invite link</button>
+      <button type="button" class="rider-btn rider-btn--lime" id="referral-invite-btn"{% if not referral %} disabled{% endif %} data-invite-url="{{ referral.invite_url if referral else '' }}">Get invite link</button>
     </article>
 
     <article class="rider-panel">

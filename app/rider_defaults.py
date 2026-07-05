@@ -1,4 +1,4 @@
-"""Demo rider dashboard data until rider API endpoints are available."""
+"""Fallback rider UI data when the API is unavailable or has no records."""
 
 RIDER_STATS = {
     "wallet_balance": {"value": "₦42,580", "trend": "₦5,200 this week"},
@@ -319,8 +319,8 @@ TRACKING_FINDING = {
 }
 
 SHARE_RIDE = {
-    "share_url": "https://jcride.ng/t/JCR-29481?s=adaeze",
-    "share_message": "Follow my JCRide trip live:",
+    "share_url": "https://josride.ng/t/JCR-29481?s=adaeze",
+    "share_message": "Follow my JosRide trip live:",
     "contacts": [
         {"initials": "MO", "name": "Mom", "phone": "+234 803 111 2222", "trusted": True},
         {"initials": "CE", "name": "Chinedu E.", "phone": "+234 805 222 0098", "trusted": True},

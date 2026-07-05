@@ -2,14 +2,19 @@
 {% set active_page = 'wallet' %}
 
 {% block user_content %}
+<script type="application/json" id="wallet-api-config">{{ {
+  "email": user_email,
+  "callbackUrl": url_for('main.user_wallet', _external=True)
+} | tojson }}</script>
+
 <section class="wallet-kpi-grid">
   <article class="wallet-balance-card">
     <span class="wallet-balance-card__label">JosRide Wallet</span>
     <p class="wallet-balance-card__value">{{ wallet.balance }}</p>
     <p class="wallet-balance-card__sub">{{ wallet.balance_sub }}</p>
     <div class="wallet-balance-card__actions">
-      <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost">+ Fund wallet</button>
-      <button type="button" class="wallet-balance-card__btn">Withdraw</button>
+      <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost" id="wallet-manual-fund-btn">+ Fund wallet</button>
+      <button type="button" class="wallet-balance-card__btn" id="wallet-withdraw-btn">Withdraw</button>
     </div>
   </article>
   <article class="rider-kpi-card">
@@ -79,13 +84,34 @@
       </div>
     </div>
 
-    <button type="button" class="rider-btn rider-btn--request">Continue with Paystack</button>
+    <button type="button" class="rider-btn rider-btn--request" id="wallet-paystack-btn">Continue with Paystack</button>
+
+    <div class="wallet-withdraw-panel" id="wallet-withdraw-panel" hidden>
+      <h3 class="rider-panel__subtitle">Withdraw to bank</h3>
+      <label class="support-field">
+        <span>Amount (₦)</span>
+        <input type="number" id="wallet-withdraw-amount" min="100" step="100" placeholder="5000">
+      </label>
+      <label class="support-field">
+        <span>Bank name</span>
+        <input type="text" id="wallet-withdraw-bank" placeholder="GTBank">
+      </label>
+      <label class="support-field">
+        <span>Account number</span>
+        <input type="text" id="wallet-withdraw-account-number" placeholder="0123456789">
+      </label>
+      <label class="support-field">
+        <span>Account name</span>
+        <input type="text" id="wallet-withdraw-account-name" placeholder="Jane Doe">
+      </label>
+      <button type="button" class="rider-btn rider-btn--dark" id="wallet-withdraw-submit">Submit withdrawal</button>
+    </div>
   </section>
 
   <section class="rider-panel wallet-transactions">
     <div class="rider-panel__header">
       <h2 class="rider-panel__title">Transactions</h2>
-      <button type="button" class="rider-link">↻ Refresh</button>
+      <button type="button" class="rider-link" id="wallet-refresh-btn">↻ Refresh</button>
     </div>
     <ul class="wallet-tx-list">
       {% for tx in transactions %}
@@ -110,4 +136,5 @@
 
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-wallet.js') }}"></script>
 {% endblock %}

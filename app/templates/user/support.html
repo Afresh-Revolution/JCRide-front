@@ -3,7 +3,7 @@
 
 {% block user_content %}
 <div class="support-quick-grid">
-  <a href="#" class="support-quick-card">
+  <a href="#live-chat" class="support-quick-card" id="support-live-chat">
     <span class="support-quick-card__icon support-quick-card__icon--green" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     </span>
@@ -23,7 +23,7 @@
     </div>
     <span class="support-quick-card__chev" aria-hidden="true">›</span>
   </a>
-  <a href="#" class="support-quick-card">
+  <a href="#faq-list" class="support-quick-card">
     <span class="support-quick-card__icon support-quick-card__icon--green" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     </span>
@@ -44,7 +44,7 @@
 </div>
 
 <div class="support-layout">
-  <section class="rider-panel support-ticket">
+  <section class="rider-panel support-ticket" id="live-chat">
     <h2 class="rider-panel__title">Open a support ticket</h2>
     <form class="support-form" method="post">
       <label class="support-field">
@@ -58,17 +58,32 @@
       </label>
       <label class="support-field">
         <span>Related trip (optional)</span>
-        <input type="text" name="trip_id" placeholder="JCR-29481" value="JCR-29481">
+        <input type="text" name="trip_id" placeholder="JCR-29481">
       </label>
       <label class="support-field">
         <span>Describe the issue</span>
-        <textarea name="description" rows="5" placeholder="Tell us what happened..."></textarea>
+        <textarea name="description" rows="5" placeholder="Tell us what happened..." required></textarea>
       </label>
       <button type="submit" class="rider-btn rider-btn--dark support-submit">Submit ticket</button>
     </form>
   </section>
 
   <section class="rider-panel support-faq">
+    {% if support_tickets %}
+    <h2 class="rider-panel__title">Your tickets</h2>
+    <ul class="support-ticket-list">
+      {% for ticket in support_tickets %}
+      <li class="support-ticket-item">
+        <div class="support-ticket-item__body">
+          <strong>{{ ticket.subject }}</strong>
+          <span>{{ ticket.category | replace('_', ' ') | title }} · {{ ticket.created_at }}</span>
+        </div>
+        <span class="rider-status rider-status--{{ ticket.status | replace(' ', '-') }}">{{ ticket.status | title }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <hr class="support-section-divider">
+    {% endif %}
     <h2 class="rider-panel__title">Frequently asked</h2>
     <div class="faq-list" id="faq-list">
       {% for item in faq_items %}
@@ -83,5 +98,6 @@
 {% endblock %}
 
 {% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-support.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
 {% endblock %}

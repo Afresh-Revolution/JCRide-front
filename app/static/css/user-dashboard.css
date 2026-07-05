@@ -36,21 +36,21 @@ body.user-body.admin-nav-open {
 }
 
 .user-flash-container {
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  top: auto;
-  left: auto;
-  z-index: 2000;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  max-width: min(360px, calc(100vw - 2rem));
-  pointer-events: none;
+  margin-bottom: 1.25rem;
 }
 
 .user-flash-container .user-flash {
-  pointer-events: auto;
+  margin-bottom: 0;
+}
+
+.user-flash.flash-dismissible {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .user-flash {
@@ -404,6 +404,21 @@ button.rider-link:hover {
   border: 3px solid var(--user-green);
   border-radius: 3px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.map-marker-stop {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 2px solid var(--user-green);
+  border-radius: 50%;
+  color: var(--user-green);
+  font-size: 10px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .map-marker-vehicle {
@@ -829,6 +844,7 @@ button.rider-link:hover {
   border: 1px solid var(--user-border);
   border-radius: var(--user-radius-sm);
   min-width: 0;
+  position: relative;
 }
 
 .route-input__dot {
@@ -840,6 +856,14 @@ button.rider-link:hover {
 
 .route-input__dot--pickup {
   background: #16a34a;
+}
+
+.route-input--gps .route-input__dot--pickup {
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+}
+
+.route-input--gps input {
+  font-weight: 500;
 }
 
 .route-input__dot--dropoff {
@@ -856,6 +880,77 @@ button.rider-link:hover {
   outline: none;
 }
 
+.route-input--searchable {
+  position: relative;
+}
+
+.route-input__dot--stop {
+  background: var(--user-muted);
+  border-radius: 2px;
+}
+
+.route-input--stop {
+  padding-right: 2rem;
+}
+
+.route-stop-remove {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--user-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.route-stop-remove:hover {
+  color: var(--user-text);
+}
+
+.location-suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  margin: 0;
+  padding: 0.35rem 0;
+  list-style: none;
+  background: var(--user-panel-bg, #fff);
+  border: 1px solid var(--user-border);
+  border-radius: var(--user-radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.location-suggestions button {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--user-text);
+  cursor: pointer;
+}
+
+.location-suggestions button:hover,
+.location-suggestions button:focus {
+  background: var(--user-field-bg);
+}
+
+.book-ride-form__hint {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--user-muted);
+}
+
 .route-add-stop {
   margin-top: 0.75rem;
   width: 100%;
@@ -865,7 +960,12 @@ button.rider-link:hover {
   background: transparent;
   color: var(--user-muted);
   font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.route-add-stop:disabled {
   cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .trip-stats {
@@ -3295,11 +3395,47 @@ button.rider-link:hover {
   .admin-topbar__search {
     display: none;
   }
+}
 
-  .user-flash-container {
-    left: 1rem;
-    right: 1rem;
-    bottom: 1rem;
-    max-width: none;
-  }
+.admin-topbar__search {
+  position: relative;
+}
+
+.portal-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  background: var(--rider-surface, #fff);
+  border: 1px solid var(--rider-border, #e5e7eb);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.portal-search-results a {
+  display: block;
+  padding: 10px 14px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.portal-search-results a:hover {
+  background: rgba(10, 79, 42, 0.06);
+}
+
+.portal-search-results strong {
+  display: block;
+  font-size: 0.875rem;
+}
+
+.portal-search-results span {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.7;
 }

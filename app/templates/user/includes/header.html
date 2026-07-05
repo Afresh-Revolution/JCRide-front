@@ -2,7 +2,9 @@
 {% set sidebar_id = 'user-sidebar' %}
 {% set profile_name = rider_name %}
 {% set profile_initials = rider_initials %}
-{% set profile_meta = rider_location ~ ' · Premium rider' %}
+{% set profile_meta = rider_meta %}
+{% set profile_meta_id = 'rider-profile-meta' %}
+{% set profile_badge = rider_meta.split(' · ')[-1] if ' · ' in rider_meta else '' %}
 {% set search_placeholder = 'Search rides, places, trip ID...' %}
 {% set show_topbar_quick_actions = true %}
 {% set quick_notifications_url = url_for('main.user_notifications') %}

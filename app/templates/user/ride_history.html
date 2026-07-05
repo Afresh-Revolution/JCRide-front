@@ -19,7 +19,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
         Filters
       </button>
-      <button type="button" class="rider-btn rider-btn--dark-sm rider-btn--icon">
+      <button type="button" class="rider-btn rider-btn--dark-sm rider-btn--icon" id="history-export-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export
       </button>
@@ -38,6 +38,7 @@
           <th>Duration</th>
           <th>Fare</th>
           <th>Status</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -51,6 +52,11 @@
           <td>{{ trip.duration }}</td>
           <td><strong>{{ trip.fare }}</strong></td>
           <td><span class="rider-status rider-status--{{ trip.status }}">{{ trip.status | capitalize }}</span></td>
+          <td>
+            {% if trip.ride_id and trip.status == 'completed' %}
+            <button type="button" class="rider-btn rider-btn--outline-sm history-rate-btn" data-ride-id="{{ trip.ride_id }}">Rate</button>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -58,14 +64,7 @@
   </div>
 
   <div class="history-pagination">
-    <span class="history-pagination__info">Showing 14 of 148 trips</span>
-    <div class="history-pagination__controls">
-      <button type="button" class="history-page-btn" disabled aria-label="Previous page">‹</button>
-      <button type="button" class="history-page-btn is-active">1</button>
-      <button type="button" class="history-page-btn">2</button>
-      <button type="button" class="history-page-btn">3</button>
-      <button type="button" class="history-page-btn" aria-label="Next page">›</button>
-    </div>
+    <span class="history-pagination__info">Showing {{ history_trips | length }} trip{% if history_trips | length != 1 %}s{% endif %}</span>
   </div>
 </section>
 {% endblock %}
