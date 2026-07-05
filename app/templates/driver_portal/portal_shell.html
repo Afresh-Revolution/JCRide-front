@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{% block title %}Driver Portal — JosRide NAIJA{% endblock %}</title>
   {% from "includes/brand_assets.html" import brand_stylesheet %}
-  {% from "includes/pwa_head.html" import pwa_head, pwa_scripts %}
+  {% from "includes/pwa_head.html" import pwa_head, pwa_scripts, pwa_body_start %}
   {{ pwa_head() }}
   {{ brand_stylesheet() }}
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,6 +14,7 @@
   {% block head %}{% endblock %}
 </head>
 <body class="admin-body driver-portal">
+  {{ pwa_body_start() }}
   {% block body %}{% endblock %}
   {% block scripts %}{% endblock %}
   {{ pwa_scripts() }}

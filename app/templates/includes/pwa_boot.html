@@ -1,0 +1,62 @@
+{# PWA boot shell — splash + skeleton (include immediately after <body>) #}
+
+{% macro pwa_boot_shell() %}
+<div id="pwa-splash" class="pwa-splash" aria-hidden="true" role="status" aria-label="Loading JosRide">
+  <div class="pwa-splash__inner">
+    <div class="pwa-splash__logo-wrap">
+      <img
+        class="pwa-splash__logo"
+        src="{{ static_url('pwa/icons/icon-192.png') }}"
+        alt=""
+        width="96"
+        height="96"
+        decoding="sync"
+        fetchpriority="high"
+      >
+      <div class="pwa-splash__ring" aria-hidden="true"></div>
+    </div>
+    <p class="pwa-splash__name">JosRide <span>NAIJA</span></p>
+    <p class="pwa-splash__tagline">Premium rides across Nigeria</p>
+  </div>
+</div>
+
+<div id="pwa-skeleton" class="pwa-skeleton" aria-hidden="true" hidden>
+  <div class="pwa-skeleton__nav pwa-skeleton__shimmer"></div>
+  <div class="pwa-skeleton__body">
+    <div class="pwa-skeleton__hero pwa-skeleton__shimmer"></div>
+    <div class="pwa-skeleton__row">
+      <div class="pwa-skeleton__card pwa-skeleton__shimmer"></div>
+      <div class="pwa-skeleton__card pwa-skeleton__shimmer"></div>
+    </div>
+    <div class="pwa-skeleton__row">
+      <div class="pwa-skeleton__card pwa-skeleton__shimmer"></div>
+      <div class="pwa-skeleton__card pwa-skeleton__shimmer"></div>
+    </div>
+    <div class="pwa-skeleton__block pwa-skeleton__shimmer"></div>
+    <div class="pwa-skeleton__block pwa-skeleton__block--short pwa-skeleton__shimmer"></div>
+    <div class="pwa-skeleton__list">
+      <div class="pwa-skeleton__line pwa-skeleton__shimmer"></div>
+      <div class="pwa-skeleton__line pwa-skeleton__shimmer"></div>
+      <div class="pwa-skeleton__line pwa-skeleton__shimmer"></div>
+      <div class="pwa-skeleton__line pwa-skeleton__line--short pwa-skeleton__shimmer"></div>
+    </div>
+  </div>
+</div>
+
+<button
+  type="button"
+  class="pwa-reload-btn"
+  id="pwa-reload-btn"
+  aria-label="Reload page"
+  title="Reload page"
+  hidden
+>
+  <span class="pwa-reload-btn__glow" aria-hidden="true"></span>
+  <span class="pwa-reload-btn__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+      <polyline points="21 3 21 9 15 9"/>
+    </svg>
+  </span>
+</button>
+{% endmacro %}
