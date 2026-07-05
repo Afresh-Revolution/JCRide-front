@@ -4,7 +4,7 @@ import requests
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import ReadTimeout, RequestException, Timeout
 
-from app.config import get_api_timeout, get_api_url, get_deployed_api_url, is_local_api_url
+from app.config import get_api_timeout, get_api_urls
 
 API_PREFIX = "/api/v1"
 
@@ -35,32 +35,20 @@ def _parse_error(response: requests.Response) -> str:
     return body.get("message", response.text or response.reason)
 
 
-def _connection_error_message(api_url: str, exc: RequestException) -> str:
-    detail = str(exc)
+def _connection_error_message(api_urls: list[str], exc: RequestException | None) -> str:
+    tried = " → ".join(api_urls)
+    detail = str(exc) if exc else "unknown error"
     if "actively refused" in detail or "10061" in detail or "Connection refused" in detail:
         return (
-            f"Backend is not running at {api_url}. "
-            "Start it from the JCRide-back folder: python run.py"
+            f"Could not reach any backend ({tried}). "
+            "Start JosRide-back locally or confirm the deployed API URL in .env."
         )
     if isinstance(exc, (ReadTimeout, Timeout)) or "timed out" in detail.lower():
         return (
-            f"Backend at {api_url} did not respond in time. "
-            "On Render free tier the server may be waking up—wait a moment and try again, "
-            "or set API_URL=http://localhost:8000 in .env and run JCRide-back locally."
+            f"Backend did not respond in time ({tried}). "
+            "On Render free tier the server may be waking up—wait a moment and try again."
         )
-    return f"Could not reach API at {api_url}. Details: {exc}"
-
-
-def _api_base_urls() -> list[str]:
-    primary = get_api_url()
-    fallback = get_deployed_api_url()
-    if is_local_api_url(primary) and _normalize_url(fallback) != _normalize_url(primary):
-        return [primary, fallback]
-    return [primary]
-
-
-def _normalize_url(url: str) -> str:
-    return str(url).strip().rstrip("/")
+    return f"Could not reach API ({tried}). Details: {detail}"
 
 
 def _request(method, endpoint, token=None, **kwargs):
@@ -70,12 +58,11 @@ def _request(method, endpoint, token=None, **kwargs):
 
     timeout = kwargs.pop("timeout", get_api_timeout())
     max_attempts = 2
+    api_urls = get_api_urls()
     last_exc: RequestException | None = None
-    last_url = get_api_url()
     response = None
 
-    for base_url in _api_base_urls():
-        last_url = base_url
+    for base_url in api_urls:
         for attempt in range(max_attempts):
             try:
                 response = requests.request(
@@ -88,17 +75,13 @@ def _request(method, endpoint, token=None, **kwargs):
                 if attempt < max_attempts - 1 and retryable:
                     time.sleep(2)
                     continue
-                if isinstance(exc, RequestsConnectionError) and base_url != _api_base_urls()[-1]:
-                    break
-                raise ApiError(_connection_error_message(base_url, exc)) from exc
-        else:
-            continue
-        break
-    else:
-        raise ApiError(_connection_error_message(last_url, last_exc)) from last_exc
+                response = None
+                break
+        if response is not None:
+            break
 
     if response is None:
-        raise ApiError(_connection_error_message(last_url, last_exc)) from last_exc
+        raise ApiError(_connection_error_message(api_urls, last_exc)) from last_exc
     if not response.ok:
         raise ApiError(_parse_error(response), response.status_code)
     return response.json() if response.content else {}
@@ -270,20 +253,19 @@ def admin_login(email, password):
     )
 
 
-def register(full_name, phone, email, password, confirm_password=None):
+def register(full_name, phone, email, password, confirm_password=None, referral_code=None):
     if confirm_password is None:
         confirm_password = password
-    return _request(
-        "POST",
-        f"{API_PREFIX}/auth/register",
-        json={
-            "full_name": full_name,
-            "phone": phone,
-            "email": email,
-            "password": password,
-            "confirm_password": confirm_password,
-        },
-    )
+    payload = {
+        "full_name": full_name,
+        "phone": phone,
+        "email": email,
+        "password": password,
+        "confirm_password": confirm_password,
+    }
+    if referral_code:
+        payload["referral_code"] = referral_code
+    return _request("POST", f"{API_PREFIX}/auth/register", json=payload)
 
 
 def verify_otp(email_or_phone, code):
@@ -313,31 +295,37 @@ def upload_driver_document(token, document_type, file_storage):
         )
     }
     data = {"document_type": document_type}
-    api_url = get_api_url()
     timeout = get_api_timeout()
     max_attempts = 2
+    api_urls = get_api_urls()
     last_exc: RequestException | None = None
+    response = None
 
-    for attempt in range(max_attempts):
-        try:
-            response = requests.post(
-                f"{api_url}{API_PREFIX}/drivers/documents/upload",
-                headers=headers,
-                files=files,
-                data=data,
-                timeout=timeout,
-            )
-            break
-        except RequestException as exc:
-            last_exc = exc
-            retryable = isinstance(exc, (ReadTimeout, Timeout, RequestsConnectionError))
-            if attempt < max_attempts - 1 and retryable:
-                time.sleep(2)
+    for api_url in api_urls:
+        for attempt in range(max_attempts):
+            try:
                 file_storage.stream.seek(0)
-                continue
-            raise ApiError(_connection_error_message(api_url, exc)) from exc
-    else:
-        raise ApiError(_connection_error_message(api_url, last_exc)) from last_exc
+                response = requests.post(
+                    f"{api_url}{API_PREFIX}/drivers/documents/upload",
+                    headers=headers,
+                    files=files,
+                    data=data,
+                    timeout=timeout,
+                )
+                break
+            except RequestException as exc:
+                last_exc = exc
+                retryable = isinstance(exc, (ReadTimeout, Timeout, RequestsConnectionError))
+                if attempt < max_attempts - 1 and retryable:
+                    time.sleep(2)
+                    continue
+                response = None
+                break
+        if response is not None:
+            break
+
+    if response is None:
+        raise ApiError(_connection_error_message(api_urls, last_exc)) from last_exc
     if not response.ok:
         raise ApiError(_parse_error(response), response.status_code)
     return response.json() if response.content else {}
@@ -352,12 +340,430 @@ def register_driver(token, payload):
     )
 
 
-def request_ride(token, pickup, dropoff):
+def _ride_coords(pickup: str, dropoff: str) -> dict:
+    from app.rider_defaults import resolve_location_coords
+    from app.rider_api_transforms import infer_city
+
+    pickup_coords = resolve_location_coords(pickup)
+    dest_coords = resolve_location_coords(dropoff)
+    return {
+        "pickup_lat": pickup_coords["lat"],
+        "pickup_lng": pickup_coords["lng"],
+        "destination_lat": dest_coords["lat"],
+        "destination_lng": dest_coords["lng"],
+        "city": infer_city(pickup or dropoff),
+    }
+
+
+def _ride_payload(
+    pickup,
+    dropoff,
+    pickup_lat,
+    pickup_lng,
+    dest_lat,
+    dest_lng,
+    tier="economy",
+    stops=None,
+    city=None,
+):
+    from app.rider_api_transforms import infer_city
+
+    payload = {
+        "pickup_lat": float(pickup_lat),
+        "pickup_lng": float(pickup_lng),
+        "destination_lat": float(dest_lat),
+        "destination_lng": float(dest_lng),
+        "pickup_address": pickup,
+        "destination_address": dropoff,
+        "service_tier": tier,
+        "city": city or infer_city(pickup or dropoff),
+    }
+    if stops:
+        payload["stops"] = stops
+    return payload
+
+
+def estimate_ride(token, pickup, dropoff, tier="economy"):
+    coords = _ride_coords(pickup, dropoff)
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/estimate",
+        token=token,
+        json={
+            **coords,
+            "pickup_address": pickup,
+            "destination_address": dropoff,
+            "service_tier": tier,
+        },
+    )
+
+
+def estimate_ride_coords(
+    token,
+    pickup,
+    dropoff,
+    pickup_lat,
+    pickup_lng,
+    dest_lat,
+    dest_lng,
+    tier="economy",
+    stops=None,
+    city=None,
+):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/estimate",
+        token=token,
+        json=_ride_payload(
+            pickup,
+            dropoff,
+            pickup_lat,
+            pickup_lng,
+            dest_lat,
+            dest_lng,
+            tier=tier,
+            stops=stops,
+            city=city,
+        ),
+    )
+
+
+def request_ride(token, pickup, dropoff, tier="economy"):
+    coords = _ride_coords(pickup, dropoff)
     return _request(
         "POST",
         f"{API_PREFIX}/rides/request",
         token=token,
-        json={"pickup": pickup, "destination": dropoff},
+        json={
+            **coords,
+            "pickup_address": pickup,
+            "destination_address": dropoff,
+            "service_tier": tier,
+        },
+    )
+
+
+def request_ride_coords(
+    token,
+    pickup,
+    dropoff,
+    pickup_lat,
+    pickup_lng,
+    dest_lat,
+    dest_lng,
+    tier="economy",
+    stops=None,
+    city=None,
+):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/request",
+        token=token,
+        json=_ride_payload(
+            pickup,
+            dropoff,
+            pickup_lat,
+            pickup_lng,
+            dest_lat,
+            dest_lng,
+            tier=tier,
+            stops=stops,
+            city=city,
+        ),
+    )
+
+
+def get_current_ride(token):
+    return _request("GET", f"{API_PREFIX}/rides/current", token=token)
+
+
+def cancel_ride(token, ride_id, reason=None):
+    payload = {"reason": reason} if reason else {}
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/cancel",
+        token=token,
+        json=payload,
+    )
+
+
+def estimate_delivery(token, pickup, dropoff):
+    coords = _ride_coords(pickup, dropoff)
+    return _request(
+        "POST",
+        f"{API_PREFIX}/deliveries/estimate",
+        token=token,
+        json={
+            **coords,
+            "pickup_address": pickup,
+            "destination_address": dropoff,
+        },
+    )
+
+
+def request_delivery(token, pickup, dropoff, package_details, recipient_name, recipient_phone):
+    coords = _ride_coords(pickup, dropoff)
+    return _request(
+        "POST",
+        f"{API_PREFIX}/deliveries/request",
+        token=token,
+        json={
+            **coords,
+            "pickup_address": pickup,
+            "destination_address": dropoff,
+            "package_details": package_details,
+            "recipient_name": recipient_name,
+            "recipient_phone": recipient_phone,
+        },
+    )
+
+
+def get_current_delivery(token):
+    return _request("GET", f"{API_PREFIX}/deliveries/current", token=token)
+
+
+def cancel_delivery(token, delivery_id, reason=None):
+    payload = {"reason": reason} if reason else {}
+    return _request(
+        "POST",
+        f"{API_PREFIX}/deliveries/{delivery_id}/cancel",
+        token=token,
+        json=payload,
+    )
+
+
+def list_scheduled_rides(token, page=1, limit=20):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/scheduled-rides",
+        token=token,
+        params={"page": page, "limit": limit},
+    )
+
+
+def create_scheduled_ride(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/scheduled-rides",
+        token=token,
+        json=payload,
+    )
+
+
+def cancel_scheduled_ride(token, scheduled_id, reason=None):
+    payload = {"reason": reason} if reason else {}
+    return _request(
+        "POST",
+        f"{API_PREFIX}/scheduled-rides/{scheduled_id}/cancel",
+        token=token,
+        json=payload,
+    )
+
+
+def get_wallet(token):
+    return _request("GET", f"{API_PREFIX}/wallet", token=token)
+
+
+def get_wallet_transactions(token, page=1, limit=20):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/wallet/transactions",
+        token=token,
+        params={"page": page, "limit": limit},
+    )
+
+
+def get_rider_data_export(token):
+    return _request("GET", f"{API_PREFIX}/settings/data-export", token=token)
+
+
+def get_user_settings(token):
+    return _request("GET", f"{API_PREFIX}/settings", token=token)
+
+
+def update_user_settings(token, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/settings",
+        token=token,
+        json=payload,
+    )
+
+
+def list_notifications(token, page=1, limit=50):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/notifications",
+        token=token,
+        params={"page": page, "limit": limit},
+    )
+
+
+def mark_notification_read(token, notification_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/notifications/{notification_id}/read",
+        token=token,
+    )
+
+
+def mark_all_notifications_read(token):
+    return _request("POST", f"{API_PREFIX}/notifications/read-all", token=token)
+
+
+def get_notification_preferences(token):
+    return _request("GET", f"{API_PREFIX}/settings/notification-preferences", token=token)
+
+
+def update_notification_preferences(token, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/settings/notification-preferences",
+        token=token,
+        json=payload,
+    )
+
+
+def create_support_ticket(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/support/tickets",
+        token=token,
+        json=payload,
+    )
+
+
+def list_support_tickets(token, page=1, limit=20):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/support/tickets",
+        token=token,
+        params={"page": page, "limit": limit},
+    )
+
+
+def start_ride(token, ride_id):
+    return _request("POST", f"{API_PREFIX}/rides/{ride_id}/start", token=token)
+
+
+def rate_driver(token, ride_id, rating, comment=None):
+    payload = {"rating": rating}
+    if comment:
+        payload["comment"] = comment
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/rate-driver",
+        token=token,
+        json=payload,
+    )
+
+
+def trigger_ride_sos(token, ride_id, lat=None, lng=None, message=None):
+    payload = {}
+    if lat is not None:
+        payload["lat"] = lat
+    if lng is not None:
+        payload["lng"] = lng
+    if message:
+        payload["message"] = message
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/sos",
+        token=token,
+        json=payload,
+    )
+
+
+def ride_call_intent(token, ride_id, target="driver"):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/call-intent",
+        token=token,
+        json={"target": target},
+    )
+
+
+def get_ride_messages(token, ride_id, page=1, limit=50):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/rides/{ride_id}/messages",
+        token=token,
+        params={"page": page, "limit": limit},
+    )
+
+
+def initialize_paystack(token, amount_ngn, email=None, callback_url=None):
+    payload = {"amount_ngn": amount_ngn}
+    if email:
+        payload["email"] = email
+    if callback_url:
+        payload["callback_url"] = callback_url
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/paystack/initialize",
+        token=token,
+        json=payload,
+    )
+
+
+def verify_paystack(token, reference):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/paystack/verify",
+        token=token,
+        json={"reference": reference},
+    )
+
+
+def create_wallet_funding_request(token, amount_ngn, bank_name, account_name, proof_url=None):
+    payload = {
+        "amount_ngn": amount_ngn,
+        "bank_name": bank_name,
+        "account_name": account_name,
+    }
+    if proof_url:
+        payload["proof_url"] = proof_url
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/fund-request",
+        token=token,
+        json=payload,
+    )
+
+
+def withdraw_wallet(token, amount_ngn, bank_name, account_number, account_name):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/withdraw",
+        token=token,
+        json={
+            "amount_ngn": amount_ngn,
+            "bank_name": bank_name,
+            "account_number": account_number,
+            "account_name": account_name,
+        },
+    )
+
+
+def pause_account(token, pause_until):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/settings/account/pause",
+        token=token,
+        json={"pause_until": pause_until},
+    )
+
+
+def request_account_deletion(token):
+    return _request("POST", f"{API_PREFIX}/settings/account/delete-request", token=token)
+
+
+def register_device(token, device_token, platform="web"):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/devices/register",
+        token=token,
+        json={"device_token": device_token, "platform": platform},
     )
 
 
@@ -691,3 +1097,106 @@ def update_admin_bike_delivery_settings(token, payload):
         token=token,
         json=payload,
     )
+
+
+# ── Customer features (Phase 14) ──
+
+
+def forgot_password(email_or_phone):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/auth/forgot-password",
+        json={"email_or_phone": email_or_phone},
+    )
+
+
+def reset_password(email_or_phone, code, new_password, confirm_password):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/auth/reset-password",
+        json={
+            "email_or_phone": email_or_phone,
+            "code": code,
+            "new_password": new_password,
+            "confirm_password": confirm_password,
+        },
+    )
+
+
+def get_customer_dashboard(token):
+    return _request("GET", f"{API_PREFIX}/customers/dashboard", token=token)
+
+
+def list_customer_rides(token, page=1, limit=50, search=None, booking_id=None, status=None):
+    params = {"page": page, "limit": limit}
+    if search:
+        params["search"] = search
+    if booking_id:
+        params["booking_id"] = booking_id
+    if status:
+        params["status"] = status
+    return _request("GET", f"{API_PREFIX}/customers/rides", token=token, params=params)
+
+
+def get_nearby_drivers(token, lat, lng, service_tier="economy", vehicle_category="car", radius_km=8):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/rides/nearby-drivers",
+        token=token,
+        params={
+            "lat": lat,
+            "lng": lng,
+            "service_tier": service_tier,
+            "vehicle_category": vehicle_category,
+            "radius_km": radius_km,
+        },
+    )
+
+
+def get_referral_info(token):
+    return _request("GET", f"{API_PREFIX}/referrals/me", token=token)
+
+
+def search_rider(token, query, limit=20):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/search",
+        token=token,
+        params={"q": query, "limit": limit},
+    )
+
+
+def get_support_faq():
+    return _request("GET", f"{API_PREFIX}/public/support/faq")
+
+
+def create_live_chat_session(token):
+    return _request("POST", f"{API_PREFIX}/support/live-chat/session", token=token)
+
+
+def list_saved_locations(token):
+    return _request("GET", f"{API_PREFIX}/customers/saved-locations", token=token)
+
+
+def create_saved_location(token, payload):
+    return _request("POST", f"{API_PREFIX}/customers/saved-locations", token=token, json=payload)
+
+
+def delete_saved_location(token, location_id):
+    return _request("DELETE", f"{API_PREFIX}/customers/saved-locations/{location_id}", token=token)
+
+
+def list_trusted_contacts(token):
+    return _request("GET", f"{API_PREFIX}/customers/contacts", token=token)
+
+
+def create_trusted_contact(token, payload):
+    return _request("POST", f"{API_PREFIX}/customers/contacts", token=token, json=payload)
+
+
+def delete_trusted_contact(token, contact_id):
+    return _request("DELETE", f"{API_PREFIX}/customers/contacts/{contact_id}", token=token)
+
+
+def create_ride_share_link(token, ride_id):
+    return _request("POST", f"{API_PREFIX}/rides/{ride_id}/share", token=token)

@@ -16,9 +16,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body class="user-body">
-  {% from "includes/flashes.html" import dismissible_flashes %}
-  {{ dismissible_flashes('user-flash-container', 'user-flash', 'user-flash--') }}
+<body class="user-body" data-auto-geolocate="true">
   {% block body %}{% endblock %}
   {% block scripts %}
   <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>

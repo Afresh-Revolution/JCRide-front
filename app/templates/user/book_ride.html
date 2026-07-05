@@ -10,29 +10,36 @@
 
   <section class="rider-panel book-ride-panel">
     <form method="post" class="book-ride-form" id="book-ride-form">
+      <input type="hidden" name="pickup_lat" id="pickup-lat">
+      <input type="hidden" name="pickup_lng" id="pickup-lng">
+      <input type="hidden" name="destination_lat" id="destination-lat">
+      <input type="hidden" name="destination_lng" id="destination-lng">
+
       <div class="book-ride-form__section">
         <h2 class="book-ride-form__title">Where to?</h2>
-        <div class="route-inputs">
+        <div class="route-inputs" id="route-inputs">
           <label class="route-input">
             <span class="route-input__dot route-input__dot--pickup" aria-hidden="true"></span>
-            <input type="text" name="pickup" value="{{ booking.pickup }}" placeholder="Pickup location" required>
+            <input type="text" name="pickup" id="pickup-input" value="" placeholder="Pickup location" required autocomplete="off">
           </label>
+          <div id="route-stops"></div>
           <label class="route-input">
             <span class="route-input__dot route-input__dot--dropoff" aria-hidden="true"></span>
-            <input type="text" name="dropoff" value="{{ booking.dropoff }}" placeholder="Destination" required>
+            <input type="text" name="dropoff" id="dropoff-input" value="" placeholder="Destination" required autocomplete="off">
           </label>
         </div>
-        <button type="button" class="route-add-stop" disabled>+ Add stop</button>
+        <button type="button" class="route-add-stop" id="route-add-stop">+ Add stop</button>
+        <p class="book-ride-form__hint" id="nearby-drivers-note" hidden></p>
       </div>
 
       <div class="trip-stats">
         <div class="trip-stat">
           <span class="trip-stat__label">Distance</span>
-          <span class="trip-stat__value">{{ booking.distance }}</span>
+          <span class="trip-stat__value" id="trip-distance">{{ booking.distance }}</span>
         </div>
         <div class="trip-stat">
           <span class="trip-stat__label">Duration</span>
-          <span class="trip-stat__value">{{ booking.duration }}</span>
+          <span class="trip-stat__value" id="trip-duration">{{ booking.duration }}</span>
         </div>
         <div class="trip-stat">
           <span class="trip-stat__label">Est. fare</span>
@@ -60,26 +67,26 @@
                 <span class="ride-tier__badge">{{ tier.badge }}</span>
                 {% endif %}
               </span>
-              <span class="ride-tier__desc">{{ tier.description }}</span>
+              <span class="ride-tier__desc ride-tier__desc-dynamic">{{ tier.description }}</span>
               <span class="ride-tier__meta">
                 <span class="ride-tier__meta-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                   {{ tier.seats }}
                 </span>
-                <span class="ride-tier__meta-item">
+                <span class="ride-tier__meta-item ride-tier__eta">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   {{ tier.eta }}
                 </span>
               </span>
             </span>
-            <span class="ride-tier__fare">{{ tier.fare }} est.</span>
+            <span class="ride-tier__fare ride-tier__fare-dynamic">{{ tier.fare }} est.</span>
           </label>
           {% endfor %}
         </div>
       </div>
 
-      <button type="submit" class="rider-btn rider-btn--request" id="request-ride-btn">
-        Request ride — {{ booking.est_fare }} est.
+      <button type="submit" class="rider-btn rider-btn--request" id="request-ride-btn" disabled>
+        Request ride
       </button>
     </form>
   </section>
@@ -88,6 +95,7 @@
 
 {% block page_scripts %}
 <script type="application/json" id="rider-route-map-data">{{ route_map | tojson }}</script>
+<script src="{{ url_for('static', filename='js/user-location-search.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-route-map.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-book-ride.js') }}"></script>
 {% endblock %}

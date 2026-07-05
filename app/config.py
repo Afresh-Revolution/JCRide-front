@@ -24,15 +24,21 @@ def _is_local_url(url: str) -> bool:
     return "localhost" in lowered or "127.0.0.1" in lowered
 
 
+def _parse_url_list(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [_normalize_url(part) for part in raw.split(",") if part.strip()]
+
+
 def get_deployed_api_url() -> str:
-    """Deployed JCRide-back URL (Render, etc.). Used when local API is unavailable."""
+    """Deployed JosRide-back URL (Render, etc.). Used when local API is unavailable."""
     url = _FILE_ENV.get("DEPLOYED_API_URL") or os.getenv("DEPLOYED_API_URL")
     if url:
         return _normalize_url(url)
 
-    api_url = _FILE_ENV.get("API_URL") or os.getenv("API_URL")
-    if api_url and not _is_local_url(_normalize_url(api_url)):
-        return _normalize_url(api_url)
+    for candidate in _parse_url_list(_FILE_ENV.get("API_URL") or os.getenv("API_URL")):
+        if not _is_local_url(candidate):
+            return candidate
 
     return DEFAULT_DEPLOYED_API_URL
 
@@ -41,12 +47,34 @@ def is_local_api_url(url: str | None = None) -> bool:
     return _is_local_url(url or get_api_url())
 
 
+def get_api_urls() -> list[str]:
+    """Backend URLs to try, in order (local first, then deployed)."""
+    urls: list[str] = []
+    seen: set[str] = set()
+
+    for url in _parse_url_list(_FILE_ENV.get("API_URL") or os.getenv("API_URL")):
+        if url not in seen:
+            urls.append(url)
+            seen.add(url)
+
+    deployed = get_deployed_api_url()
+    if deployed not in seen:
+        urls.append(deployed)
+
+    return urls or [DEFAULT_DEPLOYED_API_URL]
+
+
 def get_api_url() -> str:
-    """Return JCRide-back base URL. Localhost when set; otherwise deployed backend."""
-    url = _FILE_ENV.get("API_URL") or os.getenv("API_URL")
-    if url:
-        return _normalize_url(url)
-    return get_deployed_api_url()
+    """Primary backend URL (first in the try list)."""
+    return get_api_urls()[0]
+
+
+def get_ws_url() -> str:
+    """WebSocket URL for live ride updates."""
+    base = get_api_url()
+    if base.startswith("https://"):
+        return base.replace("https://", "wss://", 1) + "/api/v1/ws"
+    return base.replace("http://", "ws://", 1) + "/api/v1/ws"
 
 
 def get_api_timeout() -> int:

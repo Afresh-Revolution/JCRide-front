@@ -1,7 +1,7 @@
 # Web framework
 flask==3.1.0
 
-# HTTP client (calls JCRide-back API)
+# HTTP client (calls JosRide-back API)
 requests==2.32.3
 
 # Config

@@ -76,15 +76,16 @@
     });
   }
 
-  function updateAreaBadge(label, driverCount, usingDeviceLocation) {
+  function updateAreaBadge(label, driverCount, usingDeviceLocation, radiusKm) {
     var badge = document.getElementById("rider-area-map-badge");
     if (!badge) return;
 
-    var prefix = usingDeviceLocation ? "Your location" : label;
-    badge.textContent = prefix + " · " + driverCount + " drivers within 2 km";
+    var radius = radiusKm || 2;
+    var prefix = usingDeviceLocation && label ? label : usingDeviceLocation ? "Your location" : label;
+    badge.textContent = prefix + " · " + driverCount + " drivers within " + radius + " km";
   }
 
-  function renderAreaMap(center, config, usingDeviceLocation) {
+  function renderAreaMap(center, config, usingDeviceLocation, locationLabel) {
     if (!areaMapInstance || typeof L === "undefined") return;
 
     clearMapLayers();
@@ -92,14 +93,17 @@
     var zoom = config.map_zoom || 14;
     var radiusKm = config.radius_km || 2;
     var driverCount = config.driver_count || 12;
-    var drivers = offsetDrivers(center, config.drivers || []);
+    var drivers = config.use_absolute_drivers
+      ? config.drivers || []
+      : offsetDrivers(center, config.drivers || []);
 
     areaMapInstance.setView([center.lat, center.lng], zoom);
 
+    var displayLabel = locationLabel || config.location_label || "Your area";
     var userMarker = L.marker([center.lat, center.lng], {
       icon: createDivIcon('<div class="map-marker-user"></div>', [16, 16], [8, 8]),
       zIndexOffset: 300,
-    }).bindTooltip(usingDeviceLocation ? "You are here" : config.location_label, {
+    }).bindTooltip(usingDeviceLocation ? "You are here" : displayLabel, {
       direction: "top",
       offset: [0, -8],
     });
@@ -140,29 +144,72 @@
       maxZoom: zoom,
     });
 
-    updateAreaBadge(config.location_label, driverCount, usingDeviceLocation);
+    updateAreaBadge(displayLabel, driverCount, usingDeviceLocation, radiusKm);
   }
 
   function resolveUserCenter(config, callback) {
     var fallback = config.map_center || { lat: 6.4474, lng: 3.5569 };
 
+    function finish(center, usingDeviceLocation, locationLabel) {
+      callback(center, usingDeviceLocation, locationLabel);
+    }
+
+    if (window.RiderGeolocation) {
+      window.RiderGeolocation.detectAndApply({ forceFresh: true })
+        .then(function (result) {
+          finish(
+            { lat: result.lat, lng: result.lng },
+            true,
+            result.label
+          );
+        })
+        .catch(function () {
+          if (!navigator.geolocation) {
+            finish(fallback, false, config.location_label);
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              finish(
+                {
+                  lat: position.coords.latitude,
+                  lng: position.coords.longitude,
+                },
+                true,
+                config.location_label
+              );
+            },
+            function () {
+              finish(fallback, false, config.location_label);
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 120000,
+            }
+          );
+        });
+      return;
+    }
+
     if (!navigator.geolocation) {
-      callback(fallback, false);
+      finish(fallback, false, config.location_label);
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       function (position) {
-        callback(
+        finish(
           {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           },
-          true
+          true,
+          config.location_label
         );
       },
       function () {
-        callback(fallback, false);
+        finish(fallback, false, config.location_label);
       },
       {
         enableHighAccuracy: true,
@@ -199,15 +246,51 @@
 
     L.control.zoom({ position: "topright" }).addTo(areaMapInstance);
 
-    renderAreaMap(initialCenter, config, false);
+    renderAreaMap(initialCenter, config, false, config.location_label);
 
-    resolveUserCenter(config, function (center, usingDeviceLocation) {
-      renderAreaMap(center, config, usingDeviceLocation);
-      window.setTimeout(function () {
-        if (areaMapInstance) {
-          areaMapInstance.invalidateSize();
-        }
-      }, 120);
+    resolveUserCenter(config, function (center, usingDeviceLocation, locationLabel) {
+      function drawMap(driverConfig) {
+        renderAreaMap(center, driverConfig || config, usingDeviceLocation, locationLabel);
+        window.setTimeout(function () {
+          if (areaMapInstance) areaMapInstance.invalidateSize();
+        }, 120);
+      }
+
+      if (config.live_drivers_api && window.UserApi) {
+        UserApi.request(
+          "/user/api/nearby-drivers?lat=" +
+            encodeURIComponent(center.lat) +
+            "&lng=" +
+            encodeURIComponent(center.lng)
+        )
+          .then(function (data) {
+            var merged = Object.assign({}, config, {
+              driver_count: data.driver_count || 0,
+              use_absolute_drivers: true,
+              drivers: (data.drivers || []).map(function (d) {
+                return { lat: d.lat, lng: d.lng };
+              }),
+              radius_km: data.radius_km || config.radius_km,
+            });
+            var subtitle = document.querySelector(".rider-panel--map .rider-panel__subtitle");
+            if (subtitle && data.driver_count != null) {
+              subtitle.textContent =
+                data.driver_count +
+                " drivers within " +
+                (data.radius_km || 2) +
+                " km · Avg pickup " +
+                (data.avg_pickup_minutes || 4) +
+                " min";
+            }
+            drawMap(merged);
+          })
+          .catch(function () {
+            drawMap(config);
+          });
+        return;
+      }
+
+      drawMap(config);
     });
   }
 

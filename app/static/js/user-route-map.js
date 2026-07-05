@@ -202,12 +202,42 @@
       L.polyline(route, {
         color: mapGreen,
         weight: 5,
-        opacity: 0.9,
-        dashArray: "12, 10",
+        opacity: 0.92,
+        dashArray: config.use_fastest_route ? null : "12, 10",
         lineCap: "round",
       }).addTo(routeMapInstance);
       boundsPoints = boundsPoints.concat(route);
     }
+
+    (config.drivers || []).forEach(function (driver) {
+      L.circleMarker([driver.lat, driver.lng], {
+        radius: 7,
+        color: mapGreen,
+        fillColor: "#0d6b38",
+        fillOpacity: 0.92,
+        weight: 2,
+      })
+        .bindTooltip("Driver nearby", { direction: "top", offset: [0, -6] })
+        .addTo(routeMapInstance);
+      boundsPoints.push([driver.lat, driver.lng]);
+    });
+
+    (config.stops || []).forEach(function (stop, index) {
+      L.marker([stop.lat, stop.lng], {
+        icon: createDivIcon(
+          '<div class="map-marker-stop">' + (index + 1) + "</div>",
+          [18, 18],
+          [9, 9]
+        ),
+        zIndexOffset: 90,
+      })
+        .bindTooltip(stop.label || "Stop " + (index + 1), {
+          direction: "top",
+          offset: [0, -8],
+        })
+        .addTo(routeMapInstance);
+      boundsPoints.push([stop.lat, stop.lng]);
+    });
 
     if (pickup) {
       L.marker([pickup.lat, pickup.lng], {
@@ -226,7 +256,7 @@
       boundsPoints.push([pickup.lat, pickup.lng]);
     }
 
-    if (config.vehicle_position) {
+    if (config.vehicle_position && !(config.drivers && config.drivers.length)) {
       var pos = config.vehicle_position;
       L.marker([pos.lat, pos.lng], {
         icon: createDivIcon(
@@ -281,7 +311,7 @@
       routeMapInstance = null;
     }
 
-    var center = config.pickup || { lat: 6.4474, lng: 3.5569 };
+    var center = config.map_center || config.pickup || { lat: 6.5244, lng: 3.3792 };
     var zoom = config.map_zoom || 13;
 
     routeMapInstance = L.map(routeMapEl, {

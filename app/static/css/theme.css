@@ -2404,9 +2404,11 @@ html[data-user-theme="light"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin: -0.15rem -0.25rem 0 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -0.5rem -0.35rem -0.5rem 0;
   padding: 0;
   border: none;
   border-radius: 8px;
@@ -2414,7 +2416,15 @@ html[data-user-theme="light"] {
   color: inherit;
   opacity: 0.72;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 1;
   transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.flash-dismissible__close svg {
+  pointer-events: none;
 }
 
 .flash-dismissible__close:hover {
