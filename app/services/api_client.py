@@ -847,12 +847,18 @@ def register_device(token, device_token, platform="web"):
     )
 
 
-def set_availability(token, online):
+def set_availability(token, online, current_lat=None, current_lng=None):
+    payload = {"is_online": bool(online)}
+    if online:
+        if current_lat is None or current_lng is None:
+            raise ApiError("Location is required to go online. Enable GPS and try again.", 422)
+        payload["current_lat"] = float(current_lat)
+        payload["current_lng"] = float(current_lng)
     return _request(
         "POST",
         f"{API_PREFIX}/drivers/availability",
         token=token,
-        json={"online": online},
+        json=payload,
     )
 
 
