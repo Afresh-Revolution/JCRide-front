@@ -2108,6 +2108,155 @@ button.rider-link:hover {
   gap: 0.75rem;
 }
 
+.tracking-bottom-actions .rider-btn--danger-outline {
+  grid-column: 1 / -1;
+}
+
+.rider-btn--danger-outline {
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.35);
+}
+
+.rider-btn--danger {
+  background: #b91c1c;
+  color: #fff;
+  border: none;
+}
+
+.cancel-ride-modal {
+  border: none;
+  padding: 0;
+  max-width: 520px;
+  width: calc(100% - 2rem);
+  background: transparent;
+}
+
+.cancel-ride-modal::backdrop {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.cancel-ride-modal__panel {
+  position: relative;
+  margin: 0;
+  padding: 1.5rem;
+}
+
+.cancel-ride-modal__close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--user-muted);
+}
+
+.cancel-ride-modal__lead {
+  margin: 0 0 1rem;
+  color: var(--user-muted);
+  line-height: 1.5;
+}
+
+.cancel-ride-modal__label {
+  display: block;
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--user-text);
+}
+
+.cancel-reason-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.cancel-reason {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.cancel-reason:has(input:checked) {
+  border-color: var(--user-green-dark);
+  background: rgba(13, 107, 56, 0.06);
+}
+
+.cancel-ride-modal__other textarea {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.75rem;
+  font: inherit;
+  resize: vertical;
+}
+
+.cancel-ride-modal__fee {
+  margin: 0 0 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: 10px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.cancel-ride-modal__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.cancel-ride-modal__error {
+  margin: 0.75rem 0 0;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+
+.cancel-ride-modal__section.is-hidden,
+.cancel-ride-modal__fee.is-hidden,
+.cancel-ride-modal__error.is-hidden,
+.cancel-ride-modal__other.is-hidden {
+  display: none;
+}
+
+.wallet-policy-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+}
+
+.wallet-policy-banner strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.wallet-policy-banner p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.wallet-policy-banner--warn {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.wallet-policy-banner--danger {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
 .tracking-share {
   width: 100%;
   text-align: center;

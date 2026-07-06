@@ -4,7 +4,7 @@
 {% block head %}{% block page_head %}{% endblock %}{% endblock %}
 
 {% block body %}
-<div class="admin-app">
+<div class="admin-app{% if on_active_trip %} driver-on-active-trip{% elif driver_open %} driver-open{% endif %}">
   <div class="admin-sidebar-backdrop" id="driver-sidebar-backdrop" aria-hidden="true"></div>
 
   {% include "includes/driver_sidebar.html" %}
@@ -29,11 +29,21 @@
     </div>
   </div>
 </div>
+
+{% include "components/cancel_overlay.html" %}
+<script type="application/json" id="driver-realtime-config">{{ {
+  "wsUrl": ws_url,
+  "token": driver_token,
+  "activeTripId": active_trip_id,
+  "rideRequestsUrl": url_for('driver_portal.ride_requests'),
+  "dashboardUrl": url_for('driver_portal.dashboard')
+} | tojson }}</script>
 {% endblock %}
 
 {% block scripts %}
 {% block page_scripts %}{% endblock %}
 <script src="{{ url_for('static', filename='js/driver-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/driver-realtime.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pwa-register.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
 <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>

@@ -14,9 +14,18 @@
     }
   }
 
+  var currentRideStatus = config.rideStatus || "requested";
   var matchTimer = null;
   var pollTimer = null;
   var socket = null;
+
+  var CANCEL_TIERS = {
+    requested: "before_accept",
+    searching: "before_accept",
+    accepted: "after_accept",
+    driver_assigned: "after_accept",
+    driver_arrived: "on_arrival",
+  };
 
   function refreshTrackingMap() {
     if (!window.RiderRouteMap) return;
@@ -48,6 +57,7 @@
     refreshTrackingMap();
     window.setTimeout(refreshTrackingMap, 180);
     window.setTimeout(refreshTrackingMap, 480);
+    updateCancelButtonVisibility();
   }
 
   function setTrackingStep(stepIndex) {
@@ -74,15 +84,29 @@
     });
   }
 
+  function canCancelStatus(status) {
+    return ["requested", "searching", "accepted", "driver_assigned", "driver_arrived"].indexOf(status) >= 0;
+  }
+
+  function updateCancelButtonVisibility() {
+    var activeCancel = document.getElementById("tracking-cancel-ride");
+    var findingCancel = document.getElementById("tracking-cancel-request");
+    var show = canCancelStatus(currentRideStatus);
+    if (activeCancel) activeCancel.hidden = !show || currentRideStatus === "in_progress";
+    if (findingCancel) findingCancel.hidden = !show;
+  }
+
   function updateRideUi(ride) {
     if (!ride) return;
     var status = ride.status || "";
-    var driverReady = ["driver_assigned", "driver_arrived", "in_progress", "completed"].indexOf(status) >= 0;
+    currentRideStatus = status;
+    var driverReady = ["accepted", "driver_assigned", "driver_arrived", "in_progress", "completed"].indexOf(status) >= 0;
     if (driverReady) showActiveTracking();
 
     var stepMap = {
       requested: 1,
       searching: 1,
+      accepted: 2,
       driver_assigned: 2,
       driver_arrived: 2,
       in_progress: 3,
@@ -100,6 +124,7 @@
       var nameEl = document.querySelector(".tracking-driver__profile strong");
       if (nameEl) nameEl.textContent = driver.full_name;
     }
+    updateCancelButtonVisibility();
   }
 
   function pollCurrentRide() {
@@ -138,10 +163,158 @@
     });
   }
 
+  function initCancelRideModal() {
+    var modal = document.getElementById("cancel-ride-modal");
+    var form = document.getElementById("cancel-ride-form");
+    var lead = document.getElementById("cancel-ride-lead");
+    var reasonSection = document.getElementById("cancel-reason-section");
+    var feeNotice = document.getElementById("cancel-fee-notice");
+    var otherWrap = document.getElementById("cancel-reason-other-wrap");
+    var otherInput = document.getElementById("cancel-reason-other");
+    var errorEl = document.getElementById("cancel-ride-error");
+    var confirmBtn = document.getElementById("cancel-ride-confirm");
+    if (!modal || !form) return;
+
+    function tierForStatus(status) {
+      return CANCEL_TIERS[status] || "before_accept";
+    }
+
+    function resetModal() {
+      if (errorEl) {
+        errorEl.hidden = true;
+        errorEl.classList.add("is-hidden");
+        errorEl.textContent = "";
+      }
+      form.querySelectorAll('input[name="cancel_reason"]').forEach(function (input) {
+        input.checked = false;
+      });
+      if (otherInput) otherInput.value = "";
+      if (otherWrap) {
+        otherWrap.hidden = true;
+        otherWrap.classList.add("is-hidden");
+      }
+    }
+
+    function openCancelModal() {
+      resetModal();
+      var tier = tierForStatus(currentRideStatus);
+      if (lead) {
+        if (tier === "before_accept") {
+          lead.textContent = "Cancel before a driver accepts. No fee will be charged.";
+        } else if (tier === "after_accept") {
+          lead.textContent = "Your driver has accepted. No fee applies, but please tell us why you are cancelling.";
+        } else {
+          lead.textContent =
+            "Your driver has arrived. A ₦" +
+            (config.cancellationFeeNgn || 500).toLocaleString() +
+            " cancellation fee applies.";
+        }
+      }
+      if (reasonSection) {
+        var showReason = tier === "after_accept";
+        reasonSection.hidden = !showReason;
+        reasonSection.classList.toggle("is-hidden", !showReason);
+      }
+      if (feeNotice) {
+        var showFee = tier === "on_arrival";
+        feeNotice.hidden = !showFee;
+        feeNotice.classList.toggle("is-hidden", !showFee);
+      }
+      if (typeof modal.showModal === "function") {
+        modal.showModal();
+      } else {
+        modal.setAttribute("open", "open");
+      }
+    }
+
+    function closeCancelModal() {
+      if (typeof modal.close === "function") {
+        modal.close();
+      } else {
+        modal.removeAttribute("open");
+      }
+    }
+
+    form.querySelectorAll('input[name="cancel_reason"]').forEach(function (input) {
+      input.addEventListener("change", function () {
+        if (!otherWrap) return;
+        var isOther = input.value === "other" && input.checked;
+        otherWrap.hidden = !isOther;
+        otherWrap.classList.toggle("is-hidden", !isOther);
+      });
+    });
+
+    document.getElementById("cancel-ride-close")?.addEventListener("click", closeCancelModal);
+    document.getElementById("cancel-ride-back")?.addEventListener("click", closeCancelModal);
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var tier = tierForStatus(currentRideStatus);
+      var payload = {};
+      if (tier === "after_accept") {
+        var selected = form.querySelector('input[name="cancel_reason"]:checked');
+        if (!selected) {
+          if (errorEl) {
+            errorEl.textContent = "Please select a cancellation reason.";
+            errorEl.hidden = false;
+            errorEl.classList.remove("is-hidden");
+          }
+          return;
+        }
+        payload.reason_code = selected.value;
+        if (selected.value === "other" && otherInput) {
+          payload.reason = otherInput.value.trim();
+          if (!payload.reason) {
+            if (errorEl) {
+              errorEl.textContent = "Please describe your reason.";
+              errorEl.hidden = false;
+              errorEl.classList.remove("is-hidden");
+            }
+            return;
+          }
+        }
+      }
+
+      var rideId = config.rideId;
+      if (!rideId) return;
+
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Cancelling…";
+      }
+
+      UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/cancel", payload)
+        .then(function (result) {
+          if (matchTimer) window.clearTimeout(matchTimer);
+          if (pollTimer) window.clearInterval(pollTimer);
+          sessionStorage.removeItem(STORAGE_KEY);
+          closeCancelModal();
+          window.location.href = "/user/dashboard?cancelled=1&message=" + encodeURIComponent(result.message || "Ride cancelled.");
+        })
+        .catch(function (err) {
+          if (errorEl) {
+            errorEl.textContent = err.message || "Could not cancel ride.";
+            errorEl.hidden = false;
+            errorEl.classList.remove("is-hidden");
+          }
+        })
+        .finally(function () {
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Confirm cancellation";
+          }
+        });
+    });
+
+    return openCancelModal;
+  }
+
   function initFindingDriver() {
     var finding = document.getElementById("tracking-finding");
     var active = document.getElementById("tracking-active");
     if (!finding || !active) return;
+
+    var openCancelModal = initCancelRideModal();
 
     var params = new URLSearchParams(window.location.search);
     if (params.get("reset") === "1") {
@@ -160,17 +333,23 @@
     }
 
     var cancelBtn = document.getElementById("tracking-cancel-request");
-    if (cancelBtn) {
+    if (cancelBtn && openCancelModal) {
       cancelBtn.addEventListener("click", function () {
-        if (matchTimer) window.clearTimeout(matchTimer);
-        if (pollTimer) window.clearInterval(pollTimer);
-        sessionStorage.removeItem(STORAGE_KEY);
-        window.location.href = cancelBtn.getAttribute("data-cancel-url") || "/user/live-tracking/cancel";
+        currentRideStatus = currentRideStatus || "requested";
+        openCancelModal();
+      });
+    }
+
+    var activeCancel = document.getElementById("tracking-cancel-ride");
+    if (activeCancel && openCancelModal) {
+      activeCancel.addEventListener("click", function () {
+        openCancelModal();
       });
     }
 
     connectWebSocket();
     pollCurrentRide();
+    updateCancelButtonVisibility();
   }
 
   function initTrackingActions() {

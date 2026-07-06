@@ -238,6 +238,106 @@ body.driver-portal .ride-request-card {
   background: var(--dash-green-dark, #0a4f2a);
 }
 
+.status-banner--on-trip {
+  background: #1e3a5f;
+}
+
+.driver-cancel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.driver-cancel-overlay.is-hidden {
+  display: none;
+}
+
+.driver-cancel-overlay__card {
+  width: min(100%, 480px);
+  background: #fff;
+  color: #0f172a;
+  border-radius: 20px;
+  padding: 2rem 1.75rem;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+}
+
+.driver-cancel-overlay__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.driver-cancel-overlay__icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.driver-cancel-overlay__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.driver-cancel-overlay__lead {
+  margin: 0 0 1rem;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.driver-cancel-overlay__reason {
+  margin: 0 0 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-align: left;
+}
+
+.driver-cancel-overlay__reason-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.driver-cancel-overlay__reason p {
+  margin: 0;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+.driver-cancel-overlay__status {
+  margin: 0 0 1.25rem;
+  font-size: 0.9375rem;
+  color: #0d6b38;
+  line-height: 1.5;
+}
+
+.driver-cancel-overlay__btn {
+  width: 100%;
+  max-width: 280px;
+}
+
+body.driver-cancel-overlay-open {
+  overflow: hidden;
+}
+
 .status-banner__left {
   display: flex;
   align-items: center;

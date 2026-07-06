@@ -2,6 +2,7 @@
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
+from app.config import get_ws_url
 from app.driver_api_transforms import support_faq_for_driver
 from app.driver_portal.dashboard_service import resolve_dashboard
 from app.driver_portal.data import DRIVER_SUPPORT_CATEGORIES, HERO_STATS
@@ -32,6 +33,7 @@ from app.services.api_client import (
     driver_settings_go_offline,
     driver_settings_pause,
     get_driver_profile,
+    get_driver_active_ride,
     get_driver_payout_account,
     get_driver_ride_requests,
     list_support_tickets,
@@ -122,10 +124,37 @@ def _driver_profile():
     }
 
 
+def _sync_driver_trip_state(token: str | None) -> tuple[bool, str | None]:
+    if not token:
+        session.pop("active_trip_id", None)
+        return False, None
+    try:
+        ride = get_driver_active_ride(token)
+        if ride:
+            payload = ride.get("ride") or ride.get("data") or ride
+            ride_id = str((payload or {}).get("id") or (payload or {}).get("ride_id") or "")
+            if ride_id:
+                session["active_trip_id"] = ride_id
+                return True, ride_id
+    except ApiError:
+        pass
+    session.pop("active_trip_id", None)
+    return False, None
+
+
 def _portal_context(active_nav: str, **extra):
+    token = _driver_token()
+    on_active_trip, active_trip_id = _sync_driver_trip_state(token)
+    online = bool(session.get("driver_online", False))
     return {
         "profile": _driver_profile(),
         "active_nav": active_nav,
+        "ws_url": get_ws_url(),
+        "driver_token": token,
+        "on_active_trip": on_active_trip,
+        "active_trip_id": active_trip_id,
+        "driver_open": online and not on_active_trip,
+        "online": online,
         **extra,
     }
 
@@ -221,6 +250,7 @@ def dashboard():
     dashboard_data, api_connected = resolve_dashboard(token)
     driver = _load_driver_profile()
     online = bool(driver.get("is_online")) if driver else session.get("driver_online", False)
+    session["driver_online"] = online
 
     return render_template(
         "pages/dashboard.html",

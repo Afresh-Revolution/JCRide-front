@@ -568,8 +568,12 @@ def get_current_ride(token):
     return _request("GET", f"{API_PREFIX}/rides/current", token=token)
 
 
-def cancel_ride(token, ride_id, reason=None):
-    payload = {"reason": reason} if reason else {}
+def cancel_ride(token, ride_id, reason=None, reason_code=None):
+    payload = {}
+    if reason:
+        payload["reason"] = reason
+    if reason_code:
+        payload["reason_code"] = reason_code
     return _request(
         "POST",
         f"{API_PREFIX}/rides/{ride_id}/cancel",
@@ -613,8 +617,12 @@ def get_current_delivery(token):
     return _request("GET", f"{API_PREFIX}/deliveries/current", token=token)
 
 
-def cancel_delivery(token, delivery_id, reason=None):
-    payload = {"reason": reason} if reason else {}
+def cancel_delivery(token, delivery_id, reason=None, reason_code=None):
+    payload = {}
+    if reason:
+        payload["reason"] = reason
+    if reason_code:
+        payload["reason_code"] = reason_code
     return _request(
         "POST",
         f"{API_PREFIX}/deliveries/{delivery_id}/cancel",
@@ -653,6 +661,28 @@ def cancel_scheduled_ride(token, scheduled_id, reason=None):
 
 def get_wallet(token):
     return _request("GET", f"{API_PREFIX}/wallet", token=token)
+
+
+def get_account_policy(token):
+    return _request("GET", f"{API_PREFIX}/wallet/account-policy", token=token)
+
+
+def pay_cancellation_fee(token):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/pay-cancellation-fee",
+        token=token,
+        json={},
+    )
+
+
+def unlock_account(token):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/unlock-account",
+        token=token,
+        json={},
+    )
 
 
 def get_wallet_transactions(token, page=1, limit=20):
