@@ -51,8 +51,13 @@
     cancelRide: function (rideId) {
       return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/cancel");
     },
-    setAvailability: function (online) {
-      return apiPost(base + "/availability", { online: !!online });
+    setAvailability: function (online, lat, lng) {
+      var payload = { is_online: !!online };
+      if (online) {
+        payload.current_lat = lat;
+        payload.current_lng = lng;
+      }
+      return apiPost(base + "/availability", payload);
     },
     markNotificationRead: function (id) {
       return apiPost(base + "/notifications/" + encodeURIComponent(id) + "/read");

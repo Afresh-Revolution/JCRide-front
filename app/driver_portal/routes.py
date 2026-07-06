@@ -990,9 +990,18 @@ def toggle_online():
         flash("Please sign in again.", "error")
         return redirect(url_for("driver_portal.login"))
 
+    lat = request.form.get("current_lat", type=float)
+    lng = request.form.get("current_lng", type=float)
+    if online and (lat is None or lng is None):
+        lat = lat if lat is not None else session.get("driver_lat")
+        lng = lng if lng is not None else session.get("driver_lng")
+
     try:
-        set_availability(token, online)
+        set_availability(token, online, current_lat=lat, current_lng=lng)
         session["driver_online"] = online
+        if online and lat is not None and lng is not None:
+            session["driver_lat"] = lat
+            session["driver_lng"] = lng
         flash("You are now online." if online else "You are now offline.", "success")
     except ApiError as exc:
         flash(exc.message, "error")
@@ -1142,9 +1151,16 @@ def driver_api_availability():
     if guard:
         return guard
     payload = request.get_json(silent=True) or {}
-    online = bool(payload.get("online"))
+    online = bool(payload.get("is_online", payload.get("online")))
     try:
-        return jsonify(set_availability(_driver_token(), online))
+        return jsonify(
+            set_availability(
+                _driver_token(),
+                online,
+                current_lat=payload.get("current_lat"),
+                current_lng=payload.get("current_lng"),
+            )
+        )
     except ApiError as exc:
         return _driver_api_error(exc)
 

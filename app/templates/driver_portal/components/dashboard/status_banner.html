@@ -24,7 +24,7 @@
       <input
         type="checkbox"
         {% if online %}checked{% endif %}
-        onchange="document.getElementById('onlineValue').value = this.checked ? 'true' : 'false'; this.form.submit();"
+        aria-label="Toggle online status"
       >
       <span class="switch__slider"></span>
     </label>
