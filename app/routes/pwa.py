@@ -1,4 +1,4 @@
-"""PWA routes — manifest, service worker, offline page at root scope."""
+"""PWA routes - manifest, service worker, offline page at root scope."""
 
 from pathlib import Path
 

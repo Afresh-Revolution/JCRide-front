@@ -275,7 +275,7 @@ def normalize_admin_trip(ride: dict) -> dict:
     driver_name = driver.get("full_name") or "Unassigned"
     pickup = ride.get("pickup_address") or "Pickup"
     destination = ride.get("destination_address") or "Destination"
-    city = ride.get("city") or "—"
+    city = ride.get("city") or "-"
     fare = float(ride.get("final_fare_ngn") or ride.get("estimated_fare_ngn") or 0)
     ui_status = status
     if status in ACTIVE_RIDE_STATUSES and status not in {"completed", "cancelled"}:

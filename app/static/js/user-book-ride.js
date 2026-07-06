@@ -202,7 +202,7 @@
     });
     var fare = input.getAttribute("data-fare");
     if (estFare) estFare.textContent = fare;
-    if (requestBtn) requestBtn.textContent = "Request ride — " + fare + " est.";
+    if (requestBtn) requestBtn.textContent = "Request ride - " + fare + " est.";
   }
 
   function refreshSelectedFare() {

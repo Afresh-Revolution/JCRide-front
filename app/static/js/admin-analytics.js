@@ -84,13 +84,13 @@
     const revenueTrendEl = document.getElementById("analytics-kpi-revenue-trend");
 
     if (usersEl) usersEl.textContent = users.value || "0";
-    if (usersTrendEl) usersTrendEl.textContent = users.trend || "—";
+    if (usersTrendEl) usersTrendEl.textContent = users.trend || "-";
     if (driversEl) driversEl.textContent = drivers.value || "0";
-    if (driversTrendEl) driversTrendEl.textContent = drivers.trend || "—";
+    if (driversTrendEl) driversTrendEl.textContent = drivers.trend || "-";
     if (tripsEl) tripsEl.textContent = trips.value || "0";
-    if (tripsTrendEl) tripsTrendEl.textContent = completion.trend || trips.trend || "—";
+    if (tripsTrendEl) tripsTrendEl.textContent = completion.trend || trips.trend || "-";
     if (revenueEl) revenueEl.textContent = revenue.value || "₦0";
-    if (revenueTrendEl) revenueTrendEl.textContent = revenue.trend || completion.value || "—";
+    if (revenueTrendEl) revenueTrendEl.textContent = revenue.trend || completion.value || "-";
   }
 
   function loadSummaryStats() {

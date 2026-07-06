@@ -102,7 +102,7 @@
           "<span class=\"users-cell-user__id\">ID - " + escapeHtml(user.public_id) + "</span></div></div></td>" +
           "<td><div class=\"users-cell-contact\">" +
           "<span class=\"users-cell-contact__email\">" + escapeHtml(user.email) + "</span>" +
-          "<span class=\"users-cell-contact__phone\">" + escapeHtml(user.phone || "—") + "</span></div></td>" +
+          "<span class=\"users-cell-contact__phone\">" + escapeHtml(user.phone || "-") + "</span></div></td>" +
           "<td class=\"users-cell-trips\">" + escapeHtml(user.trip_count) + "</td>" +
           "<td class=\"users-cell-spend\">" + escapeHtml(user.lifetime_spend_display) + "</td>" +
           "<td class=\"users-cell-joined\">" + escapeHtml(user.joined_display) + "</td>" +
@@ -195,11 +195,11 @@
       "<p class=\"user-detail-header__meta\">" + escapeHtml(user.public_id) + " · " + escapeHtml(user.status_label) + "</p></div></div>" +
       "<dl class=\"user-detail-grid\">" +
       "<div><dt>Email</dt><dd>" + escapeHtml(user.email) + "</dd></div>" +
-      "<div><dt>Phone</dt><dd>" + escapeHtml(user.phone || "—") + "</dd></div>" +
+      "<div><dt>Phone</dt><dd>" + escapeHtml(user.phone || "-") + "</dd></div>" +
       "<div><dt>Total trips</dt><dd>" + escapeHtml(user.trip_count) + "</dd></div>" +
       "<div><dt>Lifetime spend</dt><dd>" + escapeHtml(user.lifetime_spend_display) + "</dd></div>" +
       "<div><dt>Joined</dt><dd>" + escapeHtml(user.joined_display) + "</dd></div>" +
-      "<div><dt>JosCity ID</dt><dd>" + escapeHtml(user.joscity_user_id || "—") + "</dd></div>" +
+      "<div><dt>JosCity ID</dt><dd>" + escapeHtml(user.joscity_user_id || "-") + "</dd></div>" +
       "<div><dt>Last synced</dt><dd>" + escapeHtml(synced) + "</dd></div>" +
       "<div><dt>Account status</dt><dd><span class=\"" + statusClass(user.status) + "\">" + escapeHtml(user.status_label) + "</span></dd></div>" +
       "</dl>";
@@ -234,7 +234,7 @@
         }
         let toastMessage = message;
         if (status === "verified" && user && user.email) {
-          toastMessage += " — approval email sent to " + user.email;
+          toastMessage += " - approval email sent to " + user.email;
         }
         showToast(toastMessage);
       })

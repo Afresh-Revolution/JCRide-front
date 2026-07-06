@@ -515,7 +515,7 @@ def _handle_login(portal: str):
                             if user.get("joscity_user_id"):
                                 flash(
                                     "This JosCity account has not completed driver signup. "
-                                    "Apply as a driver first — rider JosCity sign-in is not available here.",
+                                    "Apply as a driver first - rider JosCity sign-in is not available here.",
                                     "error",
                                 )
                             else:
@@ -625,7 +625,7 @@ def _driver_signup_resume_step(signup: dict) -> int:
 
 
 def _save_driver_signup(data: dict) -> None:
-    """Persist only wizard state required to finish signup — no personal details."""
+    """Persist only wizard state required to finish signup - no personal details."""
     allowed = {
         "step",
         "access_token",
@@ -1285,14 +1285,14 @@ def user_book_ride():
     booking = {
         "pickup": "",
         "dropoff": "",
-        "distance": "—",
-        "duration": "—",
-        "est_fare": "—",
+        "distance": "-",
+        "duration": "-",
+        "est_fare": "-",
     }
     ride_tiers = [
-        {"id": "economy", "label": "Economy", "price": "—", "eta": "—", "icon": "car"},
-        {"id": "comfort", "label": "Comfort", "price": "—", "eta": "—", "icon": "car"},
-        {"id": "premium", "label": "Premium", "price": "—", "eta": "—", "icon": "car"},
+        {"id": "economy", "label": "Economy", "price": "-", "eta": "-", "icon": "car"},
+        {"id": "comfort", "label": "Comfort", "price": "-", "eta": "-", "icon": "car"},
+        {"id": "premium", "label": "Premium", "price": "-", "eta": "-", "icon": "car"},
     ]
     token = _rider_token()
 
@@ -1356,7 +1356,7 @@ def user_book_ride():
                 )
             ride = (result or {}).get("ride") or result or {}
             session["active_trip"] = ride_to_active_trip(ride)
-            flash(f"Ride requested ({tier}) — waiting for a driver.", "success")
+            flash(f"Ride requested ({tier}) - waiting for a driver.", "success")
         except ApiError as exc:
             session["active_trip"] = {
                 "pickup": pickup,
@@ -1401,12 +1401,12 @@ def user_bike_delivery():
         "package_notes": "",
         "recipient_name": "",
         "recipient_phone": "",
-        "distance": "—",
-        "eta": "—",
-        "fare": "—",
+        "distance": "-",
+        "eta": "-",
+        "fare": "-",
         "fare_num": 0,
-        "insurance_cap": "—",
-        "pickup_eta": "—",
+        "insurance_cap": "-",
+        "pickup_eta": "-",
     }
     token = _rider_token()
 
@@ -1440,7 +1440,7 @@ def user_bike_delivery():
                 )
                 ride = (result or {}).get("delivery") or result or {}
                 session["active_trip"] = ride_to_active_trip(ride)
-                flash("Bike delivery requested — courier on the way.", "success")
+                flash("Bike delivery requested - courier on the way.", "success")
             except ApiError as exc:
                 session["active_trip"] = {
                     "pickup": pickup,
@@ -1467,7 +1467,7 @@ def user_bike_delivery():
         route_map=build_route_map(
             delivery["pickup"],
             delivery["dropoff"],
-            badge_label="Pickup — Drop-off · Bike courier",
+            badge_label="Pickup - Drop-off · Bike courier",
             vehicle_type="bike",
         ),
         **_rider_context(),
@@ -2281,7 +2281,7 @@ def user_api_saved_locations():
 
 @main_bp.route("/driver", methods=["GET", "POST"])
 def driver_page():
-    """Legacy URL — send drivers to the real driver portal."""
+    """Legacy URL - send drivers to the real driver portal."""
     if session.get("driver_token") or session.get("role") == "driver":
         return redirect(url_for("driver_portal.dashboard"))
     return redirect(url_for("driver_portal.login"))

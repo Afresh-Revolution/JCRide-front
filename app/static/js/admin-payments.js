@@ -88,7 +88,7 @@
   }
 
   function formatDate(iso) {
-    if (!iso) return "—";
+    if (!iso) return "-";
     const date = new Date(iso);
     return date.toLocaleString(undefined, {
       month: "short",
@@ -276,7 +276,7 @@
         showToast(
           "Settlement " +
             result.reference +
-            " completed — " +
+            " completed - " +
             formatNairaFull(result.amount_ngn) +
             " sent to bank."
         );
@@ -395,7 +395,7 @@
       .map(function (item) {
         const proof = item.proof_url
           ? '<a class="queue-proof-link" href="' + escapeHtml(item.proof_url) + '" target="_blank" rel="noopener">Proof</a>'
-          : "—";
+          : "-";
         const approveDisabled = item.can_approve ? "" : " disabled";
         const approveTitle = item.can_approve
           ? "Approve and credit wallet"

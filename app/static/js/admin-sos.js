@@ -39,7 +39,7 @@
   }
 
   function formatDate(iso) {
-    if (!iso) return "—";
+    if (!iso) return "-";
     return new Date(iso).toLocaleString();
   }
 

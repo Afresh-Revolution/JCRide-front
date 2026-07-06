@@ -5,7 +5,7 @@ from __future__ import annotations
 
 def _short_id(value: str | None) -> str:
     if not value:
-        return "—"
+        return "-"
     text = str(value).replace("-", "")
     return text[:8].upper()
 
@@ -22,9 +22,9 @@ def normalize_funding_list(data: dict) -> dict:
                 "user_id": row.get("user_id"),
                 "user_short": _short_id(row.get("user_id")),
                 "amount_ngn": float(row.get("amount_ngn") or 0),
-                "bank_name": row.get("bank_name") or "—",
-                "account_name": row.get("account_name") or "—",
-                "reference": row.get("reference") or "—",
+                "bank_name": row.get("bank_name") or "-",
+                "account_name": row.get("account_name") or "-",
+                "reference": row.get("reference") or "-",
                 "proof_url": row.get("proof_url"),
                 "status": row.get("status") or "pending",
                 "provider": provider,
@@ -60,10 +60,10 @@ def normalize_withdrawal_list(data: dict) -> dict:
                 "amount_ngn": float(row.get("amount_ngn") or 0),
                 "withdrawal_fee_ngn": float(row.get("withdrawal_fee_ngn") or 0),
                 "net_amount_ngn": float(row.get("net_amount_ngn") or 0),
-                "bank_name": row.get("bank_name") or "—",
-                "account_number": row.get("account_number") or "—",
-                "account_name": row.get("account_name") or "—",
-                "reference": row.get("reference") or "—",
+                "bank_name": row.get("bank_name") or "-",
+                "account_number": row.get("account_number") or "-",
+                "account_name": row.get("account_name") or "-",
+                "reference": row.get("reference") or "-",
                 "status": status,
                 "can_approve": status == "pending",
                 "can_mark_paid": status in {"pending", "approved"},

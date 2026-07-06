@@ -79,9 +79,9 @@
   }
 
   function renderSla(data) {
-    if (slaFirst) slaFirst.textContent = data.first_reply || "—";
-    if (slaResolution) slaResolution.textContent = data.resolution || "—";
-    if (slaCsat) slaCsat.textContent = (data.csat_percent != null ? data.csat_percent + "%" : "—");
+    if (slaFirst) slaFirst.textContent = data.first_reply || "-";
+    if (slaResolution) slaResolution.textContent = data.resolution || "-";
+    if (slaCsat) slaCsat.textContent = (data.csat_percent != null ? data.csat_percent + "%" : "-");
   }
 
   function renderAgents(data) {

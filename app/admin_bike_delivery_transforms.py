@@ -10,7 +10,7 @@ def normalize_bike_rider(raw: dict) -> dict:
         **raw,
         "earnings_display": raw.get("earnings_display") or f"₦{earnings:,.0f}",
         "rating_display": raw.get("rating_display") or (
-            f"{float(rating):.2f}" if rating is not None else "—"
+            f"{float(rating):.2f}" if rating is not None else "-"
         ),
     }
 
@@ -36,7 +36,7 @@ def normalize_bike_pricing(raw: dict) -> dict:
             {
                 **row,
                 "amount_display": (
-                    f"₦{float(amount):,.0f}" if amount is not None else "—"
+                    f"₦{float(amount):,.0f}" if amount is not None else "-"
                 ),
             }
         )

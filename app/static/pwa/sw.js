@@ -1,4 +1,4 @@
-/* JosRide service worker — production caching v1 */
+/* JosRide service worker - production caching v1 */
 
 var CACHE_VERSION = "josride-pwa-v3";
 var STATIC_CACHE = CACHE_VERSION + "-static";

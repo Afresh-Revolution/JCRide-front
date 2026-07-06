@@ -9,19 +9,19 @@ from app.services.api_client import ApiError, get_driver_performance, get_driver
 
 def empty_profile() -> dict:
     return {
-        "name": "—",
+        "name": "-",
         "initials": "DR",
-        "since": "—",
+        "since": "-",
         "rating": 0,
         "trips": 0,
-        "acceptance": "—",
-        "completion": "—",
-        "on_time": "—",
+        "acceptance": "-",
+        "completion": "-",
+        "on_time": "-",
         "vehicle": {
-            "make_model": "—",
-            "color": "—",
-            "plate": "—",
-            "category": "—",
+            "make_model": "-",
+            "color": "-",
+            "plate": "-",
+            "category": "-",
         },
         "documents": merge_profile_documents([]),
     }

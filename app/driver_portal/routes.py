@@ -101,14 +101,14 @@ def _driver_profile():
     driver = _load_driver_profile()
     name = session.get("driver_name") or "Driver"
     rating = 0
-    plate = "—"
+    plate = "-"
     approval_status = ""
     initials = "DR"
 
     if driver:
         name = driver.get("full_name") or name
         rating = float(driver.get("rating_avg") or 0)
-        plate = driver.get("plate_number") or "—"
+        plate = driver.get("plate_number") or "-"
         approval_status = str(driver.get("status") or "").replace("_", " ").title()
         initials = "".join(part[0] for part in name.split()[:2]).upper() or "DR"
         session["driver_online"] = bool(driver.get("is_online"))
@@ -183,7 +183,7 @@ def login():
     return render_template(
         "pages/login.html",
         hero_stats=HERO_STATS,
-        profile={"name": "Driver", "initials": "DR", "rating": 0, "plate": "—"},
+        profile={"name": "Driver", "initials": "DR", "rating": 0, "plate": "-"},
     )
 
 
