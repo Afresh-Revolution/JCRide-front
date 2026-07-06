@@ -43,6 +43,7 @@ from app.services.api_client import (
     delete_trusted_contact,
     forgot_password,
     get_customer_dashboard,
+    get_customer_profile_extras,
     get_nearby_drivers,
     get_referral_info,
     get_support_faq,
@@ -63,6 +64,7 @@ from app.services.api_client import (
     start_ride,
     trigger_ride_sos,
     update_notification_preferences,
+    update_customer_profile_extras,
     update_profile,
     update_user_settings,
     upload_driver_document,
@@ -268,7 +270,7 @@ def _schedule_reminder_minutes(label: str) -> int:
 
 
 def _rider_context() -> dict:
-    name = session.get("name") or PROFILE_DEFAULTS["full_name"]
+    name = session.get("name") or "Rider"
     has_gps = session.get("rider_lat") is not None and session.get("rider_lng") is not None
     location = session.get("rider_location") if has_gps else "Detecting location…"
     badge = session.get("rider_badge") or "Rider"
@@ -282,8 +284,22 @@ def _rider_context() -> dict:
 
 def _profile_context() -> dict:
     profile, ok = _safe_rider_api(get_profile)
+    extras = None
+    if ok:
+        extras, extras_ok = _safe_rider_api(get_customer_profile_extras)
+        if not extras_ok:
+            extras = None
     if ok:
         mapped = profile_from_api(profile)
+        if extras:
+            if extras.get("date_of_birth"):
+                mapped["dob"] = str(extras["date_of_birth"])
+            if extras.get("nin"):
+                mapped["nin"] = extras["nin"]
+            if extras.get("emergency_contact_name"):
+                mapped["emergency_contact_name"] = extras["emergency_contact_name"]
+            if extras.get("emergency_contact_phone"):
+                mapped["emergency_contact_phone"] = extras["emergency_contact_phone"]
         session["name"] = mapped["full_name"]
         session["email"] = mapped["email"]
         session["phone"] = mapped["phone"]
@@ -361,20 +377,7 @@ def _notifications_inbox() -> list[dict]:
         return notifications_to_ui(payload.get("notifications") or [])
 
     notifications, ok = _safe_rider_api(_fetch, [])
-    if ok:
-        return notifications
-
-    overrides = session.get(RIDER_NOTIFICATION_STATES_KEY) or {}
-    items = []
-    for row in RIDER_NOTIFICATIONS:
-        item = dict(row)
-        state = overrides.get(item["id"])
-        if state and "read" in state:
-            item["unread"] = not state["read"]
-        else:
-            item["unread"] = bool(row.get("unread"))
-        items.append(item)
-    return items
+    return notifications if ok else []
 
 
 def _notification_channels() -> list[dict]:
@@ -466,8 +469,7 @@ def _upcoming_scheduled_rides() -> list[dict]:
     rides, ok = _safe_rider_api(_fetch, [])
     if ok:
         return rides
-    user_rides = list(session.get("rider_scheduled_rides") or [])
-    return user_rides + list(UPCOMING_SCHEDULED_RIDES)
+    return list(session.get("rider_scheduled_rides") or [])
 
 
 def _handle_login(portal: str):
@@ -1239,17 +1241,13 @@ def user_dashboard():
         stats = dashboard_stats_from_api(dashboard_data)
     else:
         stats = build_dashboard_stats(wallet if wallet_ok else None, rides if rides_ok else [])
-        if not rides_ok and not dashboard_ok:
-            stats = dict(RIDER_STATS)
-            if wallet_ok:
-                stats = build_dashboard_stats(wallet, [])
 
     stats["location"] = {"value": display_location}
 
     recent_trips = (
         [ride_to_recent_trip(item) for item in rides[:3]]
         if rides_ok and rides
-        else RECENT_TRIPS
+        else []
     )
     live_area = live_area_from_location(display_location)
     map_config = live_area_map_for_location(display_location)
@@ -1291,7 +1289,11 @@ def user_book_ride():
         "duration": "—",
         "est_fare": "—",
     }
-    ride_tiers = [dict(item) for item in RIDE_TIERS]
+    ride_tiers = [
+        {"id": "economy", "label": "Economy", "price": "—", "eta": "—", "icon": "car"},
+        {"id": "comfort", "label": "Comfort", "price": "—", "eta": "—", "icon": "car"},
+        {"id": "premium", "label": "Premium", "price": "—", "eta": "—", "icon": "car"},
+    ]
     token = _rider_token()
 
     if request.method == "POST":
@@ -1393,7 +1395,19 @@ def user_bike_delivery():
     if guard:
         return guard
 
-    delivery = dict(BIKE_DELIVERY_DEFAULTS)
+    delivery = {
+        "pickup": "",
+        "dropoff": "",
+        "package_notes": "",
+        "recipient_name": "",
+        "recipient_phone": "",
+        "distance": "—",
+        "eta": "—",
+        "fare": "—",
+        "fare_num": 0,
+        "insurance_cap": "—",
+        "pickup_eta": "—",
+    }
     token = _rider_token()
 
     if request.method == "POST":
@@ -1599,8 +1613,12 @@ def user_share_ride():
     guard = _require_rider()
     if guard:
         return guard
-    share = dict(SHARE_RIDE)
-    rider_name = session.get("name") or PROFILE_DEFAULTS["full_name"]
+    share = {
+        "contacts": [],
+        "share_message": "",
+        "share_url": "",
+    }
+    rider_name = session.get("name") or "Rider"
     active = session.get("active_trip") or {}
     ride_id = active.get("ride_id")
     token = _rider_token()
@@ -1608,10 +1626,8 @@ def user_share_ride():
     contacts_data, contacts_ok = _safe_rider_api(list_trusted_contacts, [])
     if contacts_ok and contacts_data:
         share["contacts"] = contacts_to_share_ui(contacts_data)
-    else:
-        share["contacts"] = SHARE_RIDE.get("contacts", [])
 
-    share_url = None
+    share_url = ""
     if token and ride_id:
         try:
             link = create_ride_share_link(token, ride_id)
@@ -1622,15 +1638,12 @@ def user_share_ride():
         except ApiError:
             pass
 
-    if not share_url:
-        booking_id = active.get("booking_id") or LIVE_TRACKING["booking_id"]
-        share_url = f"https://josride.ng/t/{booking_id}?s={rider_name.split()[0].lower()}"
-        share["share_message"] = SHARE_RIDE.get("share_message", "").replace(
-            "JCR-29481", booking_id
-        )
     share["share_url"] = share_url
-    tracking = dict(LIVE_TRACKING)
-    if active.get("booking_id"):
+    tracking, _ = ride_to_tracking(None)
+    ride, ride_ok = _safe_rider_api(lambda t: get_current_ride(t) or get_current_delivery(t))
+    if ride_ok and ride:
+        tracking, _ = ride_to_tracking(ride)
+    elif active.get("booking_id"):
         tracking["booking_id"] = active["booking_id"]
     return render_template(
         "user/share_ride.html",
@@ -1650,7 +1663,7 @@ def user_ride_history():
     history_trips = (
         [ride_to_history_trip(item) for item in rides]
         if ok and rides
-        else RIDE_HISTORY_TRIPS
+        else []
     )
     return render_template(
         "user/ride_history.html",
@@ -1674,7 +1687,7 @@ def user_wallet():
     transactions = (
         wallet_transactions_to_ui((tx_data or {}).get("transactions") or [])
         if tx_ok
-        else list(WALLET_TRANSACTIONS)
+        else []
     )
     return render_template(
         "user/wallet.html",
@@ -1700,17 +1713,23 @@ def user_profile():
             "phone": request.form.get("phone", profile["phone"]).strip(),
         }
         dob = request.form.get("dob", "").strip()
+        extras_payload = {}
         if dob:
-            payload["date_of_birth"] = dob
+            extras_payload["date_of_birth"] = dob
         ec_name = request.form.get("emergency_contact_name", "").strip()
         ec_phone = request.form.get("emergency_contact_phone", "").strip()
         if ec_name:
-            payload["emergency_contact_name"] = ec_name
+            extras_payload["emergency_contact_name"] = ec_name
         if ec_phone:
-            payload["emergency_contact_phone"] = ec_phone
+            extras_payload["emergency_contact_phone"] = ec_phone
+        nin = request.form.get("nin", "").strip()
+        if nin:
+            extras_payload["nin"] = nin
         token = _rider_token()
         try:
             update_profile(token, payload)
+            if extras_payload:
+                update_customer_profile_extras(token, extras_payload)
             session["name"] = payload["full_name"]
             session["email"] = payload["email"]
             session["phone"] = payload["phone"]
@@ -1769,13 +1788,8 @@ def user_notification_mark_read(notification_id):
     token = _rider_token()
     try:
         mark_notification_read(token, notification_id)
-    except ApiError:
-        known_ids = {row["id"] for row in RIDER_NOTIFICATIONS}
-        if notification_id not in known_ids:
-            return jsonify({"error": "not_found"}), 404
-        states = dict(session.get(RIDER_NOTIFICATION_STATES_KEY) or {})
-        states[notification_id] = {"read": True}
-        session[RIDER_NOTIFICATION_STATES_KEY] = states
+    except ApiError as exc:
+        return jsonify({"error": exc.message}), exc.status_code
 
     notifications = _notifications_inbox()
     return jsonify({
@@ -1793,11 +1807,8 @@ def user_notifications_mark_all_read():
     token = _rider_token()
     try:
         mark_all_notifications_read(token)
-    except ApiError:
-        states = dict(session.get(RIDER_NOTIFICATION_STATES_KEY) or {})
-        for row in RIDER_NOTIFICATIONS:
-            states[row["id"]] = {"read": True}
-        session[RIDER_NOTIFICATION_STATES_KEY] = states
+    except ApiError as exc:
+        return jsonify({"error": exc.message}), exc.status_code
 
     notifications = _notifications_inbox()
     return jsonify({
@@ -1875,7 +1886,7 @@ def user_support():
         else []
     )
     faq_data, faq_ok = _safe_rider_api(lambda token: get_support_faq(), None)
-    faq_items = faq_from_api(faq_data) if faq_ok and faq_data else SUPPORT_FAQ
+    faq_items = faq_from_api(faq_data) if faq_ok and faq_data else []
     return render_template(
         "user/support.html",
         active_page="support",

@@ -1,6 +1,6 @@
 /* JosRide service worker — production caching v1 */
 
-var CACHE_VERSION = "josride-pwa-v2";
+var CACHE_VERSION = "josride-pwa-v3";
 var STATIC_CACHE = CACHE_VERSION + "-static";
 var RUNTIME_CACHE = CACHE_VERSION + "-runtime";
 var OFFLINE_URL = "/offline";
@@ -18,6 +18,7 @@ var PRECACHE_URLS = [
   "/static/css/landing.css",
   "/static/css/admin.css",
   "/static/css/admin-dashboard.css",
+  "/static/css/driver-portal.css",
   "/static/css/user-dashboard.css",
   "/static/css/pwa-install.css",
   "/static/css/pwa-shell.css",

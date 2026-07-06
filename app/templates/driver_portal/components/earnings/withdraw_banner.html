@@ -3,11 +3,27 @@
   <div class="earnings-withdraw-banner__info">
     <p class="earnings-withdraw-banner__label">Withdraw to bank</p>
     <p class="earnings-withdraw-banner__amount">{{ withdrawal.amount }}</p>
-    <p class="earnings-withdraw-banner__bank">
-      {{ withdrawal.bank_name }} · {{ withdrawal.account_masked }} · {{ withdrawal.provider }}
-    </p>
+    {% if withdrawal.bank_name or withdrawal.account_masked %}
+      <p class="earnings-withdraw-banner__bank">
+        {{ withdrawal.bank_name }} · {{ withdrawal.account_masked }} · {{ withdrawal.provider }}
+      </p>
+    {% else %}
+      <p class="earnings-withdraw-banner__bank">Enter your payout bank details below.</p>
+    {% endif %}
   </div>
-  <form method="post" action="{{ url_for('driver_portal.withdraw_earnings') }}">
+  <form method="post" action="{{ url_for('driver_portal.withdraw_earnings') }}" class="earnings-withdraw-form">
+    <label class="earnings-withdraw-field">
+      <span>Bank name</span>
+      <input type="text" name="bank_name" placeholder="GTBank" value="{{ payout.bank_name if payout else '' }}" required>
+    </label>
+    <label class="earnings-withdraw-field">
+      <span>Account number</span>
+      <input type="text" name="account_number" inputmode="numeric" placeholder="0123456789" required>
+    </label>
+    <label class="earnings-withdraw-field">
+      <span>Account name</span>
+      <input type="text" name="account_name" placeholder="{{ profile.name }}" value="{{ payout.account_name if payout else '' }}" required>
+    </label>
     <button type="submit" class="earnings-withdraw-banner__btn">Withdraw now</button>
   </form>
 </article>
