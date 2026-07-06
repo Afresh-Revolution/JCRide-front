@@ -523,6 +523,7 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
     status_labels = {
         "requested": "Finding a driver",
         "searching": "Finding a driver",
+        "accepted": "Driver assigned",
         "driver_assigned": "Driver assigned",
         "driver_arrived": "Driver arrived",
         "in_progress": "Trip in progress",
@@ -589,6 +590,7 @@ def tracking_step_for_status(status: str | None) -> int:
     mapping = {
         "requested": 1,
         "searching": 1,
+        "accepted": 2,
         "driver_assigned": 2,
         "driver_arrived": 2,
         "in_progress": 3,

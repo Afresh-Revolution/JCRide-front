@@ -138,6 +138,43 @@
     });
   }
 
+  var payFeeBtn = document.getElementById("wallet-pay-fee-btn");
+  if (payFeeBtn) {
+    payFeeBtn.addEventListener("click", function () {
+      setBusy(payFeeBtn, true, "Paying…");
+      UserApi.post("/user/api/wallet/pay-cancellation-fee", {})
+        .then(function () {
+          alert("Cancellation fee paid. Thank you.");
+          window.location.reload();
+        })
+        .catch(function (err) {
+          alert(err.message || "Could not pay cancellation fee.");
+        })
+        .finally(function () {
+          setBusy(payFeeBtn, false);
+        });
+    });
+  }
+
+  var unlockBtn = document.getElementById("wallet-unlock-btn");
+  if (unlockBtn) {
+    unlockBtn.addEventListener("click", function () {
+      if (!window.confirm("Pay the unlock fee from your wallet to restore your account?")) return;
+      setBusy(unlockBtn, true, "Unlocking…");
+      UserApi.post("/user/api/wallet/unlock-account", {})
+        .then(function () {
+          alert("Account unlocked. You can book rides again.");
+          window.location.reload();
+        })
+        .catch(function (err) {
+          alert(err.message || "Could not unlock account.");
+        })
+        .finally(function () {
+          setBusy(unlockBtn, false);
+        });
+    });
+  }
+
   var params = new URLSearchParams(window.location.search);
   var reference = params.get("reference") || params.get("trxref");
   if (reference) {

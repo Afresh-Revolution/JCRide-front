@@ -9,6 +9,26 @@
 {% endblock %}
 
 {% block user_content %}
+{% set policy = account_policy or {} %}
+{% if request.args.get('message') %}
+<section class="wallet-policy-banner wallet-policy-banner--warn">
+  <p>{{ request.args.get('message') }}</p>
+</section>
+{% elif policy.get('status') == 'suspended' and policy.get('can_unlock') %}
+<section class="wallet-policy-banner wallet-policy-banner--danger">
+  <div>
+    <strong>Account suspended</strong>
+    <p>Pay ₦{{ '{:,.0f}'.format(policy.get('unlock_fee_ngn') or 2000) }} from your <a href="{{ url_for('main.user_wallet') }}">wallet</a> to unlock your account.</p>
+  </div>
+</section>
+{% elif policy.get('cancellation_fee_due_ngn') %}
+<section class="wallet-policy-banner wallet-policy-banner--warn">
+  <div>
+    <strong>Cancellation fee due</strong>
+    <p>₦{{ '{:,.0f}'.format(policy.get('cancellation_fee_due_ngn') or 0) }} outstanding. <a href="{{ url_for('main.user_wallet') }}">Pay from wallet</a> within 24 hours.</p>
+  </div>
+</section>
+{% endif %}
 <section class="rider-kpi-grid">
   <article class="rider-kpi-card">
     <span class="rider-kpi-card__glow" aria-hidden="true"></span>

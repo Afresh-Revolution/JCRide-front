@@ -23,6 +23,9 @@ from app.services.api_client import (
     get_rider_data_export,
     get_user_settings,
     get_wallet,
+    get_account_policy,
+    pay_cancellation_fee,
+    unlock_account,
     get_wallet_transactions,
     initialize_paystack,
     list_notifications,
@@ -333,7 +336,7 @@ def _tracking_page_context() -> dict:
     tracking, finding = ride_to_tracking(ride if ok else None)
     vehicle_type = active.get("vehicle_type") or "car"
     status = (ride or {}).get("status") if ok and ride else active.get("status")
-    driver_ready = status in ("driver_assigned", "driver_arrived", "in_progress", "completed")
+    driver_ready = status in ("accepted", "driver_assigned", "driver_arrived", "in_progress", "completed")
 
     if ok and ride:
         tracking["step"] = tracking_step_for_status(status)
@@ -1222,6 +1225,7 @@ def user_dashboard():
         return guard
 
     wallet, wallet_ok = _safe_rider_api(get_wallet)
+    policy_data, policy_ok = _safe_rider_api(get_account_policy)
     rides, rides_ok = _rider_rides_export()
     dashboard_data, dashboard_ok = _safe_rider_api(get_customer_dashboard)
     referral_data, referral_ok = _safe_rider_api(get_referral_info)
@@ -1263,6 +1267,7 @@ def user_dashboard():
         live_area_map=map_config,
         recent_trips=recent_trips,
         referral=referral_data if referral_ok else None,
+        account_policy=policy_data if policy_ok else {},
         api_connected={
             "wallet": wallet_ok,
             "rides": rides_ok,
@@ -1586,7 +1591,7 @@ def user_live_tracking():
     )
 
 
-@main_bp.route("/user/live-tracking/cancel")
+@main_bp.route("/user/live-tracking/cancel", methods=["GET", "POST"])
 def user_cancel_ride_request():
     guard = _require_rider()
     if guard:
@@ -1594,18 +1599,58 @@ def user_cancel_ride_request():
     active = session.get("active_trip") or {}
     ride_id = active.get("ride_id")
     token = _rider_token()
+    payload = request.get_json(silent=True) if request.method == "POST" else {}
+    reason = (payload or {}).get("reason")
+    reason_code = (payload or {}).get("reason_code")
     if token and ride_id:
         try:
             if active.get("request_type") == "delivery" or active.get("vehicle_type") == "bike":
-                cancel_delivery(token, ride_id)
+                result = cancel_delivery(token, ride_id, reason=reason, reason_code=reason_code)
             else:
-                cancel_ride(token, ride_id)
+                result = cancel_ride(token, ride_id, reason=reason, reason_code=reason_code)
+            session.pop("active_trip", None)
+            if request.method == "POST" or request.headers.get("Accept", "").find("application/json") >= 0:
+                return jsonify(result)
+            flash(result.get("message") or "Ride request cancelled.", "info")
+            return redirect(url_for("main.user_dashboard"))
         except ApiError as exc:
+            if request.method == "POST" or request.headers.get("Accept", "").find("application/json") >= 0:
+                return _user_api_error(exc)
             flash(exc.message, "error")
             return redirect(url_for("main.user_live_tracking"))
     session.pop("active_trip", None)
+    if request.method == "POST":
+        return jsonify({"message": "Ride request cancelled."})
     flash("Ride request cancelled.", "info")
     return redirect(url_for("main.user_dashboard"))
+
+
+@main_bp.route("/user/api/rides/<ride_id>/cancel", methods=["POST"])
+def user_api_cancel_ride(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    active = session.get("active_trip") or {}
+    try:
+        if active.get("request_type") == "delivery" or active.get("vehicle_type") == "bike":
+            result = cancel_delivery(
+                _rider_token(),
+                ride_id,
+                reason=payload.get("reason"),
+                reason_code=payload.get("reason_code"),
+            )
+        else:
+            result = cancel_ride(
+                _rider_token(),
+                ride_id,
+                reason=payload.get("reason"),
+                reason_code=payload.get("reason_code"),
+            )
+        session.pop("active_trip", None)
+        return jsonify(result)
+    except ApiError as exc:
+        return _user_api_error(exc)
 
 
 @main_bp.route("/user/live-tracking/share")
@@ -1680,6 +1725,7 @@ def user_wallet():
     if guard:
         return guard
     wallet_data, wallet_ok = _safe_rider_api(get_wallet)
+    policy_data, policy_ok = _safe_rider_api(get_account_policy)
     tx_data, tx_ok = _safe_rider_api(lambda token: get_wallet_transactions(token, limit=20))
     if wallet_ok:
         _sync_rider_wallet_session(wallet_data)
@@ -1694,6 +1740,7 @@ def user_wallet():
         active_page="wallet",
         wallet=wallet,
         transactions=transactions,
+        account_policy=policy_data if policy_ok else {},
         api_connected=wallet_ok,
         user_email=session.get("email") or "",
         **_rider_context(),
@@ -2054,6 +2101,39 @@ def user_api_wallet_withdraw():
                 payload.get("account_name", ""),
             )
         )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/account-policy")
+def user_api_account_policy():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(get_account_policy(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/pay-cancellation-fee", methods=["POST"])
+def user_api_pay_cancellation_fee():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(pay_cancellation_fee(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/unlock-account", methods=["POST"])
+def user_api_unlock_account():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(unlock_account(_rider_token()))
     except ApiError as exc:
         return _user_api_error(exc)
 

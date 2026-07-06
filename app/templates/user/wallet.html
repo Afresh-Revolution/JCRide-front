@@ -2,6 +2,24 @@
 {% set active_page = 'wallet' %}
 
 {% block user_content %}
+{% set policy = account_policy or {} %}
+{% if policy.get('status') == 'suspended' and policy.get('can_unlock') %}
+<section class="wallet-policy-banner wallet-policy-banner--danger" id="wallet-suspension-banner">
+  <div>
+    <strong>Account suspended</strong>
+    <p>Pay ₦{{ '{:,.0f}'.format(policy.get('unlock_fee_ngn') or 2000) }} from your wallet to unlock your account and book rides again.</p>
+  </div>
+  <button type="button" class="rider-btn rider-btn--danger" id="wallet-unlock-btn">Unlock account</button>
+</section>
+{% elif policy.get('cancellation_fee_due_ngn') %}
+<section class="wallet-policy-banner wallet-policy-banner--warn" id="wallet-fee-banner">
+  <div>
+    <strong>Cancellation fee due</strong>
+    <p>₦{{ '{:,.0f}'.format(policy.get('cancellation_fee_due_ngn') or 0) }} is outstanding. Pay within 24 hours to avoid suspension.</p>
+  </div>
+  <button type="button" class="rider-btn" id="wallet-pay-fee-btn">Pay fee now</button>
+</section>
+{% endif %}
 <script type="application/json" id="wallet-api-config">{{ {
   "email": user_email,
   "callbackUrl": url_for('main.user_wallet', _external=True)

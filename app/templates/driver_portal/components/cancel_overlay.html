@@ -1,0 +1,16 @@
+{# Full-screen overlay when a rider cancels an accepted trip #}
+<div class="driver-cancel-overlay is-hidden" id="driver-cancel-overlay" hidden role="alertdialog" aria-modal="true" aria-labelledby="driver-cancel-title">
+  <div class="driver-cancel-overlay__card">
+    <span class="driver-cancel-overlay__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </span>
+    <h2 class="driver-cancel-overlay__title" id="driver-cancel-title">Ride cancelled by rider</h2>
+    <p class="driver-cancel-overlay__lead" id="driver-cancel-lead">The rider has cancelled this trip.</p>
+    <div class="driver-cancel-overlay__reason" id="driver-cancel-reason-wrap" hidden>
+      <span class="driver-cancel-overlay__reason-label">Reason from rider</span>
+      <p id="driver-cancel-reason"></p>
+    </div>
+    <p class="driver-cancel-overlay__status" id="driver-cancel-status">Your status is now <strong>Open</strong> - you can accept new rides.</p>
+    <button type="button" class="rider-btn driver-cancel-overlay__btn" id="driver-cancel-dismiss">Got it</button>
+  </div>
+</div>
