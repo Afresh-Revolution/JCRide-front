@@ -17,14 +17,14 @@ def _normalize_doc(doc: dict) -> dict:
         status = "pending"
     return {
         "name": doc.get("name") or "Document",
-        "detail": doc.get("detail") or doc.get("expires_at") or "—",
+        "detail": doc.get("detail") or doc.get("expires_at") or "-",
         "status": status,
     }
 
 
 def merge_profile_documents(api_documents: list | None) -> list:
     merged = {
-        _doc_key(label): {"name": label, "detail": "—", "status": "pending"}
+        _doc_key(label): {"name": label, "detail": "-", "status": "pending"}
         for label in DOCUMENT_ORDER
     }
 
@@ -46,7 +46,7 @@ def merge_profile_documents(api_documents: list | None) -> list:
         if not detail and raw.get("uploaded_at"):
             detail = "Uploaded"
         if not detail:
-            detail = "—"
+            detail = "-"
 
         merged[_doc_key(normalized_name)] = _normalize_doc(
             {

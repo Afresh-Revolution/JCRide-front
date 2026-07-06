@@ -95,7 +95,7 @@
     const initials = ((parts[0] || "D").charAt(0) + (parts[1] || parts[0] || "R").charAt(0)).toUpperCase();
     const vehicleMake = raw.vehicle_make || "";
     const vehicleModel = raw.vehicle_model || "";
-    const vehicleDisplay = [vehicleMake, vehicleModel].filter(Boolean).join(" ").trim() || "—";
+    const vehicleDisplay = [vehicleMake, vehicleModel].filter(Boolean).join(" ").trim() || "-";
 
     return {
       id: raw.id,
@@ -105,7 +105,7 @@
       email: raw.email || "",
       phone: raw.phone || "",
       vehicle_display: vehicleDisplay,
-      license_plate: raw.license_plate || raw.plate_number || "—",
+      license_plate: raw.license_plate || raw.plate_number || "-",
       trip_count: raw.trip_count != null ? raw.trip_count : (raw.total_completed_trips || 0),
       earnings_display: raw.earnings_display || formatCurrency(raw.total_earnings_ngn),
       rating_display: raw.rating_display || Number(raw.rating_avg || raw.rating || 0).toFixed(2),
@@ -243,9 +243,9 @@
         }
         let toastMessage = message;
         if (status === "approved" && driver && driver.email) {
-          toastMessage += " — approval email sent to " + driver.email;
+          toastMessage += " - approval email sent to " + driver.email;
         } else if (status === "rejected" && driver && driver.email) {
-          toastMessage += " — rejection email sent to " + driver.email;
+          toastMessage += " - rejection email sent to " + driver.email;
         }
         showToast(toastMessage);
         loadStats();
@@ -286,15 +286,15 @@
           ? driver.documents.map(function (doc) {
               return doc.document_type + " (" + doc.verification_status + ")";
             }).join(", ")
-          : "—";
+          : "-";
         detailBody.innerHTML =
           "<div class=\"driver-detail-header\">" +
           "<span class=\"drivers-avatar\">" + escapeHtml(normalized.initials) + "</span>" +
           "<div><p class=\"drivers-cell-driver__name\">" + escapeHtml(normalized.full_name) + "</p>" +
           "<p class=\"drivers-cell-driver__id\">" + escapeHtml(normalized.public_id) + " · " + escapeHtml(normalized.status_label) + "</p></div></div>" +
           "<dl class=\"driver-detail-grid\">" +
-          "<div><dt>Email</dt><dd>" + escapeHtml(normalized.email || "—") + "</dd></div>" +
-          "<div><dt>Phone</dt><dd>" + escapeHtml(normalized.phone || "—") + "</dd></div>" +
+          "<div><dt>Email</dt><dd>" + escapeHtml(normalized.email || "-") + "</dd></div>" +
+          "<div><dt>Phone</dt><dd>" + escapeHtml(normalized.phone || "-") + "</dd></div>" +
           "<div><dt>Vehicle</dt><dd>" + escapeHtml(normalized.vehicle_display) + "</dd></div>" +
           "<div><dt>Plate</dt><dd>" + escapeHtml(normalized.license_plate) + "</dd></div>" +
           "<div><dt>Total trips</dt><dd>" + escapeHtml(normalized.trip_count) + "</dd></div>" +

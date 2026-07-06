@@ -16,7 +16,7 @@
 
     window.RiderRouteMap.update(
       window.RiderRouteMap.buildConfig(pickup, dropoff, {
-        badge_label: "Pickup — Drop-off · Bike courier",
+        badge_label: "Pickup - Drop-off · Bike courier",
         vehicle_type: "bike",
       })
     );

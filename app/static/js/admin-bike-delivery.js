@@ -86,37 +86,37 @@
   }
 
   function formatCurrency(amount) {
-    if (amount == null || amount === "") return "—";
+    if (amount == null || amount === "") return "-";
     return "₦" + Number(amount).toLocaleString(undefined, { maximumFractionDigits: 0 });
   }
 
   function formatCount(n) {
-    if (n == null || n === "") return "—";
+    if (n == null || n === "") return "-";
     return Number(n).toLocaleString();
   }
 
   function formatMinutes(n) {
-    if (n == null || n === "") return "—";
+    if (n == null || n === "") return "-";
     return Number(n).toFixed(1) + " min";
   }
 
   function formatPercent(n) {
-    if (n == null || n === "") return "—";
+    if (n == null || n === "") return "-";
     return Number(n).toFixed(1) + "%";
   }
 
   function formatKm(n) {
-    if (n == null || n === "") return "—";
+    if (n == null || n === "") return "-";
     return Number(n).toFixed(1) + " km";
   }
 
   function formatRating(n) {
-    if (n == null || n === "") return "—";
+    if (n == null || n === "") return "-";
     return Number(n).toFixed(2) + "★";
   }
 
   function formatGmv(amount) {
-    if (amount == null || amount === "") return "—";
+    if (amount == null || amount === "") return "-";
     const n = Number(amount);
     if (n >= 1_000_000) return "₦" + (n / 1_000_000).toFixed(1) + "M";
     if (n >= 1_000) return "₦" + (n / 1_000).toFixed(1) + "k";
@@ -129,7 +129,7 @@
 
   function normalizeRider(raw) {
     if (!raw || typeof raw !== "object") return null;
-    const name = raw.full_name || raw.name || "—";
+    const name = raw.full_name || raw.name || "-";
     const parts = String(name).trim().split(/\s+/);
     const initials = parts.length >= 2
       ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
@@ -146,15 +146,15 @@
       id: raw.id,
       full_name: name,
       initials: initials,
-      public_id: raw.public_id || raw.rider_id || "—",
-      bike_model: raw.bike_model || raw.bike || "—",
-      plate_number: raw.plate_number || raw.plate || "—",
-      zone: raw.zone || "—",
+      public_id: raw.public_id || raw.rider_id || "-",
+      bike_model: raw.bike_model || raw.bike || "-",
+      plate_number: raw.plate_number || raw.plate || "-",
+      zone: raw.zone || "-",
       delivery_count: raw.delivery_count != null ? raw.delivery_count : raw.deliveries,
       earnings_ngn: raw.earnings_ngn != null ? raw.earnings_ngn : raw.earnings,
       earnings_display: raw.earnings_display || formatCurrency(raw.earnings_ngn != null ? raw.earnings_ngn : raw.earnings),
       rating: raw.rating,
-      rating_display: raw.rating_display || (raw.rating != null ? Number(raw.rating).toFixed(2) : "—"),
+      rating_display: raw.rating_display || (raw.rating != null ? Number(raw.rating).toFixed(2) : "-"),
       status: backendStatus === "pending_approval" ? "pending" : backendStatus,
       backend_status: backendStatus,
       status_label: raw.status_label || statusLabels[backendStatus] || backendStatus,
@@ -223,7 +223,7 @@
       "bike-stat-ontime": formatPercent(stats.on_time_rate_pct),
       "bike-stat-cancellations": formatPercent(stats.cancellation_rate_pct),
       "bike-stat-avg-trip": formatKm(stats.avg_trip_km),
-      "bike-stat-rating": stats.rider_rating != null ? formatRating(stats.rider_rating) : "—",
+      "bike-stat-rating": stats.rider_rating != null ? formatRating(stats.rider_rating) : "-",
     };
     Object.keys(map).forEach(function (id) {
       const el = document.getElementById(id);
@@ -380,8 +380,8 @@
           "<div><p class=\"bike-delivery-cell-rider__name\">" + escapeHtml(rider.full_name) + "</p>" +
           "<p class=\"bike-delivery-cell-rider__id\">" + escapeHtml(rider.public_id) + " · " + escapeHtml(rider.status_label) + "</p></div></div>" +
           "<dl class=\"bike-delivery-detail-grid\">" +
-          "<div><dt>Email</dt><dd>" + escapeHtml(rider.email || "—") + "</dd></div>" +
-          "<div><dt>Phone</dt><dd>" + escapeHtml(rider.phone || "—") + "</dd></div>" +
+          "<div><dt>Email</dt><dd>" + escapeHtml(rider.email || "-") + "</dd></div>" +
+          "<div><dt>Phone</dt><dd>" + escapeHtml(rider.phone || "-") + "</dd></div>" +
           "<div><dt>Bike</dt><dd>" + escapeHtml(rider.bike_model) + "</dd></div>" +
           "<div><dt>Plate</dt><dd>" + escapeHtml(rider.plate_number) + "</dd></div>" +
           "<div><dt>Zone</dt><dd>" + escapeHtml(rider.zone) + "</dd></div>" +

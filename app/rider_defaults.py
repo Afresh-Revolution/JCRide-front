@@ -8,7 +8,7 @@ RIDER_STATS = {
 }
 
 LIVE_AREA = {
-    "title": "Your area — Live",
+    "title": "Your area - Live",
     "subtitle": "12 drivers within 2 km · Avg pickup 4 min",
 }
 
@@ -126,7 +126,7 @@ def build_route_map(
     return {
         "pickup_label": pickup_label,
         "dropoff_label": dropoff_label,
-        "badge_label": badge_label or "Pickup — Drop-off",
+        "badge_label": badge_label or "Pickup - Drop-off",
         "pickup": pickup,
         "dropoff": dropoff,
         "vehicle_position": vehicle,
@@ -385,7 +385,7 @@ SUPPORT_FAQ = [
     },
     {
         "question": "Is JosRide available outside Lagos?",
-        "answer": "Yes — Abuja, Port Harcourt, Ibadan, Kano, Enugu and 9 more cities.",
+        "answer": "Yes - Abuja, Port Harcourt, Ibadan, Kano, Enugu and 9 more cities.",
     },
     {
         "question": "How do refunds work?",
@@ -427,7 +427,7 @@ RIDER_NOTIFICATIONS = [
         "id": "ntf-003",
         "kind": "promo",
         "title": "Promo: 20% off weekend rides",
-        "body": "Use code WEEKEND20 — valid until Sun 23:59 WAT.",
+        "body": "Use code WEEKEND20 - valid until Sun 23:59 WAT.",
         "time": "2 h ago",
         "unread": True,
     },

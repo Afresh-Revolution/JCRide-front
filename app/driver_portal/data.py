@@ -271,7 +271,7 @@ PROFILE_DETAIL = {
         },
         {
             "name": "NIN / National ID",
-            "detail": "—",
+            "detail": "-",
             "status": "verified",
         },
         {

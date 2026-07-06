@@ -12,9 +12,9 @@
 
   const DELIVERY_TOGGLES = [
     { key: "delivery_in_app", label: "In-app" },
-    { key: "delivery_email", label: "Email — ops team" },
+    { key: "delivery_email", label: "Email - ops team" },
     { key: "delivery_slack", label: "Slack #ops-alerts" },
-    { key: "delivery_sms_critical", label: "SMS — critical only" },
+    { key: "delivery_sms_critical", label: "SMS - critical only" },
   ];
 
   const state = { severity: "" };

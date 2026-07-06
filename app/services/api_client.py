@@ -46,7 +46,7 @@ def _connection_error_message(api_urls: list[str], exc: RequestException | None)
     if isinstance(exc, (ReadTimeout, Timeout)) or "timed out" in detail.lower():
         return (
             f"Backend did not respond in time ({tried}). "
-            "On Render free tier the server may be waking up—wait a moment and try again."
+            "On Render free tier the server may be waking up-wait a moment and try again."
         )
     return f"Could not reach API ({tried}). Details: {detail}"
 

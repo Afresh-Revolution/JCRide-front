@@ -1,4 +1,4 @@
-"""Default landing page content — mirrors the shipped home.html copy."""
+"""Default landing page content - mirrors the shipped home.html copy."""
 
 DEFAULT_LANDING_PAGE: dict = {
     "hero": {
@@ -43,14 +43,14 @@ DEFAULT_LANDING_PAGE: dict = {
             "Nigerian riders expect."
         ),
         "items": [
-            {"title": "Live GPS metering", "description": "Fares calculated per kilometer in real-time — no surprises, no inflated estimates."},
+            {"title": "Live GPS metering", "description": "Fares calculated per kilometer in real-time - no surprises, no inflated estimates."},
             {"title": "Verified drivers", "description": "Every driver is NIN-verified with vehicle inspection and background checks."},
             {"title": "Paystack payments", "description": "Pay with card, bank transfer, USSD, or your in-app wallet. Cash also accepted."},
             {"title": "Real-time tracking", "description": "Watch your driver approach on the map and share your live trip with loved ones."},
             {"title": "24/7 support", "description": "Nigerian-based support team available around the clock via call, chat, or in-app SOS."},
             {"title": "Schedule ahead", "description": "Book rides up to 7 days in advance for airport runs, meetings, and morning commutes."},
             {"title": "Per-km billing", "description": "Transparent receipts breaking down base fare, distance, time, and any surge."},
-            {"title": "Nationwide reach", "description": "Live in 14 cities and counting — Lagos, Abuja, PH, Ibadan, Kano, Enugu and more."},
+            {"title": "Nationwide reach", "description": "Live in 14 cities and counting - Lagos, Abuja, PH, Ibadan, Kano, Enugu and more."},
         ],
     },
     "how_it_works": {
@@ -69,7 +69,7 @@ DEFAULT_LANDING_PAGE: dict = {
         "rider_bullets": [
             "In-app SOS with one-tap police & contact alerts",
             "Share live trip link via WhatsApp or SMS",
-            "Privacy-masked driver calls — your number stays private",
+            "Privacy-masked driver calls - your number stays private",
             "Trip receipts emailed instantly for expense claims",
         ],
         "rider_cta_label": "Sign up as rider",
@@ -92,7 +92,7 @@ DEFAULT_LANDING_PAGE: dict = {
     "cities_section": {
         "eyebrow": "Live nationwide",
         "title": "14 cities. One ride app.",
-        "subtitle": "From the energy of Lagos Island to the calm of Calabar — JosRide is everywhere you need to be.",
+        "subtitle": "From the energy of Lagos Island to the calm of Calabar - JosRide is everywhere you need to be.",
         "cities": [
             "Lagos", "Abuja", "Port Harcourt", "Ibadan", "Kano", "Enugu", "Benin City",
             "Kaduna", "Calabar", "Uyo", "Owerri", "Jos", "Ilorin", "Abeokuta",
@@ -101,7 +101,7 @@ DEFAULT_LANDING_PAGE: dict = {
     "pricing_section": {
         "eyebrow": "Pricing",
         "title": "Honest, per-kilometer pricing",
-        "subtitle": "Pick the class that fits your trip. You only pay for distance traveled — plus a small base fare.",
+        "subtitle": "Pick the class that fits your trip. You only pay for distance traveled - plus a small base fare.",
         "footnote": "Base fare ₦500 · Time charge ₦25/min · Surge pricing applies during peak hours and inclement weather.",
         "tiers": [
             {
@@ -135,12 +135,12 @@ DEFAULT_LANDING_PAGE: dict = {
         "eyebrow": "Testimonials",
         "title": "Loved by Nigerians, coast to coast",
         "items": [
-            {"quote": "I take JosRide every morning from Yaba to V.I. The drivers are professional and the per-km billing is a game changer — no more arguments about price.", "initials": "CA", "name": "Chioma A.", "role": "Marketing Lead, Lagos"},
+            {"quote": "I take JosRide every morning from Yaba to V.I. The drivers are professional and the per-km billing is a game changer - no more arguments about price.", "initials": "CA", "name": "Chioma A.", "role": "Marketing Lead, Lagos"},
             {"quote": "I switched from another platform because JosRide pays out instantly through Paystack. I see every naira I earn within 5 minutes of dropping off.", "initials": "EO", "name": "Emeka O.", "role": "Driver-Partner, Abuja"},
             {"quote": "The SOS button and live trip sharing make me feel safe when I'm coming home late. My mum loves that she can track my ride.", "initials": "AB", "name": "Aisha B.", "role": "Student, Ibadan"},
             {"quote": "We use the Schedule feature every Sunday for church. Driver shows up on the dot, every single time. Premium category is worth it.", "initials": "TO", "name": "Tunde O.", "role": "Accountant, Lagos"},
             {"quote": "The receipts go straight to my email. Bookkeeping for staff transport has never been this clean.", "initials": "FN", "name": "Fatima N.", "role": "HR Manager, Abuja"},
-            {"quote": "I work odd hours. Knowing the driver is NIN-verified and the support team picks up at 2am — priceless.", "initials": "DK", "name": "David K.", "role": "Nurse, Port Harcourt"},
+            {"quote": "I work odd hours. Knowing the driver is NIN-verified and the support team picks up at 2am - priceless.", "initials": "DK", "name": "David K.", "role": "Nurse, Port Harcourt"},
         ],
     },
     "faq_section": {
@@ -163,7 +163,7 @@ DEFAULT_LANDING_PAGE: dict = {
     },
     "cta": {
         "title": "Your next ride is one tap away.",
-        "subtitle": "Join 2.4 million Nigerians already moving smarter with JosRide. Sign up in seconds — your first ride is on us.",
+        "subtitle": "Join 2.4 million Nigerians already moving smarter with JosRide. Sign up in seconds - your first ride is on us.",
         "primary_label": "Get started free",
         "secondary_label": "Drive with us",
         "stats": [

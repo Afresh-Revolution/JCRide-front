@@ -71,7 +71,7 @@
     return {
       pickup_label: pickupLabel,
       dropoff_label: dropoffLabel,
-      badge_label: opts.badge_label || "Pickup — Drop-off",
+      badge_label: opts.badge_label || "Pickup - Drop-off",
       pickup: pickup,
       dropoff: dropoff,
       vehicle_position: {

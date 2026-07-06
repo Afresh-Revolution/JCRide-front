@@ -111,7 +111,7 @@
     revenueChart = new Chart(ctx, {
       type: "line",
       data: {
-        labels: labels.length ? labels : ["—"],
+        labels: labels.length ? labels : ["-"],
         datasets: [{
           label: "Revenue",
           data: values.length ? values : [0],

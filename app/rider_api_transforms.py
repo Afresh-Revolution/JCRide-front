@@ -114,8 +114,8 @@ def ride_to_recent_trip(ride: dict) -> dict:
     return {
         "date": date_label,
         "time": time_label,
-        "pickup": ride.get("pickup_address") or "—",
-        "destination": ride.get("destination_address") or "—",
+        "pickup": ride.get("pickup_address") or "-",
+        "destination": ride.get("destination_address") or "-",
         "distance": f"{ride.get('distance_km', 0):.1f} km",
         "fare": format_ngn(fare),
         "status": ride_status_label(ride.get("status")),
@@ -130,11 +130,11 @@ def ride_to_history_trip(ride: dict) -> dict:
     duration = ride.get("actual_duration_minutes") or ride.get("estimated_duration_minutes") or 0
     return {
         "ride_id": ride.get("id"),
-        "id": ride.get("booking_id") or ride.get("id") or "—",
+        "id": ride.get("booking_id") or ride.get("id") or "-",
         "date": date_label.replace("Today", datetime.now().strftime("%b %d")),
         "time": time_label,
-        "pickup": ride.get("pickup_address") or "—",
-        "destination": ride.get("destination_address") or "—",
+        "pickup": ride.get("pickup_address") or "-",
+        "destination": ride.get("destination_address") or "-",
         "distance": f"{ride.get('actual_distance_km') or ride.get('distance_km', 0):.1f} km",
         "duration": f"{duration} min",
         "fare": format_ngn(fare),
@@ -407,13 +407,13 @@ def prefs_update_from_ui(group: str, pref_id: str, enabled: bool) -> dict[str, b
 
 def scheduled_ride_to_ui(item: dict) -> dict:
     scheduled_for = _parse_dt(item.get("scheduled_for"))
-    when = scheduled_for.astimezone().strftime("%a, %d %b · %I:%M %p") if scheduled_for else "—"
+    when = scheduled_for.astimezone().strftime("%a, %d %b · %I:%M %p") if scheduled_for else "-"
     tier = (item.get("service_tier") or "comfort").capitalize()
     fare = item.get("estimated_fare_ngn") or 0
     return {
         "id": item.get("id"),
-        "pickup": item.get("pickup_address") or "—",
-        "destination": item.get("destination_address") or "—",
+        "pickup": item.get("pickup_address") or "-",
+        "destination": item.get("destination_address") or "-",
         "datetime": when,
         "class": tier,
         "repeat": "Once",
@@ -493,23 +493,23 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
         "pickup": "",
         "destination": "",
         "booking_id": "",
-        "tier": "—",
-        "fare_estimate": "—",
+        "tier": "-",
+        "fare_estimate": "-",
         "step": 1,
         "driver": {
-            "initials": "—",
-            "name": "—",
-            "rating": "—",
-            "trips": "—",
-            "plate": "—",
-            "vehicle": "—",
-            "status": "—",
+            "initials": "-",
+            "name": "-",
+            "rating": "-",
+            "trips": "-",
+            "plate": "-",
+            "vehicle": "-",
+            "status": "-",
         },
     }
     finding = {
         "pickup": "",
         "destination": "",
-        "fare_estimate": "—",
+        "fare_estimate": "-",
         "match_delay_ms": 0,
     }
     if not ride:
@@ -539,10 +539,10 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
             "driver": {
                 "initials": initials,
                 "name": driver_name,
-                "rating": str(driver.get("rating_avg") or "—"),
-                "trips": str(driver.get("completed_trips") or "—"),
-                "plate": driver.get("vehicle_plate") or "—",
-                "vehicle": driver.get("vehicle_model") or "—",
+                "rating": str(driver.get("rating_avg") or "-"),
+                "trips": str(driver.get("completed_trips") or "-"),
+                "plate": driver.get("vehicle_plate") or "-",
+                "vehicle": driver.get("vehicle_model") or "-",
                 "status": status_labels.get(status, status).upper(),
             },
         }

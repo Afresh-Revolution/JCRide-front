@@ -89,7 +89,7 @@
   }
 
   function formatCell(value, format) {
-    if (value == null || value === "") return "—";
+    if (value == null || value === "") return "-";
     if (format === "money") {
       return "₦" + Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
     }

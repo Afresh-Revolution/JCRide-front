@@ -142,13 +142,13 @@ def dashboard_from_api(data: dict, earnings: dict | None = None, demand: dict | 
         },
         {
             "title": "Online Hours",
-            "value": f"{online_hours:.1f} h" if online_hours else "—",
+            "value": f"{online_hours:.1f} h" if online_hours else "-",
             "trend": None,
             "icon": "clock",
         },
         {
             "title": "Rating",
-            "value": f"{rating:.2f} / 5" if rating else "—",
+            "value": f"{rating:.2f} / 5" if rating else "-",
             "trend": None,
             "icon": "star",
         },
@@ -198,7 +198,7 @@ def ride_requests_from_api(requests: list[dict]) -> list[dict]:
                 "rider_tier": str(item.get("service_tier") or "economy").replace("_", " ").title() + " rider",
                 "distance_km": distance,
                 "duration_min": duration,
-                "pickup_eta": f"~{max(3, duration // 4)} min" if duration else "—",
+                "pickup_eta": f"~{max(3, duration // 4)} min" if duration else "-",
                 "pickup": item.get("pickup_address") or "",
                 "destination": item.get("destination_address") or "",
                 "earnings": _fmt_ngn(fare),
@@ -288,17 +288,17 @@ def profile_from_api(data: dict, performance: dict | None = None) -> dict:
     return {
         "name": name,
         "initials": _initials(name),
-        "since": str(since) if since else "—",
+        "since": str(since) if since else "-",
         "rating": float(driver.get("rating_avg") or performance.get("avg_rating") or 0),
         "trips": int(driver.get("total_completed_trips") or performance.get("total_completed_trips") or 0),
-        "acceptance": f"{performance.get('acceptance_rate_pct', 0):.0f}%" if performance else "—",
-        "completion": f"{performance.get('completion_rate_pct', 0):.0f}%" if performance else "—",
-        "on_time": f"{performance.get('on_time_rate_pct', 0):.0f}%" if performance.get("on_time_rate_pct") is not None else "—",
+        "acceptance": f"{performance.get('acceptance_rate_pct', 0):.0f}%" if performance else "-",
+        "completion": f"{performance.get('completion_rate_pct', 0):.0f}%" if performance else "-",
+        "on_time": f"{performance.get('on_time_rate_pct', 0):.0f}%" if performance.get("on_time_rate_pct") is not None else "-",
         "vehicle": {
-            "make_model": make_model or "—",
-            "color": driver.get("vehicle_color") or "—",
-            "plate": driver.get("plate_number") or "—",
-            "category": str(driver.get("service_tier") or driver.get("vehicle_category") or "—")
+            "make_model": make_model or "-",
+            "color": driver.get("vehicle_color") or "-",
+            "plate": driver.get("plate_number") or "-",
+            "category": str(driver.get("service_tier") or driver.get("vehicle_category") or "-")
             .replace("_", " ")
             .title(),
         },
