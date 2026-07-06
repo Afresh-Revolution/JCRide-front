@@ -2,6 +2,45 @@
 
   "use strict";
 
+  var mobileQuery = window.matchMedia("(max-width: 900px)");
+
+  function syncTopbarOffset() {
+    var topbar = document.querySelector(".admin-topbar");
+    if (!topbar) return;
+
+    var bottom = Math.ceil(topbar.getBoundingClientRect().bottom);
+    if (bottom < 1) {
+      bottom = Math.ceil(topbar.offsetHeight);
+    }
+
+    document.documentElement.style.setProperty("--dash-topbar-offset", bottom + "px");
+  }
+
+  function scheduleTopbarOffsetSync() {
+    window.requestAnimationFrame(syncTopbarOffset);
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(scheduleTopbarOffsetSync);
+  }
+
+  window.addEventListener("load", scheduleTopbarOffsetSync);
+  window.addEventListener("resize", scheduleTopbarOffsetSync);
+  if (mobileQuery.addEventListener) {
+    mobileQuery.addEventListener("change", scheduleTopbarOffsetSync);
+  } else if (mobileQuery.addListener) {
+    mobileQuery.addListener(scheduleTopbarOffsetSync);
+  }
+
+  if (typeof ResizeObserver !== "undefined") {
+    var topbar = document.querySelector(".admin-topbar");
+    if (topbar) {
+      new ResizeObserver(scheduleTopbarOffsetSync).observe(topbar);
+    }
+  }
+
+  scheduleTopbarOffsetSync();
+
   var configs = [
     {
       toggleId: "admin-menu-toggle",
@@ -56,6 +95,7 @@
       var isMobile = !desktopQuery.matches;
 
       if (open && isMobile) {
+        syncTopbarOffset();
         lockBodyScroll();
         sidebar.scrollTop = 0;
       } else if (!open) {

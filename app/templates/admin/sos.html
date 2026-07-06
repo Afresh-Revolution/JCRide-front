@@ -1,0 +1,37 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'sos' %}
+
+{% block page_title %}SOS Alerts{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-queues.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-sos.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="sos-page">
+  <div class="sos-page__intro">
+    <h2 class="sos-page__title">Emergency SOS alerts</h2>
+    <p class="sos-page__subtitle">Acknowledge active alerts and resolve once the situation is handled.</p>
+    <button type="button" class="sos-refresh-btn" id="sos-refresh-btn">Refresh</button>
+  </div>
+
+  <div class="sos-filter-tabs admin-tabs" role="tablist" aria-label="SOS status filter">
+    <button type="button" class="admin-tabs__btn is-active" data-sos-filter="all">All</button>
+    <button type="button" class="admin-tabs__btn" data-sos-filter="triggered">Triggered</button>
+    <button type="button" class="admin-tabs__btn" data-sos-filter="acknowledged">Acknowledged</button>
+    <button type="button" class="admin-tabs__btn" data-sos-filter="resolved">Resolved</button>
+  </div>
+
+  <div class="sos-list" id="sos-list" aria-live="polite">
+    <p class="sos-list__loading">Loading SOS alerts…</p>
+  </div>
+</section>
+
+<div class="sos-toast" id="sos-toast" hidden role="status"></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-sos.js') }}"></script>
+{% endblock %}

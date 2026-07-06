@@ -32,6 +32,7 @@
 
 <link rel="stylesheet" href="{{ static_url('css/pwa-shell.css') }}">
 <link rel="stylesheet" href="{{ static_url('css/pwa-install.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/scroll-to-top.css') }}">
 {%- endmacro %}
 
 {% macro pwa_body_start() -%}
@@ -43,4 +44,5 @@
 {% macro pwa_scripts() -%}
 <script src="{{ static_url('js/pwa-register.js') }}" defer></script>
 <script src="{{ static_url('js/pwa-install.js') }}" defer></script>
+<script src="{{ static_url('js/scroll-to-top.js') }}" defer></script>
 {%- endmacro %}

@@ -1,0 +1,130 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'reports' %}
+
+{% block page_title %}Reports{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-queues.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-reports.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="reports-page">
+  <div class="admin-tabs" role="tablist" aria-label="Report type">
+    <button type="button" class="admin-tabs__btn is-active" data-report-tab="trips" role="tab">Trips</button>
+    <button type="button" class="admin-tabs__btn" data-report-tab="drivers" role="tab">Drivers</button>
+    <button type="button" class="admin-tabs__btn" data-report-tab="users" role="tab">Users</button>
+  </div>
+
+  <div class="reports-filters dash-card" id="reports-filters">
+    <div class="reports-filters__grid" id="reports-filters-trips">
+      <div class="reports-field">
+        <label for="report-date-from">From</label>
+        <input type="date" id="report-date-from">
+      </div>
+      <div class="reports-field">
+        <label for="report-date-to">To</label>
+        <input type="date" id="report-date-to">
+      </div>
+      <div class="reports-field">
+        <label for="report-trip-status">Status</label>
+        <select id="report-trip-status">
+          <option value="">All</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="in_progress">In progress</option>
+          <option value="accepted">Accepted</option>
+        </select>
+      </div>
+      <div class="reports-field">
+        <label for="report-trip-city">City</label>
+        <input type="text" id="report-trip-city" placeholder="Lagos">
+      </div>
+    </div>
+
+    <div class="reports-filters__grid" id="reports-filters-drivers" hidden>
+      <div class="reports-field">
+        <label for="report-driver-status">Status</label>
+        <select id="report-driver-status">
+          <option value="">All</option>
+          <option value="approved">Approved</option>
+          <option value="pending_approval">Pending</option>
+          <option value="suspended">Suspended</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="reports-field">
+        <label for="report-driver-city">City (rides)</label>
+        <input type="text" id="report-driver-city" placeholder="Lagos">
+      </div>
+      <div class="reports-field">
+        <label for="report-driver-rating">Min rating</label>
+        <input type="number" id="report-driver-rating" min="0" max="5" step="0.1" placeholder="4.0">
+      </div>
+    </div>
+
+    <div class="reports-filters__grid" id="reports-filters-users" hidden>
+      <div class="reports-field">
+        <label for="report-user-search">Search</label>
+        <input type="search" id="report-user-search" placeholder="Name, email, phone">
+      </div>
+      <div class="reports-field">
+        <label for="report-user-status">Status</label>
+        <select id="report-user-status">
+          <option value="">All</option>
+          <option value="active">Active</option>
+          <option value="pending_verification">Pending verification</option>
+          <option value="suspended">Suspended</option>
+        </select>
+      </div>
+      <div class="reports-field">
+        <label for="report-user-date-from">Joined from</label>
+        <input type="date" id="report-user-date-from">
+      </div>
+      <div class="reports-field">
+        <label for="report-user-date-to">Joined to</label>
+        <input type="date" id="report-user-date-to">
+      </div>
+    </div>
+
+    <div class="reports-filters__actions">
+      <button type="button" class="reports-btn reports-btn--ghost" id="reports-clear-btn">Clear</button>
+      <button type="button" class="reports-btn reports-btn--primary" id="reports-run-btn">Run report</button>
+      <button type="button" class="reports-btn reports-btn--export" id="reports-export-btn">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="queue-card dash-card">
+    <div class="queue-card__header">
+      <div>
+        <h2 class="queue-card__title" id="reports-table-title">Trips report</h2>
+        <p class="queue-card__subtitle" id="reports-table-subtitle">—</p>
+      </div>
+    </div>
+    <div class="queue-table-wrap">
+      <table class="queue-table" aria-label="Report results">
+        <thead id="reports-table-head">
+          <tr><th scope="col">Loading…</th></tr>
+        </thead>
+        <tbody id="reports-table-body">
+          <tr class="queue-table__loading"><td>Run a report to see results.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="queue-pagination" id="reports-pagination" hidden>
+      <span class="queue-pagination__info" id="reports-pagination-info"></span>
+      <div class="queue-pagination__controls">
+        <button type="button" class="queue-pagination__btn" id="reports-prev-btn" disabled>Previous</button>
+        <button type="button" class="queue-pagination__btn" id="reports-next-btn" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="reports-toast" id="reports-toast" hidden role="status"></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/admin-reports.js') }}"></script>
+{% endblock %}

@@ -78,6 +78,17 @@ def _request(method, endpoint, token=None, **kwargs):
                 response = None
                 break
         if response is not None:
+            if (
+                response.status_code == 404
+                and base_url != api_urls[-1]
+            ):
+                try:
+                    body = response.json()
+                except ValueError:
+                    body = {}
+                if body.get("detail") == "Not Found":
+                    response = None
+                    continue
             break
 
     if response is None:
@@ -1185,6 +1196,96 @@ def update_admin_bike_delivery_settings(token, payload):
     )
 
 
+def get_admin_funding_requests(token, status=None, provider=None, page=1, limit=20):
+    params = {"page": page, "limit": limit}
+    if status:
+        params["status"] = status
+    if provider:
+        params["provider"] = provider
+    return _request("GET", f"{API_PREFIX}/admin/payments/funding-requests", token=token, params=params)
+
+
+def approve_admin_funding_request(token, request_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/payments/funding-requests/{request_id}/approve",
+        token=token,
+    )
+
+
+def reject_admin_funding_request(token, request_id, reason):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/payments/funding-requests/{request_id}/reject",
+        token=token,
+        json={"reason": reason},
+    )
+
+
+def get_admin_withdrawals(token, status=None, page=1, limit=20):
+    params = {"page": page, "limit": limit}
+    if status:
+        params["status"] = status
+    return _request("GET", f"{API_PREFIX}/admin/payments/withdrawals", token=token, params=params)
+
+
+def approve_admin_withdrawal(token, withdrawal_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/payments/withdrawals/{withdrawal_id}/approve",
+        token=token,
+    )
+
+
+def mark_admin_withdrawal_paid(token, withdrawal_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/payments/withdrawals/{withdrawal_id}/mark-paid",
+        token=token,
+    )
+
+
+def reject_admin_withdrawal(token, withdrawal_id, reason):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/payments/withdrawals/{withdrawal_id}/reject",
+        token=token,
+        json={"reason": reason},
+    )
+
+
+def get_admin_sos_alerts(token):
+    return _request("GET", f"{API_PREFIX}/admin/sos", token=token)
+
+
+def acknowledge_admin_sos(token, sos_id):
+    return _request("POST", f"{API_PREFIX}/admin/sos/{sos_id}/acknowledge", token=token)
+
+
+def resolve_admin_sos(token, sos_id, status="resolved"):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/sos/{sos_id}/resolve",
+        token=token,
+        json={"status": status},
+    )
+
+
+def get_admin_report_trips(token, **kwargs):
+    params = {k: v for k, v in kwargs.items() if v not in (None, "")}
+    return _request("GET", f"{API_PREFIX}/admin/reports/trips", token=token, params=params)
+
+
+def get_admin_report_drivers(token, **kwargs):
+    params = {k: v for k, v in kwargs.items() if v not in (None, "")}
+    return _request("GET", f"{API_PREFIX}/admin/reports/drivers", token=token, params=params)
+
+
+def get_admin_report_users(token, **kwargs):
+    params = {k: v for k, v in kwargs.items() if v not in (None, "")}
+    return _request("GET", f"{API_PREFIX}/admin/reports/users", token=token, params=params)
+
+
 # ── Customer features (Phase 14) ──
 
 
@@ -1224,18 +1325,21 @@ def list_customer_rides(token, page=1, limit=50, search=None, booking_id=None, s
     return _request("GET", f"{API_PREFIX}/customers/rides", token=token, params=params)
 
 
-def get_nearby_drivers(token, lat, lng, service_tier="economy", vehicle_category="car", radius_km=8):
+def get_nearby_drivers(token, lat, lng, service_tier=None, vehicle_category=None, radius_km=1500):
+    params = {
+        "lat": lat,
+        "lng": lng,
+        "radius_km": radius_km,
+    }
+    if service_tier:
+        params["service_tier"] = service_tier
+    if vehicle_category:
+        params["vehicle_category"] = vehicle_category
     return _request(
         "GET",
         f"{API_PREFIX}/rides/nearby-drivers",
         token=token,
-        params={
-            "lat": lat,
-            "lng": lng,
-            "service_tier": service_tier,
-            "vehicle_category": vehicle_category,
-            "radius_km": radius_km,
-        },
+        params=params,
     )
 
 

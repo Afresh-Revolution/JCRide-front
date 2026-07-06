@@ -257,6 +257,121 @@ button.rider-link:hover {
   line-height: 1.5;
 }
 
+.rider-referral__share {
+  margin-bottom: 1rem;
+}
+
+.rider-referral__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-bottom: 0.5rem;
+}
+
+.rider-referral__link-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.rider-referral__input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.rider-referral__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 40px;
+  padding: 0 0.875rem;
+  border: none;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--user-green-dark);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rider-referral__copy svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rider-referral__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rider-referral__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 36px;
+  padding: 0 0.875rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.rider-referral__btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.rider-referral__btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rider-referral__btn--whatsapp {
+  background: #25d366;
+  border-color: #25d366;
+  color: #fff;
+}
+
+.rider-referral__btn--whatsapp:hover {
+  background: #1ebe57;
+}
+
+.rider-referral__meta {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  opacity: 0.85;
+}
+
+.rider-referral__error {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: #fecaca;
+}
+
+#referral-invite-btn.is-hidden {
+  display: none;
+}
+
+#referral-invite-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
 /* Map */
 .rider-map {
   position: relative;

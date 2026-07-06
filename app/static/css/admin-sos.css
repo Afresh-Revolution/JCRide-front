@@ -1,0 +1,162 @@
+/* Admin SOS alerts page */
+
+.sos-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sos-page__intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sos-page__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--dash-text);
+}
+
+.sos-page__subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  color: var(--dash-muted);
+}
+
+.sos-refresh-btn {
+  height: 38px;
+  padding: 0 1rem;
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  background: var(--dash-card);
+  color: var(--dash-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sos-list__loading,
+.sos-list__empty {
+  margin: 0;
+  padding: 2rem;
+  text-align: center;
+  color: var(--dash-muted);
+  background: var(--dash-card);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+}
+
+.sos-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--dash-card);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  box-shadow: var(--dash-shadow);
+}
+
+.sos-card--triggered {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.06), transparent 40%);
+}
+
+.sos-card__main {
+  min-width: 0;
+}
+
+.sos-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sos-card__ride {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--dash-text);
+}
+
+.sos-card__time {
+  font-size: 0.8125rem;
+  color: var(--dash-muted);
+}
+
+.sos-card__message {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--dash-text);
+  line-height: 1.5;
+}
+
+.sos-card__coords {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--dash-muted);
+}
+
+.sos-card__coords a {
+  color: #0d6b38;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sos-card__coords a:hover {
+  text-decoration: underline;
+}
+
+.sos-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sos-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 300;
+  max-width: 360px;
+  padding: 0.875rem 1rem;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  font-size: 0.875rem;
+  box-shadow: var(--dash-shadow-hover);
+}
+
+.sos-toast.is-error {
+  background: #991b1b;
+}
+
+.sos-toast[hidden] {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .sos-card {
+    grid-template-columns: 1fr;
+  }
+
+  .sos-card__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}

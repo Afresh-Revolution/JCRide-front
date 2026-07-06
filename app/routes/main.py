@@ -2188,7 +2188,7 @@ def user_api_nearby_drivers():
                 _rider_token(),
                 lat,
                 lng,
-                radius_km=request.args.get("radius_km", 8, type=float),
+                radius_km=request.args.get("radius_km", 1500, type=float),
             )
         )
     except ApiError as exc:

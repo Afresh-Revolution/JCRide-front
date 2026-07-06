@@ -297,6 +297,8 @@
   function init() {
     loadStats();
     loadTransactions();
+    initFundingQueue();
+    initPaymentsTabs();
 
     if (filterToggle) {
       filterToggle.addEventListener("click", function () {
@@ -343,6 +345,230 @@
           state.page += 1;
           loadTransactions();
         }
+      });
+    }
+  }
+
+  const fundingState = {
+    status: "pending",
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+    items: [],
+    rejectId: null,
+  };
+
+  function initPaymentsTabs() {
+    const tabs = document.querySelectorAll("[data-payments-tab]");
+    const panels = document.querySelectorAll("[data-payments-panel]");
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        const target = tab.getAttribute("data-payments-tab");
+        tabs.forEach(function (btn) {
+          const active = btn.getAttribute("data-payments-tab") === target;
+          btn.classList.toggle("is-active", active);
+          btn.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        panels.forEach(function (panel) {
+          panel.hidden = panel.getAttribute("data-payments-panel") !== target;
+        });
+        if (target === "funding" && !fundingState.items.length) {
+          loadFundingRequests();
+        }
+      });
+    });
+  }
+
+  function queueStatusClass(status) {
+    return "queue-status queue-status--" + String(status || "pending").replace(/\s+/g, "_");
+  }
+
+  function renderFundingTable() {
+    const tbody = document.getElementById("funding-table-body");
+    if (!tbody) return;
+    if (!fundingState.items.length) {
+      tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="8">No funding requests found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = fundingState.items
+      .map(function (item) {
+        const proof = item.proof_url
+          ? '<a class="queue-proof-link" href="' + escapeHtml(item.proof_url) + '" target="_blank" rel="noopener">Proof</a>'
+          : "—";
+        const approveDisabled = item.can_approve ? "" : " disabled";
+        const approveTitle = item.can_approve
+          ? "Approve and credit wallet"
+          : item.provider !== "manual"
+            ? "Paystack fundings verify automatically"
+            : "Already reviewed";
+        return (
+          "<tr data-funding-id=\"" + escapeHtml(item.id) + "\">" +
+          '<td><span class="queue-ref">' + escapeHtml(item.reference) + "</span></td>" +
+          "<td>" + escapeHtml(item.user_short) + "</td>" +
+          '<td class="queue-amount">' + escapeHtml(formatNairaFull(item.amount_ngn)) + "</td>" +
+          "<td>" + escapeHtml(item.bank_name) + " · " + escapeHtml(item.account_name) + " · " + proof + "</td>" +
+          '<td><span class="queue-provider-tag' + (item.provider === "manual" ? " queue-provider-tag--manual" : "") + '">' + escapeHtml(item.provider) + "</span></td>" +
+          '<td><span class="' + queueStatusClass(item.status) + '">' + escapeHtml(item.status) + "</span></td>" +
+          '<td class="payments-date">' + escapeHtml(formatDate(item.created_at)) + "</td>" +
+          '<td><div class="queue-actions">' +
+          '<button type="button" class="queue-btn queue-btn--approve" data-funding-approve="' + escapeHtml(item.id) + '"' + approveDisabled + ' title="' + escapeHtml(approveTitle) + '">Approve</button>' +
+          '<button type="button" class="queue-btn queue-btn--reject" data-funding-reject="' + escapeHtml(item.id) + '"' + (item.status === "pending" ? "" : " disabled") + ">Reject</button>" +
+          "</div></td></tr>"
+        );
+      })
+      .join("");
+  }
+
+  function updateFundingPagination() {
+    const pagination = document.getElementById("funding-pagination");
+    const info = document.getElementById("funding-pagination-info");
+    const prevBtn = document.getElementById("funding-prev-btn");
+    const nextBtn = document.getElementById("funding-next-btn");
+    if (!pagination) return;
+    pagination.hidden = fundingState.total <= 0;
+    if (fundingState.total <= 0) return;
+    const start = (fundingState.page - 1) * fundingState.limit + 1;
+    const end = Math.min(fundingState.page * fundingState.limit, fundingState.total);
+    if (info) info.textContent = "Showing " + start + "–" + end + " of " + formatCount(fundingState.total);
+    if (prevBtn) prevBtn.disabled = fundingState.page <= 1;
+    if (nextBtn) nextBtn.disabled = fundingState.page >= fundingState.totalPages;
+  }
+
+  function loadFundingRequests() {
+    const tbody = document.getElementById("funding-table-body");
+    if (tbody) {
+      tbody.innerHTML = '<tr class="queue-table__loading"><td colspan="8">Loading funding requests…</td></tr>';
+    }
+    const params = new URLSearchParams();
+    params.set("page", String(fundingState.page));
+    params.set("limit", String(fundingState.limit));
+    if (fundingState.status) params.set("status", fundingState.status);
+    return apiRequest("/admin/api/payments/funding-requests?" + params.toString())
+      .then(function (data) {
+        fundingState.items = data.items || [];
+        fundingState.total = data.total || 0;
+        fundingState.totalPages = data.total_pages || 1;
+        renderFundingTable();
+        updateFundingPagination();
+      })
+      .catch(function (err) {
+        if (tbody) {
+          tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="8">' + escapeHtml(err.message) + "</td></tr>";
+        }
+        showToast(err.message, true);
+      });
+  }
+
+  function approveFunding(requestId) {
+    window.AdminConfirm.show({
+      title: "Approve funding",
+      message: "Credit this user's wallet with the requested amount?",
+      confirmLabel: "Approve",
+    }).then(function (confirmed) {
+      if (!confirmed) return;
+      return apiRequest("/admin/api/payments/funding-requests/" + encodeURIComponent(requestId) + "/approve", {
+        method: "POST",
+      })
+        .then(function () {
+          showToast("Funding approved");
+          loadFundingRequests();
+          loadStats();
+        })
+        .catch(function (err) {
+          showToast(err.message, true);
+        });
+    });
+  }
+
+  function openFundingRejectModal(requestId) {
+    fundingState.rejectId = requestId;
+    const modal = document.getElementById("funding-reject-modal");
+    const form = document.getElementById("funding-reject-form");
+    const error = document.getElementById("funding-reject-error");
+    if (form) form.reset();
+    if (error) error.hidden = true;
+    if (modal) modal.hidden = false;
+  }
+
+  function closeFundingRejectModal() {
+    fundingState.rejectId = null;
+    const modal = document.getElementById("funding-reject-modal");
+    if (modal) modal.hidden = true;
+  }
+
+  function submitFundingReject(event) {
+    event.preventDefault();
+    const reasonEl = document.getElementById("funding-reject-reason");
+    const error = document.getElementById("funding-reject-error");
+    const reason = reasonEl ? reasonEl.value.trim() : "";
+    if (!fundingState.rejectId || reason.length < 2) return;
+    if (error) error.hidden = true;
+    apiRequest(
+      "/admin/api/payments/funding-requests/" + encodeURIComponent(fundingState.rejectId) + "/reject",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason }),
+      }
+    )
+      .then(function () {
+        closeFundingRejectModal();
+        showToast("Funding request rejected");
+        loadFundingRequests();
+      })
+      .catch(function (err) {
+        if (error) {
+          error.textContent = err.message;
+          error.hidden = false;
+        }
+      });
+  }
+
+  function initFundingQueue() {
+    const statusFilter = document.getElementById("funding-status-filter");
+    const prevBtn = document.getElementById("funding-prev-btn");
+    const nextBtn = document.getElementById("funding-next-btn");
+    const rejectForm = document.getElementById("funding-reject-form");
+    const fundingBody = document.getElementById("funding-table-body");
+
+    if (statusFilter) {
+      statusFilter.addEventListener("change", function () {
+        fundingState.status = statusFilter.value;
+        fundingState.page = 1;
+        loadFundingRequests();
+      });
+    }
+    if (prevBtn) {
+      prevBtn.addEventListener("click", function () {
+        if (fundingState.page > 1) {
+          fundingState.page -= 1;
+          loadFundingRequests();
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        if (fundingState.page < fundingState.totalPages) {
+          fundingState.page += 1;
+          loadFundingRequests();
+        }
+      });
+    }
+    if (rejectForm) {
+      rejectForm.addEventListener("submit", submitFundingReject);
+    }
+    document.querySelectorAll("[data-close-funding-reject]").forEach(function (btn) {
+      btn.addEventListener("click", closeFundingRejectModal);
+    });
+    if (fundingBody) {
+      fundingBody.addEventListener("click", function (event) {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const approveId = target.getAttribute("data-funding-approve");
+        const rejectId = target.getAttribute("data-funding-reject");
+        if (approveId && !target.disabled) approveFunding(approveId);
+        if (rejectId && !target.disabled) openFundingRejectModal(rejectId);
       });
     }
   }

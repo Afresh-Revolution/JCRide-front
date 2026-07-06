@@ -39,23 +39,45 @@ def normalize_dashboard_stats(raw: dict, *, wallet_total: float | None = None) -
     total_users = int(raw.get("total_users") or 0)
     total_customers = int(raw.get("total_customers") or 0)
     total_drivers = int(raw.get("total_drivers") or 0)
+    total_admins = int(raw.get("total_admins") or 0)
     active_drivers = int(raw.get("active_drivers") or 0)
     pending_drivers = int(raw.get("pending_drivers") or 0)
     active_trips = int(raw.get("active_trips") or 0)
     total_trips = int(raw.get("total_trips") or 0)
     completed_trips = int(raw.get("completed_trips") or 0)
     completion = float(raw.get("completion_percent") or 0)
-    revenue_mtd = float(raw.get("revenue_mtd") or raw.get("total_revenue_placeholder") or 0)
+    revenue_mtd = float(
+        raw.get("revenue_mtd")
+        or raw.get("total_revenue")
+        or raw.get("total_revenue_placeholder")
+        or 0
+    )
+    revenue_change = raw.get("revenue_mtd_change_pct")
     wallet = float(
         wallet_total
         if wallet_total is not None
         else raw.get("wallet_funds") or raw.get("wallet_funds_placeholder") or 0
     )
 
+    breakdown_parts = [f"{total_customers:,} riders", f"{total_drivers:,} drivers"]
+    other_users = max(total_users - total_customers - total_drivers - total_admins, 0)
+    if total_admins:
+        breakdown_parts.append(f"{total_admins:,} admins")
+    if other_users:
+        breakdown_parts.append(f"{other_users:,} other")
+    user_trend = " · ".join(breakdown_parts)
+
+    if revenue_change is not None:
+        revenue_trend = f"{revenue_change:+.1f}% vs last month"
+        revenue_trend_type = "up-double" if revenue_change >= 0 else "down"
+    else:
+        revenue_trend = f"{completion:.1f}% completion rate"
+        revenue_trend_type = "up-double"
+
     return {
         "total_users": {
             "value": f"{total_users:,}",
-            "trend": f"{total_customers:,} riders · {total_drivers:,} drivers",
+            "trend": user_trend,
             "trend_type": "up",
         },
         "active_drivers": {
@@ -75,8 +97,8 @@ def normalize_dashboard_stats(raw: dict, *, wallet_total: float | None = None) -
         },
         "revenue_mtd": {
             "value": _fmt_ngn(revenue_mtd),
-            "trend": f"{completion:.1f}% completion rate",
-            "trend_type": "up-double",
+            "trend": revenue_trend,
+            "trend_type": revenue_trend_type,
         },
         "wallet_funds": {
             "value": _fmt_ngn(wallet),

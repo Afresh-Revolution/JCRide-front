@@ -420,8 +420,12 @@
           .then(function (data) {
             inviteForm.hidden = true;
             inviteSuccess.hidden = false;
-            document.getElementById("invite-totp-secret").textContent = data.totp_secret;
-            showToast(data.message);
+            const successMessage = document.getElementById("invite-success-message");
+            if (successMessage) {
+              successMessage.textContent = data.message || "Admin account created.";
+            }
+            showToast(data.message || "Admin invited");
+            loadUsers();
           })
           .catch(function (err) {
             inviteFormError.textContent = err.message;

@@ -33,26 +33,13 @@ html.is-pwa .landing-header {
 }
 
 html.is-pwa .admin-topbar {
-  position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + var(--pwa-nav-offset));
-  left: 0;
-  right: 0;
-  z-index: 200;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-}
-
-@media (min-width: 901px) {
-  html.is-pwa .admin-topbar {
-    left: calc(var(--dash-sidebar-w) + var(--dash-layout-gap));
-  }
 }
 
 html.is-pwa .admin-main {
-  padding-top: calc(
-    var(--pwa-topbar-height) + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset)
+  padding-top: var(
+    --dash-topbar-offset,
+    calc(var(--pwa-topbar-height) + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset))
   );
 }
 
@@ -63,8 +50,9 @@ html.is-pwa .admin-main {
   }
 
   html.is-pwa .admin-main {
-    padding-top: calc(
-      3.75rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset)
+    padding-top: var(
+      --dash-topbar-offset,
+      calc(3.75rem + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset))
     );
   }
 }

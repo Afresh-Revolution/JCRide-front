@@ -39,8 +39,8 @@
     }, 4000);
   }
 
-  function apiRequest(url) {
-    return fetch(url).then(function (res) {
+  function apiRequest(url, options) {
+    return fetch(url, options || {}).then(function (res) {
       return res.json().then(function (data) {
         if (!res.ok) {
           throw new Error(data.message || data.detail || "Request failed");
@@ -179,6 +179,7 @@
   function init() {
     loadStats();
     loadHolders();
+    initWithdrawalsQueue();
 
     if (searchInput) {
       searchInput.addEventListener("input", function () {
@@ -214,6 +215,233 @@
           state.page += 1;
           loadHolders();
         }
+      });
+    }
+  }
+
+  const withdrawalState = {
+    status: "pending",
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+    items: [],
+    rejectId: null,
+  };
+
+  function formatDate(iso) {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function queueStatusClass(status) {
+    return "queue-status queue-status--" + String(status || "pending").replace(/\s+/g, "_");
+  }
+
+  function maskAccount(number) {
+    const text = String(number || "");
+    if (text.length <= 4) return text;
+    return "****" + text.slice(-4);
+  }
+
+  function renderWithdrawalsTable() {
+    const tbody = document.getElementById("withdrawals-table-body");
+    if (!tbody) return;
+    if (!withdrawalState.items.length) {
+      tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="7">No withdrawal requests found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = withdrawalState.items
+      .map(function (item) {
+        return (
+          "<tr>" +
+          '<td><span class="queue-ref">' + escapeHtml(item.reference) + "</span></td>" +
+          "<td>" + escapeHtml(item.user_short) + "</td>" +
+          '<td class="queue-amount">' + escapeHtml(formatNairaFull(item.net_amount_ngn)) +
+          '<div style="font-size:0.75rem;color:var(--dash-muted);font-weight:400;">Fee ' + escapeHtml(formatNairaFull(item.withdrawal_fee_ngn)) + "</div></td>" +
+          "<td>" + escapeHtml(item.bank_name) + " · " + escapeHtml(maskAccount(item.account_number)) + " · " + escapeHtml(item.account_name) + "</td>" +
+          '<td><span class="' + queueStatusClass(item.status) + '">' + escapeHtml(item.status) + "</span></td>" +
+          "<td>" + escapeHtml(formatDate(item.created_at)) + "</td>" +
+          '<td><div class="queue-actions">' +
+          '<button type="button" class="queue-btn queue-btn--approve" data-withdrawal-approve="' + escapeHtml(item.id) + '"' + (item.can_approve ? "" : " disabled") + ">Approve</button>" +
+          '<button type="button" class="queue-btn queue-btn--neutral" data-withdrawal-paid="' + escapeHtml(item.id) + '"' + (item.can_mark_paid ? "" : " disabled") + ">Mark paid</button>" +
+          '<button type="button" class="queue-btn queue-btn--reject" data-withdrawal-reject="' + escapeHtml(item.id) + '"' + (item.can_reject ? "" : " disabled") + ">Reject</button>" +
+          "</div></td></tr>"
+        );
+      })
+      .join("");
+  }
+
+  function updateWithdrawalsPagination() {
+    const pagination = document.getElementById("withdrawals-pagination");
+    const info = document.getElementById("withdrawals-pagination-info");
+    const prevBtn = document.getElementById("withdrawals-prev-btn");
+    const nextBtn = document.getElementById("withdrawals-next-btn");
+    if (!pagination) return;
+    pagination.hidden = withdrawalState.total <= 0;
+    if (withdrawalState.total <= 0) return;
+    const start = (withdrawalState.page - 1) * withdrawalState.limit + 1;
+    const end = Math.min(withdrawalState.page * withdrawalState.limit, withdrawalState.total);
+    if (info) info.textContent = "Showing " + start + "–" + end + " of " + formatCount(withdrawalState.total);
+    if (prevBtn) prevBtn.disabled = withdrawalState.page <= 1;
+    if (nextBtn) nextBtn.disabled = withdrawalState.page >= withdrawalState.totalPages;
+  }
+
+  function loadWithdrawals() {
+    const tbody = document.getElementById("withdrawals-table-body");
+    if (tbody) {
+      tbody.innerHTML = '<tr class="queue-table__loading"><td colspan="7">Loading withdrawals…</td></tr>';
+    }
+    const params = new URLSearchParams();
+    params.set("page", String(withdrawalState.page));
+    params.set("limit", String(withdrawalState.limit));
+    if (withdrawalState.status) params.set("status", withdrawalState.status);
+    return apiRequest("/admin/api/payments/withdrawals?" + params.toString())
+      .then(function (data) {
+        withdrawalState.items = data.items || [];
+        withdrawalState.total = data.total || 0;
+        withdrawalState.totalPages = data.total_pages || 1;
+        renderWithdrawalsTable();
+        updateWithdrawalsPagination();
+      })
+      .catch(function (err) {
+        if (tbody) {
+          tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="7">' + escapeHtml(err.message) + "</td></tr>";
+        }
+        showToast(err.message, true);
+      });
+  }
+
+  function approveWithdrawal(id) {
+    window.AdminConfirm.show({
+      title: "Approve withdrawal",
+      message: "Approve this payout request? You will still need to mark it paid after sending funds.",
+      confirmLabel: "Approve",
+    }).then(function (confirmed) {
+      if (!confirmed) return;
+      return apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(id) + "/approve", { method: "POST" })
+        .then(function () {
+          showToast("Withdrawal approved");
+          loadWithdrawals();
+        })
+        .catch(function (err) {
+          showToast(err.message, true);
+        });
+    });
+  }
+
+  function markWithdrawalPaid(id) {
+    window.AdminConfirm.show({
+      title: "Mark as paid",
+      message: "Confirm the bank transfer has been completed?",
+      confirmLabel: "Mark paid",
+    }).then(function (confirmed) {
+      if (!confirmed) return;
+      return apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(id) + "/mark-paid", { method: "POST" })
+        .then(function () {
+          showToast("Withdrawal marked paid");
+          loadWithdrawals();
+          loadStats();
+        })
+        .catch(function (err) {
+          showToast(err.message, true);
+        });
+    });
+  }
+
+  function openWithdrawalRejectModal(id) {
+    withdrawalState.rejectId = id;
+    const modal = document.getElementById("withdrawal-reject-modal");
+    const form = document.getElementById("withdrawal-reject-form");
+    const error = document.getElementById("withdrawal-reject-error");
+    if (form) form.reset();
+    if (error) error.hidden = true;
+    if (modal) modal.hidden = false;
+  }
+
+  function closeWithdrawalRejectModal() {
+    withdrawalState.rejectId = null;
+    const modal = document.getElementById("withdrawal-reject-modal");
+    if (modal) modal.hidden = true;
+  }
+
+  function submitWithdrawalReject(event) {
+    event.preventDefault();
+    const reasonEl = document.getElementById("withdrawal-reject-reason");
+    const error = document.getElementById("withdrawal-reject-error");
+    const reason = reasonEl ? reasonEl.value.trim() : "";
+    if (!withdrawalState.rejectId || reason.length < 2) return;
+    apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(withdrawalState.rejectId) + "/reject", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: reason }),
+    })
+      .then(function () {
+        closeWithdrawalRejectModal();
+        showToast("Withdrawal rejected");
+        loadWithdrawals();
+      })
+      .catch(function (err) {
+        if (error) {
+          error.textContent = err.message;
+          error.hidden = false;
+        }
+      });
+  }
+
+  function initWithdrawalsQueue() {
+    const statusFilter = document.getElementById("withdrawals-status-filter");
+    const prevBtn = document.getElementById("withdrawals-prev-btn");
+    const nextBtn = document.getElementById("withdrawals-next-btn");
+    const rejectForm = document.getElementById("withdrawal-reject-form");
+    const tbody = document.getElementById("withdrawals-table-body");
+
+    loadWithdrawals();
+
+    if (statusFilter) {
+      statusFilter.addEventListener("change", function () {
+        withdrawalState.status = statusFilter.value;
+        withdrawalState.page = 1;
+        loadWithdrawals();
+      });
+    }
+    if (prevBtn) {
+      prevBtn.addEventListener("click", function () {
+        if (withdrawalState.page > 1) {
+          withdrawalState.page -= 1;
+          loadWithdrawals();
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        if (withdrawalState.page < withdrawalState.totalPages) {
+          withdrawalState.page += 1;
+          loadWithdrawals();
+        }
+      });
+    }
+    if (rejectForm) {
+      rejectForm.addEventListener("submit", submitWithdrawalReject);
+    }
+    document.querySelectorAll("[data-close-withdrawal-reject]").forEach(function (btn) {
+      btn.addEventListener("click", closeWithdrawalRejectModal);
+    });
+    if (tbody) {
+      tbody.addEventListener("click", function (event) {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const approveId = target.getAttribute("data-withdrawal-approve");
+        const paidId = target.getAttribute("data-withdrawal-paid");
+        const rejectId = target.getAttribute("data-withdrawal-reject");
+        if (approveId && !target.disabled) approveWithdrawal(approveId);
+        if (paidId && !target.disabled) markWithdrawalPaid(paidId);
+        if (rejectId && !target.disabled) openWithdrawalRejectModal(rejectId);
       });
     }
   }

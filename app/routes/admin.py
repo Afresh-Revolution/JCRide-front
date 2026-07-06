@@ -64,6 +64,19 @@ from app.services.api_client import (
     update_admin_bike_delivery_settings,
     get_admin_landing_page,
     update_admin_landing_page,
+    get_admin_funding_requests,
+    approve_admin_funding_request,
+    reject_admin_funding_request,
+    get_admin_withdrawals,
+    approve_admin_withdrawal,
+    mark_admin_withdrawal_paid,
+    reject_admin_withdrawal,
+    get_admin_sos_alerts,
+    acknowledge_admin_sos,
+    resolve_admin_sos,
+    get_admin_report_trips,
+    get_admin_report_drivers,
+    get_admin_report_users,
 )
 from app.services.landing_content import merge_landing_page
 from app.admin_api_transforms import (
@@ -77,6 +90,12 @@ from app.admin_api_transforms import (
     normalize_revenue,
     normalize_ride_tiers,
     normalize_success_rate,
+)
+from app.admin_ops_transforms import (
+    normalize_funding_list,
+    normalize_report_list,
+    normalize_sos_list,
+    normalize_withdrawal_list,
 )
 from app.admin_defaults import build_empty_admin_stats
 
@@ -353,6 +372,18 @@ def notifications():
     return render_template("admin/notifications.html", active_page="notifications")
 
 
+@admin_bp.route("/sos")
+@admin_required
+def sos_page():
+    return render_template("admin/sos.html", active_page="sos")
+
+
+@admin_bp.route("/reports")
+@admin_required
+def reports_page():
+    return render_template("admin/reports.html", active_page="reports")
+
+
 @admin_bp.route("/analytics")
 @admin_required
 def analytics():
@@ -469,6 +500,195 @@ def api_payment_settle():
                 notes=payload.get("notes"),
             )
         )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/payments/funding-requests")
+@admin_required
+def api_funding_requests():
+    status = request.args.get("status")
+    provider = request.args.get("provider")
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 20, type=int)
+    try:
+        return jsonify(
+            normalize_funding_list(
+                get_admin_funding_requests(
+                    _admin_token(),
+                    status=status,
+                    provider=provider,
+                    page=page,
+                    limit=limit,
+                )
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/payments/funding-requests/<request_id>/approve", methods=["POST"])
+@admin_required
+def api_approve_funding_request(request_id):
+    try:
+        return jsonify(approve_admin_funding_request(_admin_token(), request_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/payments/funding-requests/<request_id>/reject", methods=["POST"])
+@admin_required
+def api_reject_funding_request(request_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            reject_admin_funding_request(
+                _admin_token(),
+                request_id,
+                payload.get("reason", ""),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/payments/withdrawals")
+@admin_required
+def api_withdrawals():
+    status = request.args.get("status")
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 20, type=int)
+    try:
+        return jsonify(
+            normalize_withdrawal_list(
+                get_admin_withdrawals(_admin_token(), status=status, page=page, limit=limit)
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/payments/withdrawals/<withdrawal_id>/approve", methods=["POST"])
+@admin_required
+def api_approve_withdrawal(withdrawal_id):
+    try:
+        return jsonify(approve_admin_withdrawal(_admin_token(), withdrawal_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/payments/withdrawals/<withdrawal_id>/mark-paid", methods=["POST"])
+@admin_required
+def api_mark_withdrawal_paid(withdrawal_id):
+    try:
+        return jsonify(mark_admin_withdrawal_paid(_admin_token(), withdrawal_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/payments/withdrawals/<withdrawal_id>/reject", methods=["POST"])
+@admin_required
+def api_reject_withdrawal(withdrawal_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            reject_admin_withdrawal(
+                _admin_token(),
+                withdrawal_id,
+                payload.get("reason", ""),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/sos")
+@admin_required
+def api_sos_list():
+    try:
+        return jsonify(normalize_sos_list(get_admin_sos_alerts(_admin_token())))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/sos/<sos_id>/acknowledge", methods=["POST"])
+@admin_required
+def api_sos_acknowledge(sos_id):
+    try:
+        return jsonify(acknowledge_admin_sos(_admin_token(), sos_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/sos/<sos_id>/resolve", methods=["POST"])
+@admin_required
+def api_sos_resolve(sos_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            resolve_admin_sos(
+                _admin_token(),
+                sos_id,
+                status=payload.get("status", "resolved"),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/reports/trips")
+@admin_required
+def api_report_trips():
+    try:
+        data = get_admin_report_trips(
+            _admin_token(),
+            date_from=request.args.get("date_from"),
+            date_to=request.args.get("date_to"),
+            status=request.args.get("status"),
+            city=request.args.get("city"),
+            service_tier=request.args.get("service_tier"),
+            vehicle_category=request.args.get("vehicle_category"),
+            page=request.args.get("page", 1, type=int),
+            limit=request.args.get("limit", 50, type=int),
+        )
+        return jsonify(normalize_report_list(data, report_type="trips"))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/reports/drivers")
+@admin_required
+def api_report_drivers():
+    try:
+        data = get_admin_report_drivers(
+            _admin_token(),
+            status=request.args.get("status"),
+            service_tier=request.args.get("service_tier"),
+            vehicle_category=request.args.get("vehicle_category"),
+            city=request.args.get("city"),
+            rating_min=request.args.get("rating_min", type=float),
+            page=request.args.get("page", 1, type=int),
+            limit=request.args.get("limit", 50, type=int),
+        )
+        return jsonify(normalize_report_list(data, report_type="drivers"))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/reports/users")
+@admin_required
+def api_report_users():
+    try:
+        data = get_admin_report_users(
+            _admin_token(),
+            status=request.args.get("status"),
+            date_from=request.args.get("date_from"),
+            date_to=request.args.get("date_to"),
+            search=request.args.get("search", ""),
+            page=request.args.get("page", 1, type=int),
+            limit=request.args.get("limit", 50, type=int),
+        )
+        return jsonify(normalize_report_list(data, report_type="users"))
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 

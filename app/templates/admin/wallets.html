@@ -6,6 +6,8 @@
 {% block page_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-wallets.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-queues.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-payments.css') }}">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -86,7 +88,74 @@
       </div>
     </div>
   </div>
+
+  <div class="queue-card dash-card">
+    <div class="queue-card__header">
+      <div>
+        <h2 class="queue-card__title">Withdrawal requests</h2>
+        <p class="queue-card__subtitle">Review payout requests, approve, then mark paid after bank transfer.</p>
+      </div>
+      <div class="queue-card__tools">
+        <label>
+          <span class="sr-only">Filter by status</span>
+          <select id="withdrawals-status-filter" class="queue-filter-select" aria-label="Withdrawal status">
+            <option value="">All statuses</option>
+            <option value="pending" selected>Pending</option>
+            <option value="approved">Approved</option>
+            <option value="paid">Paid</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="queue-table-wrap">
+      <table class="queue-table" aria-label="Withdrawal requests">
+        <thead>
+          <tr>
+            <th scope="col">Reference</th>
+            <th scope="col">User</th>
+            <th scope="col">Net amount</th>
+            <th scope="col">Bank details</th>
+            <th scope="col">Status</th>
+            <th scope="col">Requested</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="withdrawals-table-body">
+          <tr class="queue-table__loading"><td colspan="7">Loading withdrawals…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="queue-pagination" id="withdrawals-pagination" hidden>
+      <span class="queue-pagination__info" id="withdrawals-pagination-info"></span>
+      <div class="queue-pagination__controls">
+        <button type="button" class="queue-pagination__btn" id="withdrawals-prev-btn" disabled>Previous</button>
+        <button type="button" class="queue-pagination__btn" id="withdrawals-next-btn" disabled>Next</button>
+      </div>
+    </div>
+  </div>
 </section>
+
+<div class="payments-modal-overlay" id="withdrawal-reject-modal" hidden>
+  <div class="payments-modal" role="dialog" aria-labelledby="withdrawal-reject-title" aria-modal="true">
+    <div class="payments-modal__header">
+      <h2 id="withdrawal-reject-title">Reject withdrawal</h2>
+      <button type="button" class="payments-modal__close" data-close-withdrawal-reject aria-label="Close">&times;</button>
+    </div>
+    <form id="withdrawal-reject-form" class="payments-modal__body">
+      <p class="payments-modal__hint">Funds will remain in the user's wallet.</p>
+      <div class="payments-field">
+        <label for="withdrawal-reject-reason">Reason</label>
+        <textarea id="withdrawal-reject-reason" rows="3" required minlength="2" placeholder="e.g. Account name mismatch"></textarea>
+      </div>
+      <p class="payments-form-error" id="withdrawal-reject-error" hidden></p>
+      <div class="payments-modal__footer">
+        <button type="button" class="payments-btn payments-btn--ghost" data-close-withdrawal-reject>Cancel</button>
+        <button type="submit" class="payments-btn payments-btn--primary">Reject withdrawal</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div class="wallets-toast" id="wallets-toast" hidden role="status"></div>
 {% endblock %}
