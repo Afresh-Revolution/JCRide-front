@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.driver_portal.data import DOCUMENT_ORDER, PROFILE_DETAIL
+from app.driver_portal.data import DOCUMENT_ORDER
 
 
 def _doc_key(name: str) -> str:
@@ -10,9 +10,11 @@ def _doc_key(name: str) -> str:
 
 
 def _normalize_doc(doc: dict) -> dict:
-    status = str(doc.get("status") or "pending").lower()
+    status = str(doc.get("status") or doc.get("verification_status") or "pending").lower()
     if status in ("verified", "approved"):
         status = "verified"
+    elif status in ("rejected", "expired"):
+        status = "pending"
     return {
         "name": doc.get("name") or "Document",
         "detail": doc.get("detail") or doc.get("expires_at") or "—",
@@ -21,9 +23,10 @@ def _normalize_doc(doc: dict) -> dict:
 
 
 def merge_profile_documents(api_documents: list | None) -> list:
-    """Merge API documents with defaults so Insurance and other required rows always show."""
-    defaults = {_doc_key(doc["name"]): _normalize_doc(doc) for doc in PROFILE_DETAIL["documents"]}
-    merged = dict(defaults)
+    merged = {
+        _doc_key(label): {"name": label, "detail": "—", "status": "pending"}
+        for label in DOCUMENT_ORDER
+    }
 
     for raw in api_documents or []:
         name = raw.get("name") or raw.get("document_type") or raw.get("type") or ""
@@ -40,25 +43,17 @@ def merge_profile_documents(api_documents: list | None) -> list:
             normalized_name = "Vehicle Papers"
 
         detail = raw.get("detail") or raw.get("expires_at") or raw.get("expiry_date")
-        if not detail and raw.get("status") == "pending":
-            detail = "Awaiting upload"
+        if not detail and raw.get("uploaded_at"):
+            detail = "Uploaded"
+        if not detail:
+            detail = "—"
 
         merged[_doc_key(normalized_name)] = _normalize_doc(
             {
                 "name": normalized_name,
-                "detail": detail or "—",
-                "status": raw.get("status") or "pending",
+                "detail": detail,
+                "status": raw.get("status") or raw.get("verification_status") or "pending",
             }
         )
 
-    ordered = []
-    seen = set()
-    for label in DOCUMENT_ORDER:
-        key = _doc_key(label)
-        if key in merged:
-            ordered.append(merged[key])
-            seen.add(key)
-    for key, doc in merged.items():
-        if key not in seen:
-            ordered.append(doc)
-    return ordered
+    return [merged[_doc_key(label)] for label in DOCUMENT_ORDER if _doc_key(label) in merged]

@@ -488,8 +488,30 @@ def ride_to_active_trip(ride: dict) -> dict:
 
 
 def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
-    tracking = dict(LIVE_TRACKING)
-    finding = dict(TRACKING_FINDING)
+    tracking = {
+        "status_label": "No active trip",
+        "pickup": "",
+        "destination": "",
+        "booking_id": "",
+        "tier": "—",
+        "fare_estimate": "—",
+        "step": 1,
+        "driver": {
+            "initials": "—",
+            "name": "—",
+            "rating": "—",
+            "trips": "—",
+            "plate": "—",
+            "vehicle": "—",
+            "status": "—",
+        },
+    }
+    finding = {
+        "pickup": "",
+        "destination": "",
+        "fare_estimate": "—",
+        "match_delay_ms": 0,
+    }
     if not ride:
         return tracking, finding
 

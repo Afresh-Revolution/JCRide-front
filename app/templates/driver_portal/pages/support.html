@@ -72,8 +72,15 @@
       <article class="driver-support-card">
         <h2 class="driver-support-card__title">Frequently asked</h2>
         <ul class="driver-support-faq">
-          {% for question in support_faq %}
-            <li><button type="button" class="driver-support-faq__item">{{ question }}</button></li>
+          {% for item in support_faq %}
+            <li>
+              <details class="driver-support-faq__details">
+                <summary class="driver-support-faq__item">{{ item.question }}</summary>
+                {% if item.answer %}<p class="driver-support-faq__answer">{{ item.answer }}</p>{% endif %}
+              </details>
+            </li>
+          {% else %}
+            <li><p class="driver-support-faq__empty">No FAQ items loaded.</p></li>
           {% endfor %}
         </ul>
       </article>

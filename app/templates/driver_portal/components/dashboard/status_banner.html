@@ -9,8 +9,10 @@
         YOU ARE <strong>{% if online %}Online{% else %}Offline{% endif %}</strong>
         {% if online %}· accepting rides{% endif %}
       </div>
-      {% if online %}
+      {% if online and zone and surge %}
         <div class="status-banner__sub">{{ zone }} · surge {{ surge }}</div>
+      {% elif online %}
+        <div class="status-banner__sub">Accepting ride requests</div>
       {% endif %}
     </div>
   </div>

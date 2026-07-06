@@ -33,6 +33,8 @@
 
 {% block scripts %}
 {% block page_scripts %}{% endblock %}
+<script src="{{ url_for('static', filename='js/driver-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pwa-register.js') }}"></script>
 <script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
 <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
 {% endblock %}
