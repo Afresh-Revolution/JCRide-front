@@ -176,6 +176,86 @@ def complete_driver_ride(token, ride_id):
         "POST",
         f"{API_PREFIX}/drivers/rides/{ride_id}/complete",
         token=token,
+        json={},
+    )
+
+
+def get_driver_nearby_demand(token):
+    return _request("GET", f"{API_PREFIX}/drivers/demand/nearby", token=token)
+
+
+def get_driver_performance(token):
+    return _request("GET", f"{API_PREFIX}/drivers/performance", token=token)
+
+
+def get_driver_payout_account(token):
+    return _request("GET", f"{API_PREFIX}/drivers/payout-account", token=token)
+
+
+def upsert_driver_payout_account(token, payload):
+    return _request(
+        "PUT",
+        f"{API_PREFIX}/drivers/payout-account",
+        token=token,
+        json=payload,
+    )
+
+
+def get_driver_active_trip_navigation(token):
+    return _request("GET", f"{API_PREFIX}/drivers/rides/active/navigation", token=token)
+
+
+def get_driver_delivery_requests(token):
+    return _request("GET", f"{API_PREFIX}/drivers/deliveries/requests", token=token)
+
+
+def get_driver_active_delivery(token):
+    return _request("GET", f"{API_PREFIX}/drivers/deliveries/active", token=token)
+
+
+def accept_driver_delivery(token, delivery_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/deliveries/{delivery_id}/accept",
+        token=token,
+    )
+
+
+def reject_driver_delivery(token, delivery_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/deliveries/{delivery_id}/reject",
+        token=token,
+    )
+
+
+def start_driver_delivery(token, delivery_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/deliveries/{delivery_id}/start",
+        token=token,
+    )
+
+
+def complete_driver_delivery(token, delivery_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/deliveries/{delivery_id}/complete",
+        token=token,
+        json={},
+    )
+
+
+def get_customer_profile_extras(token):
+    return _request("GET", f"{API_PREFIX}/customers/profile-extras", token=token)
+
+
+def update_customer_profile_extras(token, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/customers/profile-extras",
+        token=token,
+        json=payload,
     )
 
 
@@ -234,14 +314,14 @@ def driver_settings_deactivate_request(token):
 
 
 def submit_driver_support_ticket(token, category, description, trip_id=None):
-    payload = {"category": category, "description": description}
-    if trip_id:
-        payload["trip_id"] = trip_id
-    return _request(
-        "POST",
-        f"{API_PREFIX}/drivers/support/tickets",
-        token=token,
-        json=payload,
+    return create_support_ticket(
+        token,
+        {
+            "category": category,
+            "subject": category,
+            "description": description,
+            "ride_id": trip_id or None,
+        },
     )
 
 

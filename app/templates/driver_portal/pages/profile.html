@@ -72,6 +72,23 @@
             </li>
           {% endfor %}
         </ul>
+        <form method="post" action="{{ url_for('driver_portal.upload_profile_document') }}" enctype="multipart/form-data" class="driver-profile-upload">
+          <label>
+            <span>Upload document</span>
+            <select name="document_type" required>
+              <option value="license">Driver License</option>
+              <option value="vehicle_papers">Vehicle Papers</option>
+              <option value="nin">NIN</option>
+              <option value="insurance">Insurance</option>
+              <option value="profile_photo">Profile Photo</option>
+            </select>
+          </label>
+          <label>
+            <span>File</span>
+            <input type="file" name="file" accept="image/*,.pdf" required>
+          </label>
+          <button type="submit" class="driver-btn driver-btn--primary">Upload</button>
+        </form>
       </article>
     </div>
   </div>

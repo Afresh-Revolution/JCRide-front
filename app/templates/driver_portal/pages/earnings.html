@@ -29,6 +29,20 @@
   </div>
 
   {% include "components/earnings/withdraw_banner.html" %}
+
+  {% if transactions %}
+  <article class="earnings-transactions panel">
+    <h2 class="panel__title">Recent transactions</h2>
+    <ul class="earnings-transactions__list">
+      {% for tx in transactions %}
+        <li class="earnings-transactions__item">
+          <span>{{ tx.label }}</span>
+          <span>₦{{ '{:,.0f}'.format(tx.amount or 0) }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </article>
+  {% endif %}
 </section>
 
 <script type="application/json" id="earnings-chart-data">{{ chart_data | tojson }}</script>
