@@ -2162,6 +2162,10 @@ html {
     color: var(--dash-muted);
   }
 
+  body.driver-portal .active-trip-maneuver__eta {
+    color: #4ade80;
+  }
+
   body.driver-portal .active-trip-status {
     color: #4ade80;
   }

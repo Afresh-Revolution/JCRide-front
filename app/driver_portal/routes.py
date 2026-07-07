@@ -420,7 +420,11 @@ def api_active_trip_map():
                 "speed_kmh": trip.get("speed_kmh"),
                 **trip_action_flags(trip),
             },
-            "map": trip_map_payload(trip),
+            "map": {
+                **trip_map_payload(trip),
+                "status": trip.get("status"),
+                "picked_up": trip.get("picked_up"),
+            },
         }
     )
 
