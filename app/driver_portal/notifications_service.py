@@ -26,6 +26,13 @@ def resolve_notifications_inbox(token: str | None) -> tuple[list[dict], bool]:
         return [], False
 
 
+def resolve_notifications_unread_count(token: str | None) -> int:
+    items, ok = resolve_notifications_inbox(token)
+    if not ok:
+        return 0
+    return sum(1 for item in items if item.get("unread"))
+
+
 def resolve_notification_settings(token: str | None) -> tuple[list[dict], list[dict], bool]:
     if not token:
         return [], [], False

@@ -2509,53 +2509,202 @@ body.driver-trip-chat-open {
   position: relative;
 }
 
-.earnings-withdraw-banner {
+.earnings-withdraw-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1.25rem 1.5rem;
+  flex-direction: column;
   border-radius: var(--dash-radius, 16px);
+  border: 1px solid var(--dash-border, #e5e7eb);
+  background: var(--dash-card, #fff);
+  box-shadow: var(--dash-shadow, 0 1px 2px rgba(16, 24, 40, 0.04));
+  overflow: hidden;
+}
+
+.earnings-withdraw-card__hero {
+  padding: 1.25rem 1.5rem;
   background: linear-gradient(135deg, #0a4f2a 0%, #0d6b38 100%);
   color: #fff;
 }
 
-.earnings-withdraw-banner__label {
+.earnings-withdraw-card__eyebrow {
   margin: 0 0 0.35rem;
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  opacity: 0.85;
-}
-
-.earnings-withdraw-banner__amount {
-  margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.earnings-withdraw-banner__bank {
-  margin: 0.35rem 0 0;
-  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   opacity: 0.88;
 }
 
-.earnings-withdraw-banner__btn {
+.earnings-withdraw-card__amount {
+  margin: 0;
+  font-size: clamp(1.625rem, 3vw, 2.125rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.earnings-withdraw-card__meta {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  opacity: 0.9;
+}
+
+.earnings-withdraw-form {
+  padding: 1.25rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.earnings-withdraw-form__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.125rem;
+}
+
+.earnings-withdraw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.earnings-withdraw-field--full {
+  grid-column: 1 / -1;
+}
+
+.earnings-withdraw-field__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--dash-muted, #64748b);
+}
+
+.earnings-withdraw-field__input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--dash-border, #d1d5db);
+  border-radius: 12px;
+  background: var(--dash-input-bg, #f8fafc);
+  color: var(--dash-text, #0f172a);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.earnings-withdraw-field__input::placeholder {
+  color: var(--dash-muted, #94a3b8);
+  opacity: 0.85;
+}
+
+.earnings-withdraw-field__input:hover {
+  border-color: #9ca3af;
+}
+
+.earnings-withdraw-field__input:focus {
+  outline: none;
+  border-color: #0a4f2a;
+  box-shadow: 0 0 0 3px rgba(10, 79, 42, 0.15);
+  background: var(--dash-card, #fff);
+}
+
+.earnings-withdraw-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid var(--dash-border, #e5e7eb);
+}
+
+.earnings-withdraw-form__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   border: none;
   border-radius: 999px;
-  padding: 0.85rem 1.5rem;
-  background: #4ade80;
-  color: #052e16;
+  padding: 0.85rem 1.75rem;
+  min-width: 11rem;
+  background: #0a4f2a;
+  color: #fff;
   font-size: 0.9375rem;
   font-weight: 700;
   cursor: pointer;
-  white-space: nowrap;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
-.earnings-withdraw-banner__btn:hover {
-  background: #86efac;
+.earnings-withdraw-form__submit svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+.earnings-withdraw-form__submit:hover {
+  background: #0d6b38;
+}
+
+.earnings-withdraw-form__submit:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 768px) {
+  .earnings-withdraw-form__fields {
+    grid-template-columns: 1fr;
+  }
+
+  .earnings-withdraw-field--full {
+    grid-column: auto;
+  }
+
+  .earnings-withdraw-form__actions {
+    justify-content: stretch;
+  }
+
+  .earnings-withdraw-form__submit {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .earnings-withdraw-card__hero {
+    background: linear-gradient(135deg, #0a4f2a 0%, #0f5132 55%, #14532d 100%);
+  }
+
+  .earnings-withdraw-field__input {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+
+  .earnings-withdraw-field__input:focus {
+    border-color: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+    background: #0f172a;
+  }
+
+  .earnings-withdraw-form__actions {
+    border-top-color: #334155;
+  }
+}
+
+html[data-user-theme="dark"] .earnings-withdraw-card__hero {
+  background: linear-gradient(135deg, #0a4f2a 0%, #0f5132 55%, #14532d 100%);
+}
+
+html[data-user-theme="dark"] .earnings-withdraw-field__input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+html[data-user-theme="dark"] .earnings-withdraw-field__input:focus {
+  border-color: #4ade80;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+  background: #0f172a;
+}
+
+html[data-user-theme="dark"] .earnings-withdraw-form__actions {
+  border-top-color: #334155;
 }
 
 /* ── Notifications page ───────────────────────────────────── */
@@ -2834,16 +2983,6 @@ body.driver-trip-chat-open {
 @media (max-width: 768px) {
   .earnings-summary-grid {
     grid-template-columns: 1fr;
-  }
-
-  .earnings-withdraw-banner {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .earnings-withdraw-banner__btn {
-    width: 100%;
-    text-align: center;
   }
 
   .notifications-settings {
@@ -3132,6 +3271,173 @@ body.driver-trip-chat-open {
   color: var(--dash-text, #111827);
 }
 
+.driver-profile-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.driver-profile-card__header .driver-profile-card__title {
+  margin: 0;
+}
+
+.driver-profile-vehicle-edit {
+  flex-shrink: 0;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+}
+
+.driver-profile-vehicle-lock {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  white-space: nowrap;
+}
+
+.driver-profile-vehicle-banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #92400e;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.driver-vehicle-modal {
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  padding: 0;
+  border: none;
+  border-radius: 1rem;
+  background: var(--dash-card, #fff);
+  color: var(--dash-text, #111827);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+}
+
+.driver-vehicle-modal::backdrop {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.driver-vehicle-modal__form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 2rem);
+}
+
+.driver-vehicle-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--dash-border, #e5e7eb);
+}
+
+.driver-vehicle-modal__header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.125rem;
+}
+
+.driver-vehicle-modal__sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--dash-muted, #6b7280);
+  line-height: 1.45;
+}
+
+.driver-vehicle-modal__close {
+  border: none;
+  background: transparent;
+  color: var(--dash-muted, #6b7280);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.driver-vehicle-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  padding: 1rem 1.25rem 0;
+}
+
+.driver-vehicle-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dash-muted, #6b7280);
+}
+
+.driver-vehicle-field input,
+.driver-vehicle-field select {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 1px solid var(--dash-border, #e5e7eb);
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  font: inherit;
+  color: var(--dash-text, #111827);
+  background: var(--dash-card, #fff);
+}
+
+.driver-vehicle-modal__photos {
+  padding: 1rem 1.25rem;
+}
+
+.driver-vehicle-modal__photos h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
+}
+
+.driver-vehicle-modal__photos > p {
+  margin: 0 0 0.85rem;
+  font-size: 0.8125rem;
+  color: var(--dash-muted, #6b7280);
+}
+
+.driver-vehicle-photo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--dash-text, #111827);
+}
+
+.driver-vehicle-photo input[type="file"] {
+  font-size: 0.8125rem;
+}
+
+.driver-vehicle-photo__name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--dash-muted, #6b7280);
+}
+
+.driver-vehicle-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0.85rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--dash-border, #e5e7eb);
+}
+
+.earnings-withdraw-card__meta--locked {
+  color: #b45309;
+}
+
 .driver-profile-docs {
   list-style: none;
   margin: 0;
@@ -3181,6 +3487,222 @@ body.driver-trip-chat-open {
 .driver-profile-doc__status--pending {
   background: #fef3c7;
   color: #92400e;
+}
+
+.driver-profile-upload {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--dash-border, #e5e7eb);
+}
+
+.driver-profile-upload__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--dash-text, #111827);
+}
+
+.driver-profile-upload__hint {
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--dash-muted, #6b7280);
+}
+
+.driver-profile-upload__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.driver-profile-upload__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.driver-profile-upload__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--dash-muted, #64748b);
+}
+
+.driver-profile-upload__select {
+  width: 100%;
+  padding: 0.75rem 2.25rem 0.75rem 1rem;
+  border: 1px solid var(--dash-border, #d1d5db);
+  border-radius: 12px;
+  background: var(--dash-input-bg, #f8fafc);
+  color: var(--dash-text, #0f172a);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.driver-profile-upload__select:focus {
+  outline: none;
+  border-color: #0a4f2a;
+  box-shadow: 0 0 0 3px rgba(10, 79, 42, 0.15);
+}
+
+.driver-profile-upload__dropzone {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border: 1px dashed var(--dash-border, #cbd5e1);
+  border-radius: 14px;
+  background: var(--dash-bg, #f8fafc);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.driver-profile-upload__dropzone.is-selected {
+  border-style: solid;
+  border-color: #86efac;
+  background: #ecfdf5;
+}
+
+.driver-profile-upload__dropzone-icon {
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--dash-card, #fff);
+  border: 1px solid var(--dash-border, #e5e7eb);
+  color: #0a4f2a;
+  flex-shrink: 0;
+}
+
+.driver-profile-upload__dropzone-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.driver-profile-upload__dropzone-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.driver-profile-upload__dropzone-copy strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--dash-text, #111827);
+}
+
+.driver-profile-upload__dropzone-copy > span:not(.driver-profile-upload__filename) {
+  font-size: 0.78rem;
+  color: var(--dash-muted, #6b7280);
+}
+
+.driver-profile-upload__filename {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #0a4f2a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.driver-profile-upload__browse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--dash-border, #d1d5db);
+  background: var(--dash-card, #fff);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--dash-text, #111827);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.driver-profile-upload__browse:hover {
+  border-color: #34d399;
+}
+
+.driver-profile-upload__submit {
+  align-self: flex-start;
+  min-width: 11rem;
+}
+
+@media (max-width: 640px) {
+  .driver-profile-upload__dropzone {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .driver-profile-upload__dropzone-icon {
+    margin: 0 auto;
+  }
+
+  .driver-profile-upload__browse,
+  .driver-profile-upload__submit {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .driver-profile-upload__select,
+  .driver-profile-upload__browse {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+
+  .driver-profile-upload__select:focus {
+    border-color: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18);
+  }
+
+  .driver-profile-upload__dropzone {
+    background: #0f172a;
+    border-color: #475569;
+  }
+
+  .driver-profile-upload__dropzone.is-selected {
+    background: rgba(10, 79, 42, 0.2);
+    border-color: #4ade80;
+  }
+
+  .driver-profile-upload__dropzone-icon {
+    background: #1e293b;
+    border-color: #334155;
+    color: #4ade80;
+  }
+
+  .driver-profile-upload__filename {
+    color: #86efac;
+  }
+}
+
+html[data-user-theme="dark"] .driver-profile-upload__select,
+html[data-user-theme="dark"] .driver-profile-upload__browse {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+html[data-user-theme="dark"] .driver-profile-upload__dropzone {
+  background: #0f172a;
+  border-color: #475569;
+}
+
+html[data-user-theme="dark"] .driver-profile-upload__dropzone.is-selected {
+  background: rgba(10, 79, 42, 0.2);
+  border-color: #4ade80;
 }
 
 /* ── Settings page ─────────────────────────────────────────── */

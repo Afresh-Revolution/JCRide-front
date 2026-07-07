@@ -802,6 +802,64 @@ def api_delete_driver(driver_id):
         return jsonify({"message": exc.message}), exc.status_code
 
 
+@admin_bp.route("/api/vehicle-changes")
+@admin_required
+def api_vehicle_changes():
+    try:
+        from app.services.api_client import get_admin_vehicle_changes
+
+        return jsonify(
+            get_admin_vehicle_changes(
+                _admin_token(),
+                status=request.args.get("status", "pending"),
+                page=int(request.args.get("page", 1)),
+                limit=int(request.args.get("limit", 20)),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/vehicle-changes/<request_id>")
+@admin_required
+def api_vehicle_change_detail(request_id):
+    try:
+        from app.services.api_client import get_admin_vehicle_change
+
+        return jsonify(get_admin_vehicle_change(_admin_token(), request_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/vehicle-changes/<request_id>/approve", methods=["POST"])
+@admin_required
+def api_approve_vehicle_change(request_id):
+    try:
+        from app.services.api_client import approve_admin_vehicle_change
+
+        return jsonify(approve_admin_vehicle_change(_admin_token(), request_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/vehicle-changes/<request_id>/reject", methods=["POST"])
+@admin_required
+def api_reject_vehicle_change(request_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        from app.services.api_client import reject_admin_vehicle_change
+
+        return jsonify(
+            reject_admin_vehicle_change(
+                _admin_token(),
+                request_id,
+                reason=payload.get("reason"),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
 @admin_bp.route("/api/bike-delivery/stats")
 @admin_required
 def api_bike_delivery_stats():

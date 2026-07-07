@@ -19,9 +19,13 @@ def empty_profile() -> dict:
         "on_time": "-",
         "vehicle": {
             "make_model": "-",
+            "make": "",
+            "model": "",
             "color": "-",
             "plate": "-",
             "category": "-",
+            "vehicle_category": "car",
+            "service_tier": "economy",
         },
         "documents": merge_profile_documents([]),
     }
