@@ -17,11 +17,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body class="user-body" data-auto-geolocate="true">
+<body class="user-body" data-auto-geolocate="{% block auto_geolocate %}false{% endblock %}">
   {{ pwa_body_start() }}
   {% block body %}{% endblock %}
   {% block scripts %}
-  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}" defer></script>
   {{ pwa_scripts() }}
   {% endblock %}
 </body>

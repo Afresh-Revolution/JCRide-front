@@ -46,6 +46,7 @@ from app.services.api_client import (
     delete_trusted_contact,
     forgot_password,
     get_customer_dashboard,
+    get_customer_dashboard_summary,
     get_customer_profile_extras,
     get_nearby_drivers,
     get_referral_info,
@@ -1224,35 +1225,10 @@ def user_dashboard():
     if guard:
         return guard
 
-    wallet, wallet_ok = _safe_rider_api(get_wallet)
-    policy_data, policy_ok = _safe_rider_api(get_account_policy)
-    rides, rides_ok = _rider_rides_export()
-    dashboard_data, dashboard_ok = _safe_rider_api(get_customer_dashboard)
-    referral_data, referral_ok = _safe_rider_api(get_referral_info)
-    if wallet_ok:
-        _sync_rider_wallet_session(wallet)
-
-    profile, profile_ok = _safe_rider_api(get_profile)
-    if profile_ok:
-        mapped = profile_from_api(profile)
-        session["name"] = mapped["full_name"]
-        session["rider_badge"] = mapped.get("badge") or "Rider"
-
     has_gps = session.get("rider_lat") is not None and session.get("rider_lng") is not None
     display_location = session.get("rider_location") if has_gps else "Detecting location…"
-
-    if dashboard_ok and dashboard_data:
-        stats = dashboard_stats_from_api(dashboard_data)
-    else:
-        stats = build_dashboard_stats(wallet if wallet_ok else None, rides if rides_ok else [])
-
+    stats = build_dashboard_stats(None, [])
     stats["location"] = {"value": display_location}
-
-    recent_trips = (
-        [ride_to_recent_trip(item) for item in rides[:3]]
-        if rides_ok and rides
-        else []
-    )
     live_area = live_area_from_location(display_location)
     map_config = live_area_map_for_location(display_location)
     map_config["location_label"] = display_location
@@ -1265,16 +1241,13 @@ def user_dashboard():
         stats=stats,
         live_area=live_area,
         live_area_map=map_config,
-        recent_trips=recent_trips,
-        referral=referral_data if referral_ok else None,
-        account_policy=policy_data if policy_ok else {},
+        recent_trips=[],
+        referral=None,
+        account_policy={},
         api_connected={
-            "wallet": wallet_ok,
-            "rides": rides_ok,
-            "profile": profile_ok,
-            "dashboard": dashboard_ok,
+            "dashboard": False,
             "live_drivers": True,
-            "referral": referral_ok,
+            "referral": False,
         },
         **rider_ctx,
     )
@@ -2296,6 +2269,33 @@ def user_api_referral():
         return guard
     try:
         return jsonify(get_referral_info(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/dashboard-summary")
+def user_api_dashboard_summary():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        summary = get_customer_dashboard_summary(_rider_token())
+        stats = dashboard_stats_from_api((summary or {}).get("stats"))
+        location_label = session.get("rider_location")
+        if location_label:
+            stats["location"] = {"value": location_label}
+        account_policy = (summary or {}).get("account_policy") or {}
+        referral = (summary or {}).get("referral")
+        recent_rides = (summary or {}).get("recent_rides") or []
+        recent_trips = [ride_to_recent_trip(item) for item in recent_rides[:3]]
+        return jsonify(
+            {
+                "stats": stats,
+                "account_policy": account_policy,
+                "referral": referral,
+                "recent_trips": recent_trips,
+            }
+        )
     except ApiError as exc:
         return _user_api_error(exc)
 

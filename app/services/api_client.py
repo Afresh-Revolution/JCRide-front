@@ -1344,6 +1344,10 @@ def get_customer_dashboard(token):
     return _request("GET", f"{API_PREFIX}/customers/dashboard", token=token)
 
 
+def get_customer_dashboard_summary(token):
+    return _request("GET", f"{API_PREFIX}/customers/dashboard-summary", token=token)
+
+
 def list_customer_rides(token, page=1, limit=50, search=None, booking_id=None, status=None):
     params = {"page": page, "limit": limit}
     if search:
