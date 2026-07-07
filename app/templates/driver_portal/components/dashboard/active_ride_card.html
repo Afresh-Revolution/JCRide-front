@@ -1,0 +1,22 @@
+{# Active ride summary on dashboard when driver has an accepted trip #}
+{% if active_ride_id %}
+<article class="panel driver-active-ride-card">
+  <div class="panel__header">
+    <div>
+      <h3 class="panel__title">Active trip</h3>
+      <p class="panel__subtitle">{{ active_ride_status|replace('_', ' ')|title }}</p>
+    </div>
+    <a href="{{ url_for('driver_portal.active_trip') }}" class="driver-btn driver-btn--primary driver-btn--sm">Open trip</a>
+  </div>
+  <div class="driver-active-ride-card__route">
+    <div>
+      <span class="driver-active-ride-card__label">Pickup</span>
+      <strong>{{ active_pickup_address or 'Pickup location' }}</strong>
+    </div>
+    <div>
+      <span class="driver-active-ride-card__label">Destination</span>
+      <strong>{{ active_destination_address or 'Destination' }}</strong>
+    </div>
+  </div>
+</article>
+{% endif %}

@@ -21,7 +21,15 @@ from app.driver_portal.settings_service import (
     settings_to_session_payload,
     settings_toggle_to_api,
 )
-from app.driver_portal.trip_service import api_ride_to_active_trip, resolve_active_trip, trip_map_payload
+from app.driver_portal.trip_service import (
+    api_ride_to_active_trip,
+    resolve_active_trip,
+    trip_action_flags,
+    trip_can_complete,
+    trip_can_arrive,
+    trip_can_pick_up,
+    trip_map_payload,
+)
 from app.services.api_client import (
     ApiError,
     accept_driver_ride,
@@ -36,6 +44,7 @@ from app.services.api_client import (
     get_driver_active_ride,
     get_driver_payout_account,
     get_driver_ride_requests,
+    get_ride_messages,
     list_support_tickets,
     login,
     mark_all_notifications_read,
@@ -43,6 +52,7 @@ from app.services.api_client import (
     register,
     register_device,
     reject_driver_ride,
+    send_ride_message,
     set_availability,
     start_ride,
     update_driver_profile,
@@ -268,6 +278,10 @@ def dashboard():
             api_connected=api_connected,
             service_tiers=SERVICE_TIERS,
             vehicle_categories=VEHICLE_CATEGORIES,
+            active_ride_id=dashboard_data.get("active_ride_id"),
+            active_ride_status=dashboard_data.get("active_ride_status"),
+            active_pickup_address=dashboard_data.get("active_pickup_address"),
+            active_destination_address=dashboard_data.get("active_destination_address"),
         ),
     )
 
@@ -404,10 +418,26 @@ def api_active_trip_map():
                 "earnings_live": trip.get("earnings_live"),
                 "trip_time": trip.get("trip_time"),
                 "speed_kmh": trip.get("speed_kmh"),
+                **trip_action_flags(trip),
             },
             "map": trip_map_payload(trip),
         }
     )
+
+
+@driver_portal_bp.route("/api/location", methods=["POST"])
+def driver_api_save_location():
+    guard = _require_driver_api()
+    if guard:
+        return guard
+
+    payload = request.get_json(silent=True) or {}
+    lat = payload.get("lat")
+    lng = payload.get("lng")
+    if lat is not None and lng is not None:
+        session["driver_lat"] = float(lat)
+        session["driver_lng"] = float(lng)
+    return jsonify({"ok": True, "lat": lat, "lng": lng})
 
 
 @driver_portal_bp.route("/active-trip/arrived", methods=["POST"])
@@ -420,6 +450,10 @@ def active_trip_arrived():
     if not trip:
         flash("No active trip.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
+
+    if not trip_can_arrive(trip):
+        flash("You have already marked arrival or the trip has moved on.", "error")
+        return redirect(url_for("driver_portal.active_trip"))
 
     token = _driver_token()
     if token:
@@ -443,6 +477,10 @@ def active_trip_start():
         flash("No active trip.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
 
+    if not trip_can_pick_up(trip):
+        flash("Mark arrival at pickup before starting the trip.", "error")
+        return redirect(url_for("driver_portal.active_trip"))
+
     token = _driver_token()
     if token:
         try:
@@ -465,10 +503,22 @@ def complete_trip():
         flash("No active trip to complete.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
 
+    if not trip_can_complete(trip):
+        flash("Complete trip becomes available when you reach the destination.", "error")
+        return redirect(url_for("driver_portal.active_trip"))
+
     token = _driver_token()
     if token:
         try:
-            complete_driver_ride(token, trip["id"])
+            metrics = {
+                "actual_distance_km": float(trip.get("distance_left_km") or trip.get("trip_distance_km") or 0),
+                "actual_duration_minutes": max(
+                    1,
+                    int(str(trip.get("trip_time") or "0").replace(" min", "") or 0),
+                ),
+                "waiting_minutes": 0,
+            }
+            complete_driver_ride(token, trip["id"], metrics=metrics)
         except ApiError as exc:
             flash(exc.message, "error")
             return redirect(url_for("driver_portal.active_trip"))
@@ -491,8 +541,9 @@ def cancel_trip():
 
     token = _driver_token()
     if token:
+        reason = (request.form.get("reason") or "").strip()
         try:
-            cancel_driver_ride(token, trip["id"])
+            cancel_driver_ride(token, trip["id"], reason=reason or None)
         except ApiError as exc:
             flash(exc.message, "error")
             return redirect(url_for("driver_portal.active_trip"))
@@ -1139,8 +1190,11 @@ def driver_api_complete_ride(ride_id):
     guard = _require_driver_api()
     if guard:
         return guard
+    payload = request.get_json(silent=True) or {}
     try:
-        return jsonify(complete_driver_ride(_driver_token(), ride_id))
+        return jsonify(
+            complete_driver_ride(_driver_token(), ride_id, metrics=payload or None)
+        )
     except ApiError as exc:
         return _driver_api_error(exc)
 
@@ -1150,8 +1204,32 @@ def driver_api_cancel_ride(ride_id):
     guard = _require_driver_api()
     if guard:
         return guard
+    payload = request.get_json(silent=True) or {}
     try:
-        return jsonify(cancel_driver_ride(_driver_token(), ride_id))
+        return jsonify(
+            cancel_driver_ride(
+                _driver_token(),
+                ride_id,
+                reason=(payload.get("reason") or "").strip() or None,
+            )
+        )
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/messages", methods=["GET", "POST"])
+def driver_api_ride_messages(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        if request.method == "POST":
+            payload = request.get_json(silent=True) or {}
+            message = (payload.get("message") or "").strip()
+            if not message:
+                return jsonify({"error": "message is required"}), 422
+            return jsonify(send_ride_message(_driver_token(), ride_id, message)), 201
+        return jsonify(get_ride_messages(_driver_token(), ride_id))
     except ApiError as exc:
         return _driver_api_error(exc)
 

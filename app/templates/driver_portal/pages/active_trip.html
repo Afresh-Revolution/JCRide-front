@@ -7,6 +7,14 @@
 
 {% block portal_content %}
 {% if trip %}
+<script type="application/json" id="driver-active-trip-config">{{ {
+  "rideId": trip.id,
+  "rideStatus": trip.status,
+  "pickup": trip.pickup,
+  "destination": trip.destination,
+  "token": driver_token,
+  "wsUrl": ws_url
+} | tojson }}</script>
 <section class="active-trip-page" aria-label="Active trip">
   <div class="active-trip-layout">
     <div class="active-trip-map-col">
@@ -23,12 +31,67 @@
       {% include "components/active_trip/trip_status_card.html" %}
       {% include "components/active_trip/live_metrics_card.html" %}
 
-      <form method="post" action="{{ url_for('driver_portal.complete_trip') }}" class="active-trip-complete-form">
-        <button type="submit" class="active-trip-complete-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
-          Complete trip
-        </button>
-      </form>
+      <article class="active-trip-card active-trip-card--route">
+        <div class="active-trip-route-row">
+          <span class="active-trip-route-row__label">Pickup</span>
+          <strong>{{ trip.pickup }}</strong>
+        </div>
+        <div class="active-trip-route-row">
+          <span class="active-trip-route-row__label">Destination</span>
+          <strong>{{ trip.destination }}</strong>
+        </div>
+      </article>
+
+      <article class="active-trip-card active-trip-card--chat" id="driver-trip-chat-panel" hidden>
+        <h2 class="active-trip-card__title">Chat with rider</h2>
+        <ul id="driver-trip-chat-list" class="ride-chat-list" aria-live="polite"></ul>
+        <form id="driver-trip-chat-form" class="ride-chat-compose">
+          <label class="sr-only" for="driver-trip-chat-input">Message rider</label>
+          <input type="text" id="driver-trip-chat-input" class="ride-chat-input" maxlength="500" placeholder="Message rider" autocomplete="off">
+          <button type="submit" class="driver-btn driver-btn--primary driver-btn--sm" id="driver-trip-chat-send">Send</button>
+        </form>
+      </article>
+
+      <div class="active-trip-actions">
+        {% if trip.can_arrive %}
+        <form method="post" action="{{ url_for('driver_portal.active_trip_arrived') }}" class="active-trip-arrive-form">
+          <button type="submit" class="active-trip-arrive-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-4.5 7-10a7 7 0 1 0-14 0c0 5.5 7 10 7 10z"/><circle cx="12" cy="11" r="2.5"/></svg>
+            Mark arrived
+          </button>
+        </form>
+        {% endif %}
+
+        {% if trip.can_pick_up %}
+        <form method="post" action="{{ url_for('driver_portal.active_trip_start') }}" class="active-trip-pickup-form">
+          <button type="submit" class="active-trip-pickup-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Picked up
+          </button>
+        </form>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('driver_portal.complete_trip') }}" class="active-trip-complete-form">
+          <button
+            type="submit"
+            class="active-trip-complete-btn"
+            {% if not trip.can_complete %}disabled aria-disabled="true"{% endif %}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+            Complete trip
+          </button>
+          <p class="active-trip-complete-hint" {% if trip.can_complete or not trip.picked_up %}hidden{% endif %}>
+            Available when you reach the destination
+          </p>
+        </form>
+
+        <form method="post" action="{{ url_for('driver_portal.cancel_trip') }}" class="active-trip-cancel-form" id="driver-trip-cancel-form">
+          <input type="hidden" name="reason" id="driver-trip-cancel-reason" value="">
+          <button type="button" class="driver-btn driver-btn--outline driver-btn--block active-trip-cancel-btn" id="driver-trip-cancel-btn">
+            Cancel trip
+          </button>
+        </form>
+      </div>
     </aside>
   </div>
 </section>
@@ -47,16 +110,8 @@
 {% block page_scripts %}
 {% if trip %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="{{ url_for('static', filename='js/driver-active-trip.js') }}"></script>
-<script>
-(function () {
-  var chatBtn = document.querySelector(".active-trip-comms__btn--chat");
-  if (!chatBtn) return;
-  chatBtn.addEventListener("click", function () {
-    var rider = chatBtn.getAttribute("data-chat-rider") || "rider";
-    window.alert("Opening chat with " + rider + " - in-app messaging coming soon.");
-  });
-})();
-</script>
+<script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/ride-chat.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/driver-active-trip.js') }}" defer></script>
 {% endif %}
 {% endblock %}

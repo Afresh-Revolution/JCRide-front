@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+import math
+
 from app.services.api_client import ApiError, get_driver_active_ride, get_driver_active_trip_navigation
+
+DESTINATION_RADIUS_KM = 0.15
+ARRIVAL_READY_STATUSES = frozenset({"accepted", "driver_assigned", "assigned"})
+PICKUP_READY_STATUSES = frozenset({"driver_arrived"})
+TRIP_STARTED_STATUSES = frozenset({"in_progress", "started", "on_trip"})
 
 
 def _fmt_ngn(amount) -> str:
@@ -16,6 +23,89 @@ def _fmt_ngn(amount) -> str:
 def _initials(name: str) -> str:
     parts = (name or "").split()
     return "".join(part[0] for part in parts[:2]).upper() or "R"
+
+
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    radius = 6371.0
+    p = math.pi / 180
+    a = (
+        0.5
+        - math.cos((lat2 - lat1) * p) / 2
+        + math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lng2 - lng1) * p)) / 2
+    )
+    return 2 * radius * math.asin(math.sqrt(a))
+
+
+def _vehicle_to_destination_km(trip: dict) -> float | None:
+    map_data = trip.get("map") or {}
+    vehicle = map_data.get("vehicle_position")
+    dest = map_data.get("end")
+    if not vehicle or not dest:
+        return None
+    try:
+        return _haversine_km(
+            float(vehicle["lat"]),
+            float(vehicle["lng"]),
+            float(dest["lat"]),
+            float(dest["lng"]),
+        )
+    except (TypeError, ValueError, KeyError):
+        return None
+
+
+def trip_is_picked_up(trip: dict) -> bool:
+    status = str(trip.get("status") or "").lower()
+    return status in TRIP_STARTED_STATUSES
+
+
+def trip_can_arrive(trip: dict) -> bool:
+    status = str(trip.get("status") or "").lower()
+    return status in ARRIVAL_READY_STATUSES
+
+
+def trip_can_pick_up(trip: dict) -> bool:
+    status = str(trip.get("status") or "").lower()
+    return status in PICKUP_READY_STATUSES
+
+
+def trip_at_destination(trip: dict) -> bool:
+    if trip.get("at_destination") is True:
+        return True
+    if not trip_is_picked_up(trip):
+        return False
+    geo_distance = _vehicle_to_destination_km(trip)
+    if geo_distance is not None:
+        return geo_distance <= DESTINATION_RADIUS_KM
+    try:
+        distance_left = float(trip.get("distance_left_km"))
+    except (TypeError, ValueError):
+        return False
+    return distance_left <= DESTINATION_RADIUS_KM
+
+
+def trip_can_complete(trip: dict) -> bool:
+    return trip_is_picked_up(trip) and trip_at_destination(trip)
+
+
+def enrich_trip_actions(trip: dict) -> dict:
+    trip["can_arrive"] = trip_can_arrive(trip)
+    trip["picked_up"] = trip_is_picked_up(trip)
+    trip["can_pick_up"] = trip_can_pick_up(trip)
+    trip["at_destination"] = trip_at_destination(trip)
+    trip["can_complete"] = trip_can_complete(trip)
+    return trip
+
+
+def trip_action_flags(trip: dict) -> dict:
+    return {
+        "status": trip.get("status"),
+        "can_arrive": trip.get("can_arrive"),
+        "picked_up": trip.get("picked_up"),
+        "can_pick_up": trip.get("can_pick_up"),
+        "at_destination": trip.get("at_destination"),
+        "can_complete": trip.get("can_complete"),
+        "distance_left_km": trip.get("distance_left_km"),
+    }
 
 
 def api_ride_to_active_trip(ride: dict) -> dict:
@@ -60,7 +150,7 @@ def api_ride_to_active_trip(ride: dict) -> dict:
     status = payload.get("status", "in_progress")
     status_label = str(status).replace("_", " ").upper()
 
-    return {
+    return enrich_trip_actions({
         "id": str(payload.get("id") or payload.get("ride_id") or ""),
         "status": status,
         "status_label": status_label,
@@ -85,7 +175,7 @@ def api_ride_to_active_trip(ride: dict) -> dict:
             "end": end,
             "vehicle_position": vehicle,
         },
-    }
+    })
 
 
 def trip_map_payload(trip: dict) -> dict:
@@ -126,8 +216,10 @@ def resolve_active_trip(token: str | None, session: dict | None = None) -> dict 
                         "lat": float(nav["driver_lat"]),
                         "lng": float(nav["driver_lng"]),
                     }
+                if nav.get("at_destination") is not None:
+                    trip["at_destination"] = bool(nav.get("at_destination"))
             if trip.get("id"):
-                return trip
+                return enrich_trip_actions(trip)
     except ApiError as exc:
         if exc.status_code not in (404, 204):
             return None

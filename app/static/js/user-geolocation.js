@@ -4,6 +4,63 @@
   var cached = null;
   var pending = null;
   var detecting = false;
+  var STORAGE_KEY = "jcrider_location";
+
+  function readStorage() {
+    try {
+      var raw = window.sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (data && data.lat != null && data.lng != null) return data;
+    } catch (err) {
+      return null;
+    }
+    return null;
+  }
+
+  function writeStorage(data) {
+    if (!data || data.lat == null || data.lng == null) return;
+    try {
+      window.sessionStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          label: data.label || "Current location",
+          lat: data.lat,
+          lng: data.lng,
+          accuracy: data.accuracy,
+          source: data.source || "gps",
+        })
+      );
+    } catch (err) {
+      /* ignore quota / private mode */
+    }
+  }
+
+  function readServerSeed() {
+    var el = document.getElementById("rider-stored-location");
+    if (!el) return null;
+    try {
+      var data = JSON.parse(el.textContent);
+      if (data && data.lat != null && data.lng != null) return data;
+    } catch (err) {
+      return null;
+    }
+    return null;
+  }
+
+  function hydrateStoredLocation() {
+    if (cached && cached.lat != null) return cached;
+    var stored = readStorage() || readServerSeed();
+    if (!stored) return null;
+    cached = {
+      label: stored.label || "Current location",
+      lat: stored.lat,
+      lng: stored.lng,
+      accuracy: stored.accuracy,
+      source: stored.source || "session",
+    };
+    return cached;
+  }
 
   function isSkippableName(name) {
     if (!name || typeof name !== "string") return true;
@@ -206,7 +263,9 @@
       lat: coords && coords.lat,
       lng: coords && coords.lng,
       accuracy: coords && coords.accuracy,
+      source: (coords && coords.source) || "gps",
     };
+    writeStorage(cached);
 
     var kpi = document.getElementById("rider-location-label");
     if (kpi) kpi.textContent = label;
@@ -240,6 +299,13 @@
 
   function detectAndApply(options) {
     var opts = options || {};
+    if (!opts.forceFresh) {
+      var stored = hydrateStoredLocation();
+      if (stored) {
+        applyLocationLabel(stored.label, stored);
+        return Promise.resolve(stored);
+      }
+    }
     if (!opts.forceFresh && cached && cached.lat != null) {
       return Promise.resolve(cached);
     }
@@ -291,18 +357,33 @@
     reverseGeocode: reverseGeocode,
     applyLocationLabel: applyLocationLabel,
     getCached: function () {
-      return cached;
+      return cached || hydrateStoredLocation();
     },
     onUpdate: function (fn) {
       global.RiderLocationListeners = global.RiderLocationListeners || [];
       global.RiderLocationListeners.push(fn);
-      if (cached) fn(cached);
+      var current = cached || hydrateStoredLocation();
+      if (current) fn(current);
+    },
+    clearStored: function () {
+      cached = null;
+      try {
+        window.sessionStorage.removeItem(STORAGE_KEY);
+      } catch (err) {
+        /* ignore */
+      }
     },
   };
+
+  hydrateStoredLocation();
 
   if (document.body && document.body.getAttribute("data-auto-geolocate") === "true") {
     var schedule = window.requestIdleCallback || function (fn) { return window.setTimeout(fn, 250); };
     schedule(function () {
+      if (cached && cached.lat != null) {
+        applyLocationLabel(cached.label, cached);
+        return;
+      }
       detectAndApply({ forceFresh: false, timeout: 12000 }).catch(function () {});
     });
   }

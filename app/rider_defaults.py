@@ -1,10 +1,10 @@
 """Fallback rider UI data when the API is unavailable or has no records."""
 
 RIDER_STATS = {
-    "wallet_balance": {"value": "₦42,580", "trend": "₦5,200 this week"},
-    "total_trips": {"value": "148", "trend": "12 this month"},
-    "total_spending": {"value": "₦284,300", "trend": "8% saved vs avg"},
-    "location": {"value": "Lekki, Lagos"},
+    "wallet_balance": {"value": "₦0", "trend": ""},
+    "total_trips": {"value": "0", "trend": ""},
+    "total_spending": {"value": "₦0", "trend": ""},
+    "location": {"value": "Detecting location…"},
 }
 
 LIVE_AREA = {

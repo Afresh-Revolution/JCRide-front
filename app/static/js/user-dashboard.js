@@ -64,16 +64,30 @@
     showError("");
   }
 
+  function applyTrend(el, trend) {
+    if (!el) return;
+    if (trend) {
+      el.textContent = "▲ " + trend;
+      el.hidden = false;
+    } else {
+      el.textContent = "";
+      el.hidden = true;
+    }
+  }
+
   function applyStats(stats) {
     if (!stats) return;
     text(document.getElementById("dashboard-wallet-value"), stats.wallet_balance && stats.wallet_balance.value);
-    text(document.getElementById("dashboard-wallet-trend"), "▲ " + ((stats.wallet_balance && stats.wallet_balance.trend) || ""));
+    applyTrend(document.getElementById("dashboard-wallet-trend"), stats.wallet_balance && stats.wallet_balance.trend);
     text(document.getElementById("dashboard-trips-value"), stats.total_trips && stats.total_trips.value);
-    text(document.getElementById("dashboard-trips-trend"), "▲ " + ((stats.total_trips && stats.total_trips.trend) || ""));
+    applyTrend(document.getElementById("dashboard-trips-trend"), stats.total_trips && stats.total_trips.trend);
     text(document.getElementById("dashboard-spending-value"), stats.total_spending && stats.total_spending.value);
-    text(document.getElementById("dashboard-spending-trend"), "▲ " + ((stats.total_spending && stats.total_spending.trend) || ""));
+    applyTrend(document.getElementById("dashboard-spending-trend"), stats.total_spending && stats.total_spending.trend);
     if (stats.location && stats.location.value && window.RiderGeolocation && !window.RiderGeolocation.getCached()) {
-      window.RiderGeolocation.applyLocationLabel(stats.location.value, null);
+      var sessionSeed = document.getElementById("rider-stored-location");
+      if (!sessionSeed) {
+        window.RiderGeolocation.applyLocationLabel(stats.location.value, null);
+      }
     }
   }
 

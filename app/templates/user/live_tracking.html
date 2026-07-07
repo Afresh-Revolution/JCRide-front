@@ -4,7 +4,7 @@
 
 {% block user_content %}
 <script type="application/json" id="tracking-api-config">{{ {
-  "rideId": ride_id,
+  "rideId": ride_id or session.get('active_trip', {}).get('ride_id'),
   "rideStatus": ride_status,
   "token": session.get("token"),
   "wsUrl": ws_url,
@@ -84,10 +84,12 @@
     </article>
 
     <article class="rider-panel tracking-details" id="tracking-chat-panel" hidden>
-      <h2 class="rider-panel__title">In-ride messages</h2>
-      <ul id="tracking-chat-list" class="tracking-chat-list"></ul>
-      <form id="tracking-chat-form">
-        <button type="submit" class="rider-btn rider-btn--outline-sm">Refresh messages</button>
+      <h2 class="rider-panel__title">In-ride chat</h2>
+      <ul id="tracking-chat-list" class="ride-chat-list" aria-live="polite"></ul>
+      <form id="tracking-chat-form" class="ride-chat-compose">
+        <label class="sr-only" for="tracking-chat-input">Message driver</label>
+        <input type="text" id="tracking-chat-input" class="ride-chat-input" maxlength="500" placeholder="Message your driver" autocomplete="off">
+        <button type="submit" class="rider-btn rider-btn--outline-sm" id="tracking-chat-send">Send</button>
       </form>
     </article>
 
@@ -162,6 +164,8 @@
 
 {% block page_scripts %}
 <script type="application/json" id="rider-route-map-data">{{ route_map | tojson }}</script>
-<script src="{{ url_for('static', filename='js/user-route-map.js') }}"></script>
-<script src="{{ url_for('static', filename='js/user-tracking.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/ride-chat.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/user-route-map.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/user-tracking.js') }}" defer></script>
 {% endblock %}

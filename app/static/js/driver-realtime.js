@@ -14,6 +14,7 @@
   if (!config.wsUrl || !config.token || typeof WebSocket === "undefined") return;
 
   var socket = null;
+  var reconnectTimer = null;
   var overlay = document.getElementById("driver-cancel-overlay");
   var reasonWrap = document.getElementById("driver-cancel-reason-wrap");
   var reasonEl = document.getElementById("driver-cancel-reason");
@@ -39,7 +40,7 @@
   function showCancelOverlay(payload) {
     if (!overlay) return;
     var booking = payload.booking_id || "this trip";
-    var reason = (payload.reason || "").trim();
+    var reason = (payload.reason || payload.cancellation_reason || "").trim();
     if (leadEl) {
       leadEl.textContent =
         payload.driver_message ||
@@ -78,39 +79,113 @@
     dismissBtn.addEventListener("click", hideCancelOverlay);
   }
 
+  function notifyNewRideRequest(payload) {
+    if (window.location.pathname.indexOf("/ride-requests") < 0) return;
+    var countEl = document.querySelector(".ride-requests-count");
+    if (countEl && payload && payload.booking_id) {
+      countEl.textContent = "New request: " + payload.booking_id;
+    }
+    if (typeof window.fetchRideRequests === "function") {
+      window.fetchRideRequests();
+    }
+  }
+
   function handleMessage(event) {
     try {
       var message = JSON.parse(event.data);
-      var type = message.type;
-      var payload = message.payload || {};
+      var type = message.type || message.event || "";
+      var payload = message.payload || message.data || {};
+
+      if (type === "connection.ready") {
+        if (config.activeTripId && socket && socket.readyState === 1) {
+          socket.send(
+            JSON.stringify(
+              window.RideRealtimeEvents
+                ? window.RideRealtimeEvents.subscribeMessage(config.activeTripId)
+                : { type: "ride.subscribe", payload: { ride_id: config.activeTripId } }
+            )
+          );
+        }
+        return;
+      }
 
       if (type === "ride.cancelled" && payload.actor_type === "customer") {
         showCancelOverlay(payload);
+        return;
       }
+
       if (type === "driver.availability.open") {
         setDriverOpenUi();
+        return;
+      }
+
+      if (type === "ride.request.new") {
+        notifyNewRideRequest(payload);
+        return;
+      }
+
+      if (type === "ride.request.closed") {
+        if (typeof window.fetchRideRequests === "function") {
+          window.fetchRideRequests();
+        }
+        return;
+      }
+
+      if (type === "chat.message.new" && window.__driverAppendChatMessage) {
+        window.__driverAppendChatMessage(payload);
+        return;
+      }
+
+      if (
+        type === "ride.started" ||
+        type === "ride.completed" ||
+        type === "ride.driver.arrived" ||
+        type === "ride.updated" ||
+        type === "ride.snapshot"
+      ) {
+        if (window.location.pathname.indexOf("/active-trip") >= 0) {
+          window.location.reload();
+        }
       }
     } catch (err) {
       /* ignore malformed messages */
     }
   }
 
-  try {
-    socket = new WebSocket(config.wsUrl + "?token=" + encodeURIComponent(config.token));
-  } catch (err) {
-    return;
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = window.setTimeout(function () {
+      reconnectTimer = null;
+      connect();
+    }, 3000);
   }
 
-  socket.addEventListener("open", function () {
-    if (config.activeTripId) {
-      socket.send(
-        JSON.stringify({
-          type: "ride.subscribe",
-          payload: { ride_id: config.activeTripId },
-        })
-      );
+  function connect() {
+    if (socket && (socket.readyState === 0 || socket.readyState === 1)) return;
+    try {
+      socket = new WebSocket(config.wsUrl + "?token=" + encodeURIComponent(config.token));
+    } catch (err) {
+      return;
     }
-  });
 
-  socket.addEventListener("message", handleMessage);
+    socket.addEventListener("open", function () {
+      if (config.activeTripId) {
+        socket.send(
+          JSON.stringify(
+            window.RideRealtimeEvents
+              ? window.RideRealtimeEvents.subscribeMessage(config.activeTripId)
+              : { type: "ride.subscribe", payload: { ride_id: config.activeTripId } }
+          )
+        );
+      }
+    });
+
+    socket.addEventListener("message", handleMessage);
+    socket.addEventListener("close", scheduleReconnect);
+    socket.addEventListener("error", function () {
+      if (socket) socket.close();
+    });
+  }
+
+  connect();
 })();

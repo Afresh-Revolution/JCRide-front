@@ -1,12 +1,15 @@
 {% extends "layouts/portal_layout.html" %}
 {% block page_title %}Dashboard{% endblock %}
 
+{% block auto_geolocate %}true{% endblock %}
+
 {% block page_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 {% endblock %}
 
 {% block portal_content %}
   {% include "components/dashboard/status_banner.html" %}
+  {% include "components/dashboard/active_ride_card.html" %}
   {% if not driver or not driver.get('service_tier') %}
     {% include "components/dashboard/vehicle_profile.html" %}
   {% endif %}

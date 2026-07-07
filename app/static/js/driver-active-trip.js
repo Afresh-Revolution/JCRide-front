@@ -187,6 +187,123 @@
     }
   }
 
+  function updateTripActions(trip) {
+    if (!trip) return;
+
+    var arriveForm = document.querySelector(".active-trip-arrive-form");
+    var pickupForm = document.querySelector(".active-trip-pickup-form");
+    var completeBtn = document.querySelector(".active-trip-complete-btn");
+    var hint = document.querySelector(".active-trip-complete-hint");
+    var cancelBtn = document.getElementById("driver-trip-cancel-btn");
+    var cancelForm = document.getElementById("driver-trip-cancel-form");
+
+    if (arriveForm) arriveForm.hidden = !trip.can_arrive;
+    if (pickupForm) pickupForm.hidden = !trip.can_pick_up;
+    if (completeBtn) {
+      completeBtn.disabled = !trip.can_complete;
+      completeBtn.setAttribute("aria-disabled", trip.can_complete ? "false" : "true");
+    }
+    if (hint) hint.hidden = !trip.picked_up || !!trip.can_complete;
+    if (cancelBtn && cancelForm) {
+      var cancellable = ["accepted", "driver_assigned", "driver_arrived"].indexOf(trip.status || "") >= 0;
+      cancelForm.hidden = !cancellable;
+    }
+  }
+
+  function readTripConfig() {
+    var el = document.getElementById("driver-active-trip-config");
+    if (!el) return {};
+    try {
+      return JSON.parse(el.textContent || "{}");
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function initChat(config) {
+    var rideId = config.rideId;
+    if (!rideId || !window.DriverApi) return;
+
+    var chatBtn = document.querySelector(".active-trip-comms__btn--chat");
+    var chatPanel = document.getElementById("driver-trip-chat-panel");
+    var chatList = document.getElementById("driver-trip-chat-list");
+    var chatForm = document.getElementById("driver-trip-chat-form");
+    var chatInput = document.getElementById("driver-trip-chat-input");
+    var chatSendBtn = document.getElementById("driver-trip-chat-send");
+
+    function loadMessages() {
+      if (!chatList) return;
+      DriverApi.request(DriverApi.base + "/rides/" + encodeURIComponent(rideId) + "/messages")
+        .then(function (data) {
+          if (window.RideChat) {
+            window.RideChat.renderMessages(chatList, (data && data.messages) || [], "driver");
+          }
+        })
+        .catch(function () {});
+    }
+
+    function appendMessage(msg) {
+      if (window.RideChat && chatList) {
+        window.RideChat.appendMessage(chatList, msg, "driver");
+      }
+    }
+
+    if (chatBtn && chatPanel) {
+      chatBtn.addEventListener("click", function () {
+        chatPanel.hidden = !chatPanel.hidden;
+        if (!chatPanel.hidden) loadMessages();
+      });
+    }
+
+    function sendMessage() {
+      var text = chatInput ? chatInput.value.trim() : "";
+      if (!text) return;
+      if (chatSendBtn) chatSendBtn.disabled = true;
+      DriverApi.post(DriverApi.base + "/rides/" + encodeURIComponent(rideId) + "/messages", {
+        message: text,
+      })
+        .then(function (msg) {
+          if (chatInput) chatInput.value = "";
+          appendMessage(msg);
+          if (chatPanel) chatPanel.hidden = false;
+        })
+        .catch(function (err) {
+          window.alert(err.message || "Could not send message.");
+        })
+        .finally(function () {
+          if (chatSendBtn) chatSendBtn.disabled = false;
+        });
+    }
+
+    if (chatForm) {
+      chatForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        sendMessage();
+      });
+    }
+
+    window.__driverAppendChatMessage = appendMessage;
+    loadMessages();
+  }
+
+  function initCancel(config) {
+    var cancelBtn = document.getElementById("driver-trip-cancel-btn");
+    var reasonInput = document.getElementById("driver-trip-cancel-reason");
+    var cancelForm = document.getElementById("driver-trip-cancel-form");
+    if (!cancelBtn || !cancelForm) return;
+
+    cancelBtn.addEventListener("click", function () {
+      if (["in_progress", "completed", "cancelled"].indexOf(config.rideStatus || "") >= 0) {
+        window.alert("You cannot cancel after the trip has started.");
+        return;
+      }
+      var reason = window.prompt("Why are you cancelling this trip?", "Vehicle issue");
+      if (reason === null) return;
+      if (reasonInput) reasonInput.value = reason.trim();
+      cancelForm.submit();
+    });
+  }
+
   function fetchLiveTrip() {
     return fetch("/driver-portal/api/active-trip-map", {
       headers: { Accept: "application/json" },
@@ -202,6 +319,7 @@
         }
         if (data.trip) {
           updateMetrics(data.trip);
+          updateTripActions(data.trip);
         }
       })
       .catch(function () {
@@ -220,8 +338,11 @@
 
   function init() {
     if (!mapEl) return;
+    var tripConfig = readTripConfig();
     initMap();
     startPolling();
+    initChat(tripConfig);
+    initCancel(tripConfig);
     window.addEventListener("resize", onResize);
   }
 

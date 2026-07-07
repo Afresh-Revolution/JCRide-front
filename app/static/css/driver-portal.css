@@ -1185,10 +1185,19 @@ body.driver-cancel-overlay-open {
 }
 
 .active-trip-complete-form {
+  margin-top: 0;
+}
+
+.active-trip-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   margin-top: auto;
 }
 
-.active-trip-complete-btn {
+.active-trip-pickup-btn,
+.active-trip-complete-btn,
+.active-trip-arrive-btn {
   width: 100%;
   display: inline-flex;
   align-items: center;
@@ -1197,25 +1206,193 @@ body.driver-cancel-overlay-open {
   padding: 0.95rem 1.25rem;
   border: none;
   border-radius: 999px;
-  background: #0d6b38;
-  color: #fff;
   font-size: 0.9375rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
 }
 
-.active-trip-complete-btn:hover {
+.active-trip-arrive-btn {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.active-trip-arrive-btn:hover {
+  background: #1e40af;
+}
+
+.active-trip-arrive-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.active-trip-pickup-btn {
+  background: #0d6b38;
+  color: #fff;
+}
+
+.active-trip-pickup-btn:hover {
   background: #0a5a2f;
 }
 
-.active-trip-complete-btn:active {
+.active-trip-pickup-btn:active {
   transform: scale(0.99);
+}
+
+.active-trip-pickup-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.active-trip-complete-btn {
+  background: #0d6b38;
+  color: #fff;
+}
+
+.active-trip-complete-btn:hover:not(:disabled) {
+  background: #0a5a2f;
+}
+
+.active-trip-complete-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.active-trip-complete-btn:disabled {
+  background: #9ca3af;
+  color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.9;
 }
 
 .active-trip-complete-btn svg {
   width: 1.125rem;
   height: 1.125rem;
+}
+
+.active-trip-complete-hint {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--dash-muted, #6b7280);
+}
+
+.active-trip-route-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--dash-border, #e5e7eb);
+}
+
+.active-trip-route-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.active-trip-route-row__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dash-muted, #6b7280);
+}
+
+.active-trip-cancel-btn {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.driver-active-ride-card {
+  margin-bottom: 1rem;
+}
+
+.driver-active-ride-card__route {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.driver-active-ride-card__route strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.driver-active-ride-card__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dash-muted, #6b7280);
+}
+
+.ride-chat-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ride-chat-empty {
+  margin: 0;
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--dash-muted, #6b7280);
+}
+
+.ride-chat-compose {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ride-chat-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--dash-border, #e5e7eb);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  background: var(--dash-input-bg, #fff);
+  color: var(--dash-text, #111827);
+}
+
+.ride-chat-item {
+  max-width: 88%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: var(--dash-bg, #f3f4f6);
+}
+
+.ride-chat-item--mine {
+  align-self: flex-end;
+  background: #e8f5ef;
+}
+
+.ride-chat-item--theirs {
+  align-self: flex-start;
+}
+
+.ride-chat-item__meta {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--dash-muted, #6b7280);
+  margin-bottom: 0.2rem;
+}
+
+.ride-chat-item__text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .active-trip-empty {
@@ -2619,6 +2796,15 @@ body.driver-cancel-overlay-open {
 
   .active-trip-comms__btn svg {
     color: #f9fafb;
+  }
+
+  .active-trip-complete-btn:disabled {
+    background: #4b5563;
+    color: #d1d5db;
+  }
+
+  .active-trip-complete-hint {
+    color: #9ca3af;
   }
 
   .driver-settings-account__btn {

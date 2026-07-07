@@ -45,11 +45,21 @@
     startRide: function (rideId) {
       return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/start");
     },
-    completeRide: function (rideId) {
-      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/complete");
+    completeRide: function (rideId, metrics) {
+      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/complete", metrics || {});
     },
-    cancelRide: function (rideId) {
-      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/cancel");
+    cancelRide: function (rideId, reason) {
+      var payload = {};
+      if (reason) payload.reason = reason;
+      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/cancel", payload);
+    },
+    sendMessage: function (rideId, message) {
+      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/messages", {
+        message: message,
+      });
+    },
+    getMessages: function (rideId) {
+      return apiRequest(base + "/rides/" + encodeURIComponent(rideId) + "/messages");
     },
     setAvailability: function (online, lat, lng) {
       var payload = { is_online: !!online };

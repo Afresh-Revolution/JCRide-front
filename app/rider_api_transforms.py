@@ -12,6 +12,7 @@ from app.rider_defaults import (
     NOTIFICATION_TOPICS,
     PROFILE_DEFAULTS,
     RIDER_STATS,
+    RIDE_TIERS,
     SETTINGS_DEFAULTS,
     TRACKING_FINDING,
     WALLET_SUMMARY,
@@ -149,16 +150,17 @@ def build_dashboard_stats(wallet: dict | None, rides: list[dict]) -> dict:
         spent = wallet.get("total_spent_on_rides") or 0
         stats["wallet_balance"] = {
             "value": format_ngn(balance),
-            "trend": f"{format_ngn(spent)} spent on rides",
+            "trend": "",
         }
         stats["total_spending"] = {
             "value": format_ngn(spent),
-            "trend": "From your wallet",
+            "trend": "",
         }
     completed = [r for r in rides if r.get("status") == "completed"]
+    trip_count = len(completed) or len(rides)
     stats["total_trips"] = {
-        "value": str(len(completed) or len(rides)),
-        "trend": f"{len(completed)} completed",
+        "value": str(trip_count),
+        "trend": f"{len(completed)} completed" if completed else "",
     }
     return stats
 
@@ -167,17 +169,18 @@ def dashboard_stats_from_api(stats: dict | None) -> dict:
     data = dict(RIDER_STATS)
     if not stats:
         return data
+    completed = int(stats.get("completed_trips") or stats.get("total_trips") or 0)
     data["wallet_balance"] = {
         "value": format_ngn(stats.get("wallet_balance_ngn", 0)),
-        "trend": stats.get("wallet_trend") or data["wallet_balance"]["trend"],
+        "trend": stats.get("wallet_trend") or "",
     }
     data["total_trips"] = {
-        "value": str(stats.get("completed_trips") or stats.get("total_trips") or 0),
-        "trend": stats.get("trips_trend") or data["total_trips"]["trend"],
+        "value": str(completed),
+        "trend": stats.get("trips_trend") or (f"{completed} completed" if completed else ""),
     }
     data["total_spending"] = {
         "value": format_ngn(stats.get("total_spending_ngn", 0)),
-        "trend": stats.get("spending_trend") or data["total_spending"]["trend"],
+        "trend": stats.get("spending_trend") or "",
     }
     if stats.get("location_label"):
         data["location"] = {"value": stats["location_label"]}
@@ -430,6 +433,18 @@ def estimate_to_booking_fields(estimate: dict, pickup: str, dropoff: str) -> dic
         "duration": f"{estimate.get('estimated_duration_minutes', 0)} min",
         "est_fare": format_ngn(estimate.get("estimated_fare_ngn")),
     }
+
+
+def default_ride_tiers() -> list[dict]:
+    tiers = []
+    for tier in RIDE_TIERS:
+        row = dict(tier)
+        row["fare"] = "-"
+        row["fare_num"] = 0
+        row["eta"] = "-"
+        row["description"] = ""
+        tiers.append(row)
+    return tiers
 
 
 def estimate_to_tiers(estimate: dict, selected_tier: str = "economy") -> list[dict]:
