@@ -4,25 +4,26 @@
 
 {% block page_scripts %}
 <script type="application/json" id="rider-area-map-data">{{ live_area_map | tojson }}</script>
-<script src="{{ url_for('static', filename='js/user-map.js') }}"></script>
-<script src="{{ url_for('static', filename='js/user-dashboard.js') }}"></script>
+<script src="{{ static_url('js/user-map.js') }}" defer></script>
+<script src="{{ static_url('js/user-dashboard.js') }}" defer></script>
 {% endblock %}
 
 {% block user_content %}
 {% set policy = account_policy or {} %}
+<section id="dashboard-policy-banner" hidden></section>
 {% if request.args.get('message') %}
-<section class="wallet-policy-banner wallet-policy-banner--warn">
+<section class="wallet-policy-banner wallet-policy-banner--warn" id="dashboard-policy-fallback">
   <p>{{ request.args.get('message') }}</p>
 </section>
 {% elif policy.get('status') == 'suspended' and policy.get('can_unlock') %}
-<section class="wallet-policy-banner wallet-policy-banner--danger">
+<section class="wallet-policy-banner wallet-policy-banner--danger" id="dashboard-policy-fallback">
   <div>
     <strong>Account suspended</strong>
     <p>Pay ₦{{ '{:,.0f}'.format(policy.get('unlock_fee_ngn') or 2000) }} from your <a href="{{ url_for('main.user_wallet') }}">wallet</a> to unlock your account.</p>
   </div>
 </section>
 {% elif policy.get('cancellation_fee_due_ngn') %}
-<section class="wallet-policy-banner wallet-policy-banner--warn">
+<section class="wallet-policy-banner wallet-policy-banner--warn" id="dashboard-policy-fallback">
   <div>
     <strong>Cancellation fee due</strong>
     <p>₦{{ '{:,.0f}'.format(policy.get('cancellation_fee_due_ngn') or 0) }} outstanding. <a href="{{ url_for('main.user_wallet') }}">Pay from wallet</a> within 24 hours.</p>
@@ -34,8 +35,8 @@
     <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Wallet Balance</span>
-      <span class="rider-kpi-card__value">{{ stats.wallet_balance.value }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up">▲ {{ stats.wallet_balance.trend }}</span>
+      <span class="rider-kpi-card__value" id="dashboard-wallet-value">{{ stats.wallet_balance.value }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-wallet-trend">▲ {{ stats.wallet_balance.trend }}</span>
     </div>
     <div class="rider-kpi-card__icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
@@ -46,8 +47,8 @@
     <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Total Trips</span>
-      <span class="rider-kpi-card__value">{{ stats.total_trips.value }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up">▲ {{ stats.total_trips.trend }}</span>
+      <span class="rider-kpi-card__value" id="dashboard-trips-value">{{ stats.total_trips.value }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-trips-trend">▲ {{ stats.total_trips.trend }}</span>
     </div>
     <div class="rider-kpi-card__icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -58,8 +59,8 @@
     <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Total Spending</span>
-      <span class="rider-kpi-card__value">{{ stats.total_spending.value }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up">▲ {{ stats.total_spending.trend }}</span>
+      <span class="rider-kpi-card__value" id="dashboard-spending-value">{{ stats.total_spending.value }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-spending-trend">▲ {{ stats.total_spending.trend }}</span>
     </div>
     <div class="rider-kpi-card__icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
@@ -189,7 +190,7 @@
           <th>Status</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="dashboard-recent-trips">
         {% for trip in recent_trips %}
         <tr>
           <td>
@@ -205,6 +206,11 @@
           </td>
         </tr>
         {% endfor %}
+        {% if not recent_trips %}
+        <tr id="dashboard-recent-trips-empty">
+          <td colspan="6">Loading recent trips…</td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>

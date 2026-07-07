@@ -155,7 +155,7 @@
     }
 
     if (window.RiderGeolocation) {
-      window.RiderGeolocation.detectAndApply({ forceFresh: true })
+      window.RiderGeolocation.detectAndApply({ forceFresh: false, timeout: 12000 })
         .then(function (result) {
           finish(
             { lat: result.lat, lng: result.lng },
@@ -296,6 +296,15 @@
 
   function init() {
     if (areaMapEl) {
+      if ("IntersectionObserver" in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          if (!entries[0] || !entries[0].isIntersecting) return;
+          observer.disconnect();
+          initAreaMap();
+        }, { rootMargin: "200px 0px" });
+        observer.observe(areaMapEl);
+        return;
+      }
       initAreaMap();
     }
   }

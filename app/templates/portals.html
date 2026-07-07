@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/portals.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/portals.css') }}">
+  <link rel="stylesheet" href="{{ static_url('css/theme.css') }}">
 </head>
 <body class="portal-page">
   {{ pwa_body_start() }}
@@ -151,7 +151,7 @@
       </footer>
     </div>
   </main>
-  <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
+  <script src="{{ static_url('js/flash-dismiss.js') }}" defer></script>
   {{ pwa_scripts() }}
 </body>
 </html>

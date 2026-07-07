@@ -301,6 +301,9 @@
   };
 
   if (document.body && document.body.getAttribute("data-auto-geolocate") === "true") {
-    detectAndApply({ forceFresh: true }).catch(function () {});
+    var schedule = window.requestIdleCallback || function (fn) { return window.setTimeout(fn, 250); };
+    schedule(function () {
+      detectAndApply({ forceFresh: false, timeout: 12000 }).catch(function () {});
+    });
   }
 })(window);

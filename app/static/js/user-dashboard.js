@@ -9,11 +9,27 @@
   var usesEl = document.getElementById("referral-uses-count");
   var errorEl = document.getElementById("referral-error");
   var titleEl = document.getElementById("referral-title");
+  var policyBannerEl = document.getElementById("dashboard-policy-banner");
+  var policyFallbackEl = document.getElementById("dashboard-policy-fallback");
+  var tripsBodyEl = document.getElementById("dashboard-recent-trips");
 
   var state = {
     inviteUrl: "",
     shareMessage: "",
   };
+
+  function text(el, value) {
+    if (el) el.textContent = value;
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
 
   function showError(message) {
     if (!errorEl) return;
@@ -46,6 +62,95 @@
     if (shareSection) shareSection.hidden = false;
     if (inviteBtn) inviteBtn.classList.add("is-hidden");
     showError("");
+  }
+
+  function applyStats(stats) {
+    if (!stats) return;
+    text(document.getElementById("dashboard-wallet-value"), stats.wallet_balance && stats.wallet_balance.value);
+    text(document.getElementById("dashboard-wallet-trend"), "▲ " + ((stats.wallet_balance && stats.wallet_balance.trend) || ""));
+    text(document.getElementById("dashboard-trips-value"), stats.total_trips && stats.total_trips.value);
+    text(document.getElementById("dashboard-trips-trend"), "▲ " + ((stats.total_trips && stats.total_trips.trend) || ""));
+    text(document.getElementById("dashboard-spending-value"), stats.total_spending && stats.total_spending.value);
+    text(document.getElementById("dashboard-spending-trend"), "▲ " + ((stats.total_spending && stats.total_spending.trend) || ""));
+    if (stats.location && stats.location.value && window.RiderGeolocation && !window.RiderGeolocation.getCached()) {
+      window.RiderGeolocation.applyLocationLabel(stats.location.value, null);
+    }
+  }
+
+  function renderPolicy(policy) {
+    if (!policyBannerEl) return;
+    if (policyFallbackEl) policyFallbackEl.hidden = true;
+    if (!policy || (!policy.can_unlock && !policy.cancellation_fee_due_ngn)) {
+      policyBannerEl.hidden = true;
+      policyBannerEl.innerHTML = "";
+      return;
+    }
+
+    if (policy.status === "suspended" && policy.can_unlock) {
+      policyBannerEl.className = "wallet-policy-banner wallet-policy-banner--danger";
+      policyBannerEl.innerHTML =
+        "<div><strong>Account suspended</strong><p>Pay ₦" +
+        Math.round(Number(policy.unlock_fee_ngn || 2000)).toLocaleString() +
+        ' from your <a href="/user/wallet">wallet</a> to unlock your account.</p></div>';
+      policyBannerEl.hidden = false;
+      return;
+    }
+
+    if (policy.cancellation_fee_due_ngn) {
+      policyBannerEl.className = "wallet-policy-banner wallet-policy-banner--warn";
+      policyBannerEl.innerHTML =
+        "<div><strong>Cancellation fee due</strong><p>₦" +
+        Math.round(Number(policy.cancellation_fee_due_ngn || 0)).toLocaleString() +
+        ' outstanding. <a href="/user/wallet">Pay from wallet</a> within 24 hours.</p></div>';
+      policyBannerEl.hidden = false;
+      return;
+    }
+
+    policyBannerEl.hidden = true;
+    policyBannerEl.innerHTML = "";
+  }
+
+  function renderRecentTrips(trips) {
+    if (!tripsBodyEl) return;
+    var items = Array.isArray(trips) ? trips : [];
+    if (!items.length) {
+      tripsBodyEl.innerHTML =
+        '<tr id="dashboard-recent-trips-empty"><td colspan="6">No recent trips yet.</td></tr>';
+      return;
+    }
+
+    tripsBodyEl.innerHTML = items
+      .map(function (trip) {
+        var status = (trip.status || "Pending").toLowerCase();
+        return (
+          "<tr>" +
+          "<td><span class=\"rider-table__primary\">" + escapeHtml(trip.date) + "</span>" +
+          "<span class=\"rider-table__secondary\">· " + escapeHtml(trip.time) + "</span></td>" +
+          "<td>" + escapeHtml(trip.pickup) + "</td>" +
+          "<td>" + escapeHtml(trip.destination) + "</td>" +
+          "<td>" + escapeHtml(trip.distance) + "</td>" +
+          "<td>" + escapeHtml(trip.fare) + "</td>" +
+          "<td><span class=\"rider-status rider-status--" + escapeHtml(status) + "\">" + escapeHtml(trip.status) + "</span></td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+  }
+
+  function fetchDashboardSummary() {
+    if (!window.UserApi) return Promise.resolve();
+    return window.UserApi.request("/user/api/dashboard-summary")
+      .then(function (data) {
+        applyStats(data.stats);
+        renderPolicy(data.account_policy);
+        renderRecentTrips(data.recent_trips);
+        if (data.referral) {
+          applyReferralData(data.referral);
+        }
+      })
+      .catch(function () {
+        renderRecentTrips([]);
+      });
   }
 
   function fetchReferral() {
@@ -133,6 +238,7 @@
   function init() {
     if (copyBtn) copyBtn.addEventListener("click", copyLink);
     initShareButtons();
+    var summaryRequest = fetchDashboardSummary();
 
     if (inviteBtn) {
       inviteBtn.addEventListener("click", fetchReferral);
@@ -148,9 +254,11 @@
       return;
     }
 
-    if (inviteBtn) {
-      fetchReferral();
-    }
+    summaryRequest.then(function () {
+      if (inviteBtn && !state.inviteUrl) {
+        fetchReferral();
+      }
+    });
   }
 
   if (document.readyState === "loading") {

@@ -79,11 +79,11 @@ def get_ws_url() -> str:
 
 def get_api_timeout() -> int:
     """HTTP timeout (seconds) for backend requests."""
-    raw = _FILE_ENV.get("API_TIMEOUT") or os.getenv("API_TIMEOUT") or "90"
+    raw = _FILE_ENV.get("API_TIMEOUT") or os.getenv("API_TIMEOUT") or "30"
     try:
         return max(10, int(raw))
     except (TypeError, ValueError):
-        return 90
+        return 30
 
 
 def reload_env() -> None:

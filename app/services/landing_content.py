@@ -1,7 +1,11 @@
 import copy
+import time
 
 from app.landing_defaults import DEFAULT_LANDING_PAGE
 from app.services.api_client import ApiError, get_public_landing_page
+
+_LANDING_CACHE_TTL_SECONDS = 120
+_landing_cache: dict[str, object] = {"expires_at": 0.0, "value": None}
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
@@ -27,10 +31,20 @@ def merge_landing_page(data: dict | None) -> dict:
 
 
 def load_landing_page() -> dict:
+    now = time.time()
+    cached = _landing_cache.get("value")
+    if isinstance(cached, dict) and _landing_cache.get("expires_at", 0.0) > now:
+        return copy.deepcopy(cached)
     try:
         data = get_public_landing_page()
         if isinstance(data, dict):
-            return _deep_merge(default_landing_page(), data)
+            merged = _deep_merge(default_landing_page(), data)
+            _landing_cache["value"] = copy.deepcopy(merged)
+            _landing_cache["expires_at"] = now + _LANDING_CACHE_TTL_SECONDS
+            return merged
     except ApiError:
         pass
-    return default_landing_page()
+    fallback = default_landing_page()
+    _landing_cache["value"] = copy.deepcopy(fallback)
+    _landing_cache["expires_at"] = now + _LANDING_CACHE_TTL_SECONDS
+    return fallback

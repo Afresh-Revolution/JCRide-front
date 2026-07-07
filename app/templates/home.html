@@ -64,14 +64,19 @@
 
     <div class="landing-hero__visual" aria-hidden="true">
       <div class="landing-hero__mockup">
-        <img
-          src="{{ static_url('images/hero.png') }}"
-          alt=""
-          class="landing-hero__mockup-photo"
-          width="520"
-          height="640"
-          loading="eager"
-        >
+        <picture>
+          <source srcset="{{ static_url('images/hero.webp') }}" type="image/webp">
+          <img
+            src="{{ static_url('images/hero.png') }}"
+            alt=""
+            class="landing-hero__mockup-photo"
+            width="520"
+            height="640"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          >
+        </picture>
 
         <div class="landing-hero__ui-card landing-hero__ui-card--where">
           <div class="landing-hero__ui-title-row">

@@ -8,6 +8,8 @@
 {% block page_head %}{% endblock %}
 {% endblock %}
 
+{% block auto_geolocate %}{% if user_leaflet %}true{% else %}false{% endif %}{% endblock %}
+
 {% block body %}
 <div class="admin-app">
   <div class="admin-sidebar-backdrop" id="user-sidebar-backdrop" aria-hidden="true"></div>
@@ -25,14 +27,14 @@
 
 {% block scripts %}
 {% if user_leaflet %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
 {% endif %}
-<script src="{{ url_for('static', filename='js/user-geolocation.js') }}"></script>
-<script src="{{ url_for('static', filename='js/user-api.js') }}"></script>
-<script src="{{ url_for('static', filename='js/user-search.js') }}"></script>
-<script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-geolocation.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/user-api.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/user-search.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/flash-dismiss.js') }}" defer></script>
 {% block page_scripts %}{% endblock %}
-<script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
+<script src="{{ url_for('static', filename='js/portal-layout.js') }}" defer></script>
 {% from "includes/pwa_head.html" import pwa_scripts %}
 {{ pwa_scripts() }}
 {% endblock %}
