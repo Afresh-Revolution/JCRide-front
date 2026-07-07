@@ -8,9 +8,12 @@
 {% block page_head %}{% endblock %}
 {% endblock %}
 
-{% block auto_geolocate %}{% if user_leaflet %}true{% else %}false{% endif %}{% endblock %}
+{% block auto_geolocate %}false{% endblock %}
 
 {% block body %}
+{% if session.get('rider_lat') is not none and session.get('rider_lng') is not none %}
+<script type="application/json" id="rider-stored-location">{{ {"label": session.get('rider_location') or 'Current location', "lat": session.get('rider_lat'), "lng": session.get('rider_lng'), "source": "session"} | tojson }}</script>
+{% endif %}
 <div class="admin-app">
   <div class="admin-sidebar-backdrop" id="user-sidebar-backdrop" aria-hidden="true"></div>
   {% include "user/includes/sidebar.html" %}

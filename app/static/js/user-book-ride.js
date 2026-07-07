@@ -23,6 +23,31 @@
   var planTimer = null;
   var lastEstimate = null;
   var programmaticPickup = false;
+  var STORAGE_KEY = "jcrider_location";
+
+  function readStoredPickup() {
+    try {
+      var raw = window.sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (data && data.lat != null && data.lng != null) return data;
+    } catch (err) {
+      return null;
+    }
+    return null;
+  }
+
+  function readSeededPickup() {
+    var el = document.getElementById("rider-stored-location");
+    if (!el) return null;
+    try {
+      var data = JSON.parse(el.textContent);
+      if (data && data.lat != null && data.lng != null) return data;
+    } catch (err) {
+      return null;
+    }
+    return null;
+  }
 
   function isPickupManual() {
     return pickupInput && pickupInput.dataset.pickupManual === "1";
@@ -258,6 +283,7 @@
       destination_lat: dropoff.lat,
       destination_lng: dropoff.lng,
       service_tier: selectedTier(),
+      vehicle_category: "car",
       stops: stops.length ? stops : undefined,
     };
   }
@@ -289,7 +315,6 @@
 
       if (window.UserApi) {
         var estimatePayload = buildEstimatePayload(waypoints);
-        estimatePayload.service_tier = "economy";
         UserApi.post("/user/api/rides/estimate", estimatePayload)
           .then(function (estimate) {
             lastEstimate = estimate;
@@ -358,10 +383,24 @@
   attachField(pickupInput, "pickup");
   attachField(dropoffInput, "dropoff");
 
+  var seededPickup = readStoredPickup() || readSeededPickup();
+  if (pickupInput && seededPickup && seededPickup.lat != null) {
+    applyAutoPickup(seededPickup);
+  }
+
   if (pickupInput) {
-    pickupInput.placeholder = "Detecting your location…";
-    pickupInput.dataset.pickupSource = "gps";
-    pickupInput.closest(".route-input").classList.add("route-input--gps");
+    var initialPickup =
+      readStoredPickup() ||
+      readSeededPickup() ||
+      (window.RiderGeolocation && window.RiderGeolocation.getCached());
+    pickupInput.placeholder =
+      initialPickup && initialPickup.lat != null
+        ? "Pickup location"
+        : "Detecting your location…";
+    if (!initialPickup || initialPickup.lat == null) {
+      pickupInput.dataset.pickupSource = "gps";
+      pickupInput.closest(".route-input").classList.add("route-input--gps");
+    }
   }
 
   if (addStopBtn) {
@@ -378,21 +417,39 @@
     refreshSelectedFare();
   }
 
-  if (window.RiderGeolocation) {
-    var cached = window.RiderGeolocation.getCached();
-    if (cached) applyAutoPickup(cached);
+  function initPickupLocation() {
+    if (!window.RiderGeolocation) {
+      var stored = readStoredPickup() || readSeededPickup();
+      if (stored) applyAutoPickup(stored);
+      return;
+    }
 
     window.RiderGeolocation.onUpdate(function (result) {
       applyAutoPickup(result);
     });
 
-    window.RiderGeolocation.detectAndApply({ forceFresh: true })
+    var cachedPickup =
+      window.RiderGeolocation.getCached() ||
+      readStoredPickup() ||
+      readSeededPickup();
+    if (cachedPickup && cachedPickup.lat != null) {
+      applyAutoPickup(cachedPickup);
+      return;
+    }
+
+    window.RiderGeolocation.detectAndApply({ forceFresh: false })
       .then(applyAutoPickup)
       .catch(function () {
         if (pickupInput && !pickupInput.value) {
           pickupInput.placeholder = "Pickup location (allow location access)";
         }
       });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPickupLocation);
+  } else {
+    initPickupLocation();
   }
 
   form.addEventListener("submit", function (event) {

@@ -888,6 +888,23 @@ html {
     background: #e5e7eb;
   }
 
+  .location-suggestions {
+    background: var(--user-card);
+    border-color: var(--user-border);
+    box-shadow: var(--user-shadow-hover);
+    scrollbar-color: #4b5563 transparent;
+  }
+
+  .location-suggestions button {
+    color: var(--user-text);
+  }
+
+  .location-suggestions button:hover,
+  .location-suggestions button:focus {
+    background: var(--user-field-bg);
+    color: #fff;
+  }
+
   .trip-stat {
     background: #1f2937;
     border-color: var(--user-border);
@@ -2367,6 +2384,23 @@ html[data-user-theme="dark"] .schedule-class.is-selected .schedule-class__rate {
 
 html[data-user-theme="dark"] .schedule-class.is-selected .schedule-class__icon {
   background: var(--user-green-dark);
+  color: #fff;
+}
+
+html[data-user-theme="dark"] .location-suggestions {
+  background: var(--user-card);
+  border-color: var(--user-border);
+  box-shadow: var(--user-shadow-hover);
+  scrollbar-color: #4b5563 transparent;
+}
+
+html[data-user-theme="dark"] .location-suggestions button {
+  color: var(--user-text);
+}
+
+html[data-user-theme="dark"] .location-suggestions button:hover,
+html[data-user-theme="dark"] .location-suggestions button:focus {
+  background: var(--user-field-bg);
   color: #fff;
 }
 

@@ -155,6 +155,21 @@
     }
 
     if (window.RiderGeolocation) {
+      var cached = window.RiderGeolocation.getCached();
+      if (cached && cached.lat != null) {
+        finish({ lat: cached.lat, lng: cached.lng }, true, cached.label);
+        return;
+      }
+
+      var shouldDetect =
+        document.body &&
+        document.body.getAttribute("data-auto-geolocate") === "true";
+
+      if (!shouldDetect) {
+        finish(fallback, false, config.location_label);
+        return;
+      }
+
       window.RiderGeolocation.detectAndApply({ forceFresh: false, timeout: 12000 })
         .then(function (result) {
           finish(
@@ -164,35 +179,16 @@
           );
         })
         .catch(function () {
-          if (!navigator.geolocation) {
-            finish(fallback, false, config.location_label);
-            return;
-          }
-          navigator.geolocation.getCurrentPosition(
-            function (position) {
-              finish(
-                {
-                  lat: position.coords.latitude,
-                  lng: position.coords.longitude,
-                },
-                true,
-                config.location_label
-              );
-            },
-            function () {
-              finish(fallback, false, config.location_label);
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 10000,
-              maximumAge: 120000,
-            }
-          );
+          finish(fallback, false, config.location_label);
         });
       return;
     }
 
-    if (!navigator.geolocation) {
+    var shouldDetectFallback =
+      document.body &&
+      document.body.getAttribute("data-auto-geolocate") === "true";
+
+    if (!shouldDetectFallback || !navigator.geolocation) {
       finish(fallback, false, config.location_label);
       return;
     }

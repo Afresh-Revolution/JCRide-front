@@ -179,6 +179,12 @@ def dashboard_from_api(data: dict, earnings: dict | None = None, demand: dict | 
         "surge": f"x{surge_mult}" if surge_mult and float(surge_mult) > 1 else None,
         "driver_name": data.get("driver_name") or "",
         "approval_status": str(data.get("approval_status") or "").replace("_", " ").title(),
+        "active_ride_id": data.get("active_ride_id"),
+        "active_ride_status": data.get("active_ride_status"),
+        "active_pickup_address": data.get("active_pickup_address") or "",
+        "active_destination_address": data.get("active_destination_address") or "",
+        "active_pickup_lat": data.get("active_pickup_lat"),
+        "active_pickup_lng": data.get("active_pickup_lng"),
     }
 
 

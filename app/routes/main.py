@@ -20,6 +20,7 @@ from app.services.api_client import (
     get_notification_preferences,
     get_profile,
     get_ride_messages,
+    send_ride_message,
     get_rider_data_export,
     get_user_settings,
     get_wallet,
@@ -45,7 +46,6 @@ from app.services.api_client import (
     delete_saved_location,
     delete_trusted_contact,
     forgot_password,
-    get_customer_dashboard,
     get_customer_dashboard_summary,
     get_customer_profile_extras,
     get_nearby_drivers,
@@ -80,9 +80,9 @@ from app.config import get_ws_url
 from app.rider_api_transforms import (
     contacts_to_share_ui,
     dashboard_stats_from_api,
+    default_ride_tiers,
     faq_from_api,
     nearby_drivers_to_map,
-    build_dashboard_stats,
     build_wallet_summary,
     delivery_estimate_to_defaults,
     estimate_to_booking_fields,
@@ -117,8 +117,6 @@ from app.rider_defaults import (
     PROFILE_MENU,
     RECENT_TRIPS,
     RIDE_HISTORY_TRIPS,
-    RIDE_TIERS,
-    RIDER_STATS,
     RIDER_NOTIFICATIONS,
     SCHEDULE_CLASS_LABELS,
     SCHEDULE_FARE_RANGES,
@@ -334,8 +332,11 @@ def _tracking_page_context() -> dict:
     def _load_current(token):
         ride = get_current_ride(token)
         if ride:
-            return ride
-        return get_current_delivery(token)
+            return ride.get("ride") or ride.get("data") or ride
+        delivery = get_current_delivery(token)
+        if delivery:
+            return delivery.get("ride") or delivery.get("data") or delivery
+        return None
 
     ride, ok = _safe_rider_api(_load_current)
     if ok and ride:
@@ -1270,8 +1271,13 @@ def user_dashboard():
 
     has_gps = session.get("rider_lat") is not None and session.get("rider_lng") is not None
     display_location = session.get("rider_location") if has_gps else "Detecting location…"
-    stats = build_dashboard_stats(None, [])
+    summary, summary_ok = _safe_rider_api(get_customer_dashboard_summary)
+    stats = dashboard_stats_from_api((summary or {}).get("stats"))
     stats["location"] = {"value": display_location}
+    account_policy = (summary or {}).get("account_policy") or {} if summary_ok else {}
+    referral = (summary or {}).get("referral") if summary_ok else None
+    recent_rides = (summary or {}).get("recent_rides") or [] if summary_ok else []
+    recent_trips = [ride_to_recent_trip(item) for item in recent_rides[:3]]
     live_area = live_area_from_location(display_location)
     map_config = live_area_map_for_location(display_location)
     map_config["location_label"] = display_location
@@ -1284,13 +1290,13 @@ def user_dashboard():
         stats=stats,
         live_area=live_area,
         live_area_map=map_config,
-        recent_trips=[],
-        referral=None,
-        account_policy={},
+        recent_trips=recent_trips,
+        referral=referral,
+        account_policy=account_policy,
         api_connected={
-            "dashboard": False,
+            "dashboard": summary_ok,
             "live_drivers": True,
-            "referral": False,
+            "referral": bool(referral),
         },
         **rider_ctx,
     )
@@ -1310,17 +1316,14 @@ def user_book_ride():
         "duration": "-",
         "est_fare": "-",
     }
-    ride_tiers = [
-        {"id": "economy", "label": "Economy", "price": "-", "eta": "-", "icon": "car"},
-        {"id": "comfort", "label": "Comfort", "price": "-", "eta": "-", "icon": "car"},
-        {"id": "premium", "label": "Premium", "price": "-", "eta": "-", "icon": "car"},
-    ]
+    ride_tiers = default_ride_tiers()
     token = _rider_token()
 
     if request.method == "POST":
         pickup = request.form.get("pickup", "").strip()
         dropoff = request.form.get("dropoff", "").strip()
         tier = request.form.get("tier", "economy")
+        vehicle_category = request.form.get("vehicle_category", "car").strip().lower() or "car"
         pickup_lat = request.form.get("pickup_lat", type=float)
         pickup_lng = request.form.get("pickup_lng", type=float)
         dest_lat = request.form.get("destination_lat", type=float)
@@ -1363,6 +1366,7 @@ def user_book_ride():
                     dest_lng,
                     tier=tier,
                     stops=stops,
+                    vehicle_category=vehicle_category,
                 )
             else:
                 result = request_ride_coords(
@@ -1374,10 +1378,18 @@ def user_book_ride():
                     dest_lat,
                     dest_lng,
                     tier=tier,
+                    vehicle_category=vehicle_category,
                 )
             ride = (result or {}).get("ride") or result or {}
             session["active_trip"] = ride_to_active_trip(ride)
-            flash(f"Ride requested ({tier}) - waiting for a driver.", "success")
+            drivers_notified = (result or {}).get("drivers_notified")
+            if drivers_notified == 0:
+                flash(
+                    "Ride requested — waiting for nearby drivers. We'll notify you when one accepts.",
+                    "success",
+                )
+            else:
+                flash(f"Ride requested ({tier}) - waiting for a driver.", "success")
         except ApiError as exc:
             session["active_trip"] = {
                 "pickup": pickup,
@@ -1972,7 +1984,12 @@ def user_api_current_ride():
         ride = get_current_ride(_rider_token())
         if not ride:
             ride = get_current_delivery(_rider_token())
-        return jsonify({"ride": ride})
+        if ride:
+            payload = ride.get("ride") or ride.get("data") or ride
+            if isinstance(payload, dict) and payload.get("id"):
+                session["active_trip"] = ride_to_active_trip(payload)
+            return jsonify({"ride": payload})
+        return jsonify({"ride": None})
     except ApiError as exc:
         return _user_api_error(exc)
 
@@ -2037,12 +2054,18 @@ def user_api_ride_call(ride_id):
         return _user_api_error(exc)
 
 
-@main_bp.route("/user/api/rides/<ride_id>/messages")
+@main_bp.route("/user/api/rides/<ride_id>/messages", methods=["GET", "POST"])
 def user_api_ride_messages(ride_id):
     guard = _require_rider_api()
     if guard:
         return guard
     try:
+        if request.method == "POST":
+            payload = request.get_json(silent=True) or {}
+            message = (payload.get("message") or "").strip()
+            if not message:
+                return jsonify({"error": "message is required"}), 422
+            return jsonify(send_ride_message(_rider_token(), ride_id, message)), 201
         return jsonify(get_ride_messages(_rider_token(), ride_id))
     except ApiError as exc:
         return _user_api_error(exc)
@@ -2247,6 +2270,7 @@ def user_api_ride_estimate():
             tier=payload.get("service_tier", "economy"),
             stops=payload.get("stops"),
             city=payload.get("city"),
+            vehicle_category=payload.get("vehicle_category", "car"),
         )
         return jsonify(estimate)
     except ApiError as exc:

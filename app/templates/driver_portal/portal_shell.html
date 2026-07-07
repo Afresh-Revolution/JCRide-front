@@ -17,7 +17,10 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body class="admin-body driver-portal">
+<body class="admin-body driver-portal" data-auto-geolocate="{% block auto_geolocate %}false{% endblock %}">
+  {% if session.get('driver_lat') is not none and session.get('driver_lng') is not none %}
+  <script type="application/json" id="driver-stored-location">{{ {"lat": session.get('driver_lat'), "lng": session.get('driver_lng'), "source": "session"} | tojson }}</script>
+  {% endif %}
   {{ pwa_body_start() }}
   {% block body %}{% endblock %}
   {% block scripts %}{% endblock %}

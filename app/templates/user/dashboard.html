@@ -2,6 +2,8 @@
 {% set active_page = 'dashboard' %}
 {% set user_leaflet = true %}
 
+{% block auto_geolocate %}true{% endblock %}
+
 {% block page_scripts %}
 <script type="application/json" id="rider-area-map-data">{{ live_area_map | tojson }}</script>
 <script src="{{ static_url('js/user-map.js') }}" defer></script>
@@ -36,7 +38,7 @@
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Wallet Balance</span>
       <span class="rider-kpi-card__value" id="dashboard-wallet-value">{{ stats.wallet_balance.value }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-wallet-trend">▲ {{ stats.wallet_balance.trend }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-wallet-trend"{% if not stats.wallet_balance.trend %} hidden{% endif %}>{% if stats.wallet_balance.trend %}▲ {{ stats.wallet_balance.trend }}{% endif %}</span>
     </div>
     <div class="rider-kpi-card__icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
@@ -48,7 +50,7 @@
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Total Trips</span>
       <span class="rider-kpi-card__value" id="dashboard-trips-value">{{ stats.total_trips.value }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-trips-trend">▲ {{ stats.total_trips.trend }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-trips-trend"{% if not stats.total_trips.trend %} hidden{% endif %}>{% if stats.total_trips.trend %}▲ {{ stats.total_trips.trend }}{% endif %}</span>
     </div>
     <div class="rider-kpi-card__icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -60,7 +62,7 @@
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Total Spending</span>
       <span class="rider-kpi-card__value" id="dashboard-spending-value">{{ stats.total_spending.value }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-spending-trend">▲ {{ stats.total_spending.trend }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-spending-trend"{% if not stats.total_spending.trend %} hidden{% endif %}>{% if stats.total_spending.trend %}▲ {{ stats.total_spending.trend }}{% endif %}</span>
     </div>
     <div class="rider-kpi-card__icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>

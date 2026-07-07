@@ -1037,12 +1037,13 @@ button.rider-link:hover {
   margin: 0;
   padding: 0.35rem 0;
   list-style: none;
-  background: var(--user-panel-bg, #fff);
+  background: var(--user-card);
   border: 1px solid var(--user-border);
   border-radius: var(--user-radius-sm);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--user-shadow-hover, 0 8px 24px rgba(0, 0, 0, 0.12));
   max-height: 240px;
   overflow-y: auto;
+  scrollbar-color: #4b5563 transparent;
 }
 
 .location-suggestions button {
@@ -1927,6 +1928,78 @@ button.rider-link:hover {
   flex-direction: column;
   gap: 1rem;
   min-width: 0;
+}
+
+.ride-chat-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ride-chat-empty {
+  margin: 0;
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--user-muted);
+}
+
+.ride-chat-compose {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ride-chat-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--user-border);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  background: var(--user-card);
+  color: var(--user-text);
+}
+
+.ride-chat-item {
+  max-width: 88%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  background: var(--user-bg, #f3f4f6);
+}
+
+.ride-chat-item--mine {
+  align-self: flex-end;
+  background: #e8f5ef;
+}
+
+.ride-chat-item--theirs {
+  align-self: flex-start;
+}
+
+.ride-chat-item__meta {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--user-muted);
+  margin-bottom: 0.2rem;
+}
+
+.ride-chat-item__text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.tracking-chat-panel {
+  margin-top: 0;
 }
 
 .tracking-stepper {

@@ -182,12 +182,13 @@ def driver_ride_arrived(token, ride_id):
     )
 
 
-def complete_driver_ride(token, ride_id):
+def complete_driver_ride(token, ride_id, metrics=None):
+    payload = metrics or {}
     return _request(
         "POST",
         f"{API_PREFIX}/drivers/rides/{ride_id}/complete",
         token=token,
-        json={},
+        json=payload,
     )
 
 
@@ -270,11 +271,15 @@ def update_customer_profile_extras(token, payload):
     )
 
 
-def cancel_driver_ride(token, ride_id):
+def cancel_driver_ride(token, ride_id, reason=None):
+    payload = {}
+    if reason:
+        payload["reason"] = reason
     return _request(
         "POST",
         f"{API_PREFIX}/drivers/rides/{ride_id}/cancel",
         token=token,
+        json=payload,
     )
 
 
@@ -456,6 +461,7 @@ def _ride_payload(
     tier="economy",
     stops=None,
     city=None,
+    vehicle_category="car",
 ):
     from app.rider_api_transforms import infer_city
 
@@ -467,6 +473,7 @@ def _ride_payload(
         "pickup_address": pickup,
         "destination_address": dropoff,
         "service_tier": tier,
+        "vehicle_category": vehicle_category or "car",
         "city": city or infer_city(pickup or dropoff),
     }
     if stops:
@@ -500,6 +507,7 @@ def estimate_ride_coords(
     tier="economy",
     stops=None,
     city=None,
+    vehicle_category="car",
 ):
     return _request(
         "POST",
@@ -515,6 +523,7 @@ def estimate_ride_coords(
             tier=tier,
             stops=stops,
             city=city,
+            vehicle_category=vehicle_category,
         ),
     )
 
@@ -545,6 +554,7 @@ def request_ride_coords(
     tier="economy",
     stops=None,
     city=None,
+    vehicle_category="car",
 ):
     return _request(
         "POST",
@@ -560,6 +570,7 @@ def request_ride_coords(
             tier=tier,
             stops=stops,
             city=city,
+            vehicle_category=vehicle_category,
         ),
     )
 
@@ -810,6 +821,15 @@ def get_ride_messages(token, ride_id, page=1, limit=50):
         f"{API_PREFIX}/rides/{ride_id}/messages",
         token=token,
         params={"page": page, "limit": limit},
+    )
+
+
+def send_ride_message(token, ride_id, message):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/messages",
+        token=token,
+        json={"message": message},
     )
 
 

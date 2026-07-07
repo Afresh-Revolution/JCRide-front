@@ -1,7 +1,17 @@
 (function () {
   "use strict";
 
-  function getPosition() {
+  function resolvePosition() {
+    if (window.DriverGeolocation) {
+      var cached = window.DriverGeolocation.getCached();
+      if (cached && cached.lat != null) {
+        return Promise.resolve({ lat: cached.lat, lng: cached.lng });
+      }
+      return window.DriverGeolocation.detectAndApply({ forceFresh: false }).then(function (coords) {
+        return { lat: coords.lat, lng: coords.lng };
+      });
+    }
+
     return new Promise(function (resolve, reject) {
       if (!navigator.geolocation) {
         reject(new Error("Geolocation is not supported on this device."));
@@ -26,7 +36,7 @@
         {
           enableHighAccuracy: true,
           timeout: 15000,
-          maximumAge: 30000,
+          maximumAge: 120000,
         }
       );
     });
@@ -76,7 +86,7 @@
       }
 
       setBusy(form, true);
-      getPosition()
+      resolvePosition()
         .then(function (coords) {
           ensureHidden(form, "current_lat").value = String(coords.lat);
           ensureHidden(form, "current_lng").value = String(coords.lng);
