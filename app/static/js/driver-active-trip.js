@@ -10,12 +10,31 @@
   var pollTimer = null;
   var geoWatchId = null;
   var navRequestId = 0;
-  var lastNavKey = "";
   var currentTripData = null;
+  var cachedNav = null;
+  var lastRouteFrom = null;
+  var lastRouteFetchTime = 0;
+  var lastRouteMode = "";
+  var lastRenderedPos = null;
+  var mapInitialized = false;
+  var followDriver = true;
+  var routeRefreshTimer = null;
+  var pollStarted = false;
+
+  var layerRefs = {
+    polyline: null,
+    vehicle: null,
+    start: null,
+    end: null,
+  };
 
   var PRE_PICKUP_STATUSES = ["accepted", "driver_assigned", "assigned", "driver_arrived"];
   var ROUTE_COLOR_PICKUP = "#2563eb";
   var ROUTE_COLOR_TRIP = "#0a4f2a";
+  var MIN_MOVE_M = 15;
+  var ROUTE_REFETCH_M = 150;
+  var ROUTE_REFETCH_MS = 90000;
+  var ROUTE_REFRESH_DEBOUNCE_MS = 3000;
 
   function readMapData() {
     if (!mapDataEl) return null;
@@ -55,6 +74,198 @@
       iconSize: size,
       iconAnchor: anchor,
     });
+  }
+
+  function distanceM(a, b) {
+    if (!a || !b) return Infinity;
+    var R = 6371000;
+    var p = Math.PI / 180;
+    var dLat = (b.lat - a.lat) * p;
+    var dLng = (b.lng - a.lng) * p;
+    var x =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(a.lat * p) * Math.cos(b.lat * p) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(x));
+  }
+
+  function movedEnough(a, b, minM) {
+    if (!b) return true;
+    return distanceM(a, b) >= minM;
+  }
+
+  function shouldRefetchRoute(from, to, tripData) {
+    if (!from || !to) return false;
+    if (!cachedNav || !layerRefs.polyline) return true;
+    var mode = tripData.route_mode || (isPrePickup(tripData) ? "to_pickup" : "to_destination");
+    if (mode !== lastRouteMode) return true;
+    if (Date.now() - lastRouteFetchTime > ROUTE_REFETCH_MS) return true;
+    if (lastRouteFrom && movedEnough(from, lastRouteFrom, ROUTE_REFETCH_M)) return true;
+    return false;
+  }
+
+  function vehicleIcon() {
+    var carSvg =
+      '<div class="map-marker-vehicle">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">' +
+      '<path d="M7 17h10M5 11l1.5-4h11L19 11"/>' +
+      '<circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>' +
+      "</svg></div>";
+    return createMapIcon(carSvg, [36, 36], [18, 18]);
+  }
+
+  function drawOrUpdateRoute(coords, prePickup) {
+    if (!liveMap || !coords || coords.length < 2) return;
+    var latlngs = coords.map(function (p) {
+      return [p.lat, p.lng];
+    });
+    var style = {
+      color: prePickup ? ROUTE_COLOR_PICKUP : mapGreen,
+      weight: 5,
+      opacity: 0.92,
+      dashArray: prePickup ? "10, 8" : null,
+      lineCap: "round",
+    };
+    if (!layerRefs.polyline) {
+      layerRefs.polyline = L.polyline(latlngs, style).addTo(liveMap);
+      mapLayers.push(layerRefs.polyline);
+    } else {
+      layerRefs.polyline.setLatLngs(latlngs);
+      layerRefs.polyline.setStyle(style);
+    }
+  }
+
+  function ensureStaticMarkers(tripData) {
+    if (!liveMap || !tripData) return;
+    var prePickup = isPrePickup(tripData);
+
+    if (tripData.start && !layerRefs.start) {
+      layerRefs.start = L.marker([tripData.start.lat, tripData.start.lng], {
+        icon: createMapIcon(
+          prePickup
+            ? '<div class="map-marker-start map-marker-start--pickup"></div>'
+            : '<div class="map-marker-start"></div>',
+          [14, 14],
+          [7, 7]
+        ),
+        zIndexOffset: 100,
+      }).addTo(liveMap);
+      mapLayers.push(layerRefs.start);
+    }
+
+    if (tripData.end && !layerRefs.end) {
+      layerRefs.end = L.marker([tripData.end.lat, tripData.end.lng], {
+        icon: createMapIcon('<div class="map-marker-end"></div>', [16, 16], [8, 8]),
+        zIndexOffset: 100,
+      }).addTo(liveMap);
+      mapLayers.push(layerRefs.end);
+    }
+
+    if (tripData.vehicle_position && !layerRefs.vehicle) {
+      layerRefs.vehicle = L.marker(
+        [tripData.vehicle_position.lat, tripData.vehicle_position.lng],
+        { icon: vehicleIcon(), zIndexOffset: 200 }
+      ).addTo(liveMap);
+      mapLayers.push(layerRefs.vehicle);
+    }
+  }
+
+  function updateVehicleMarker(pos) {
+    if (!pos || !liveMap) return;
+    if (!layerRefs.vehicle) {
+      layerRefs.vehicle = L.marker([pos.lat, pos.lng], {
+        icon: vehicleIcon(),
+        zIndexOffset: 200,
+      }).addTo(liveMap);
+      mapLayers.push(layerRefs.vehicle);
+      return;
+    }
+    layerRefs.vehicle.setLatLng([pos.lat, pos.lng]);
+  }
+
+  function fitToRouteOnce(coords, tripData) {
+    if (!liveMap || !followDriver || mapInitialized) return;
+    var boundsPoints = (coords || []).map(function (p) {
+      return [p.lat, p.lng];
+    });
+    if (tripData && tripData.start) {
+      boundsPoints.push([tripData.start.lat, tripData.start.lng]);
+    }
+    if (tripData && tripData.end) {
+      boundsPoints.push([tripData.end.lat, tripData.end.lng]);
+    }
+    if (tripData && tripData.vehicle_position) {
+      boundsPoints.push([tripData.vehicle_position.lat, tripData.vehicle_position.lng]);
+    }
+    if (boundsPoints.length > 1) {
+      liveMap.fitBounds(L.latLngBounds(boundsPoints), {
+        padding: [56, 56],
+        maxZoom: 15,
+        animate: false,
+      });
+      mapInitialized = true;
+    }
+  }
+
+  function updateManeuverFromPosition(pos) {
+    if (!cachedNav || !pos || !currentTripData) return;
+    var target = navTarget(currentTripData);
+    if (!target) return;
+
+    var distanceEl = document.getElementById("active-trip-maneuver-distance");
+    var etaEl = document.getElementById("active-trip-maneuver-eta");
+    var distKm = distanceM(pos, target) / 1000;
+    var durationMin = Math.max(1, Math.round((distKm / 30) * 60));
+
+    if (distanceEl && cachedNav.steps && cachedNav.steps.length) {
+      var step = cachedNav.steps[0];
+      var stepDist = Math.max(0, Math.round(step.distance || 0));
+      distanceEl.textContent = stepDist > 0 ? "in " + stepDist + " m" : "On route";
+    }
+    if (etaEl) {
+      etaEl.textContent =
+        "~" +
+        durationMin +
+        " min · " +
+        distKm.toFixed(1) +
+        " km" +
+        (isPrePickup(currentTripData) ? " to pickup" : " remaining");
+      etaEl.hidden = false;
+      etaEl.classList.remove("is-hidden");
+    }
+  }
+
+  function scheduleRouteRefresh(tripData, force) {
+    if (routeRefreshTimer) window.clearTimeout(routeRefreshTimer);
+    routeRefreshTimer = window.setTimeout(function () {
+      routeRefreshTimer = null;
+      refreshNavigation(tripData, !!force);
+    }, force ? 0 : ROUTE_REFRESH_DEBOUNCE_MS);
+  }
+
+  function onPositionUpdate(pos, syncServer) {
+    if (!currentTripData || !pos) return;
+
+    var moved = movedEnough(pos, lastRenderedPos, MIN_MOVE_M);
+    currentTripData.vehicle_position = { lat: pos.lat, lng: pos.lng };
+
+    if (moved) {
+      lastRenderedPos = { lat: pos.lat, lng: pos.lng };
+      updateVehicleMarker(pos);
+      updateManeuverFromPosition(pos);
+      if (followDriver && liveMap && mapInitialized) {
+        liveMap.panTo([pos.lat, pos.lng], { animate: true, duration: 0.8 });
+      }
+    }
+
+    if (syncServer && window.DriverApi) {
+      window.DriverApi.post(window.DriverApi.base + "/location", {
+        lat: pos.lat,
+        lng: pos.lng,
+        accuracy: pos.accuracy,
+      }).catch(function () {});
+    }
+
+    scheduleRouteRefresh(currentTripData, false);
   }
 
   function isPrePickup(tripData) {
@@ -190,30 +401,41 @@
     return tripData;
   }
 
-  function refreshNavigation(tripData) {
+  function resetMapLayers() {
+    mapLayers.forEach(function (layer) {
+      if (liveMap) liveMap.removeLayer(layer);
+    });
+    mapLayers = [];
+    layerRefs.polyline = null;
+    layerRefs.vehicle = null;
+    layerRefs.start = null;
+    layerRefs.end = null;
+    cachedNav = null;
+    lastRouteFrom = null;
+    lastRouteFetchTime = 0;
+    lastRouteMode = "";
+    mapInitialized = false;
+  }
+
+  function refreshNavigation(tripData, forceRoute) {
     if (!tripData) return Promise.resolve();
     currentTripData = tripData;
     tripData = enrichTripMap(tripData);
 
     var from = resolveDriverPosition(tripData);
     var to = navTarget(tripData);
+    var prePickup = isPrePickup(tripData);
+    var mode = tripData.route_mode || (prePickup ? "to_pickup" : "to_destination");
+
+    ensureStaticMarkers(tripData);
+    if (from) updateVehicleMarker(from);
+
     if (!from || !to) {
-      renderLiveMap(tripData);
       return Promise.resolve();
     }
 
-    var key =
-      (tripData.route_mode || "") +
-      ":" +
-      from.lat.toFixed(4) +
-      "," +
-      from.lng.toFixed(4) +
-      "->" +
-      to.lat.toFixed(4) +
-      "," +
-      to.lng.toFixed(4);
-    if (key === lastNavKey) {
-      renderLiveMap(tripData);
+    if (!forceRoute && !shouldRefetchRoute(from, to, tripData)) {
+      updateManeuverFromPosition(from);
       return Promise.resolve();
     }
 
@@ -221,113 +443,20 @@
     return fetchOsrmRoute(from, to).then(function (nav) {
       if (requestId !== navRequestId) return;
       if (nav && nav.route && nav.route.length >= 2) {
+        cachedNav = nav;
         tripData.route = nav.route;
-        lastNavKey = key;
+        lastRouteFrom = { lat: from.lat, lng: from.lng };
+        lastRouteFetchTime = Date.now();
+        lastRouteMode = mode;
+        drawOrUpdateRoute(nav.route, prePickup);
         updateManeuverCard(tripData, nav);
-      } else {
+        fitToRouteOnce(nav.route, tripData);
+      } else if (!cachedNav) {
         updateManeuverCard(tripData, null);
       }
-      renderLiveMap(tripData);
+      ensureStaticMarkers(tripData);
+      if (from) updateVehicleMarker(from);
     });
-  }
-
-  function clearMapLayers() {
-    mapLayers.forEach(function (layer) {
-      if (liveMap) liveMap.removeLayer(layer);
-    });
-    mapLayers = [];
-  }
-
-  function renderLiveMap(tripData) {
-    if (!liveMap || typeof L === "undefined" || !tripData) return;
-
-    clearMapLayers();
-
-    var prePickup = isPrePickup(tripData);
-    var routeColor = prePickup ? ROUTE_COLOR_PICKUP : mapGreen;
-    var mapCenter = tripData.map_center || { lat: 6.435, lng: 3.432 };
-    var mapZoom = tripData.map_zoom || 14;
-    var route = (tripData.route || []).map(function (p) {
-      return [p.lat, p.lng];
-    });
-
-    if (route.length < 2 && tripData.start && tripData.end) {
-      route = [[tripData.start.lat, tripData.start.lng], [tripData.end.lat, tripData.end.lng]];
-    }
-
-    liveMap.setView([mapCenter.lat, mapCenter.lng], mapZoom);
-
-    if (route.length >= 2) {
-      var polyline = L.polyline(route, {
-        color: routeColor,
-        weight: 5,
-        opacity: 0.92,
-        dashArray: prePickup ? "10, 8" : null,
-        lineCap: "round",
-      });
-      polyline.addTo(liveMap);
-      mapLayers.push(polyline);
-    }
-
-    if (tripData.start) {
-      var startMarker = L.marker([tripData.start.lat, tripData.start.lng], {
-        icon: createMapIcon(
-          prePickup
-            ? '<div class="map-marker-start map-marker-start--pickup"></div>'
-            : '<div class="map-marker-start"></div>',
-          [14, 14],
-          [7, 7]
-        ),
-        zIndexOffset: 100,
-      });
-      startMarker.addTo(liveMap);
-      mapLayers.push(startMarker);
-    }
-
-    if (tripData.vehicle_position) {
-      var carSvg =
-        '<div class="map-marker-vehicle">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">' +
-        '<path d="M7 17h10M5 11l1.5-4h11L19 11"/>' +
-        '<circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>' +
-        "</svg></div>";
-
-      var vehicleMarker = L.marker(
-        [tripData.vehicle_position.lat, tripData.vehicle_position.lng],
-        {
-          icon: createMapIcon(carSvg, [36, 36], [18, 18]),
-          zIndexOffset: 200,
-        }
-      );
-      vehicleMarker.addTo(liveMap);
-      mapLayers.push(vehicleMarker);
-    }
-
-    if (tripData.end) {
-      var endMarker = L.marker([tripData.end.lat, tripData.end.lng], {
-        icon: createMapIcon('<div class="map-marker-end"></div>', [16, 16], [8, 8]),
-        zIndexOffset: 100,
-      });
-      endMarker.addTo(liveMap);
-      mapLayers.push(endMarker);
-    }
-
-    var boundsPoints = route.slice();
-    if (tripData.start) boundsPoints.push([tripData.start.lat, tripData.start.lng]);
-    if (tripData.end) boundsPoints.push([tripData.end.lat, tripData.end.lng]);
-    if (tripData.vehicle_position) {
-      boundsPoints.push([
-        tripData.vehicle_position.lat,
-        tripData.vehicle_position.lng,
-      ]);
-    }
-
-    if (boundsPoints.length > 1) {
-      liveMap.fitBounds(L.latLngBounds(boundsPoints), {
-        padding: [56, 56],
-        maxZoom: 15,
-      });
-    }
   }
 
   function initMap() {
@@ -340,6 +469,7 @@
       liveMap.remove();
       liveMap = null;
     }
+    resetMapLayers();
 
     var center = tripData.map_center || { lat: 6.435, lng: 3.432 };
     var zoom = tripData.map_zoom || 14;
@@ -353,10 +483,20 @@
     bindThemeListener();
     L.control.zoom({ position: "topright" }).addTo(liveMap);
 
+    liveMap.on("dragstart", function () {
+      followDriver = false;
+    });
+
     var initial = enrichTripMap(readMapData());
     if (initial) {
       currentTripData = initial;
-      refreshNavigation(initial);
+      if (initial.vehicle_position) {
+        lastRenderedPos = {
+          lat: initial.vehicle_position.lat,
+          lng: initial.vehicle_position.lng,
+        };
+      }
+      refreshNavigation(initial, true);
     }
 
     window.setTimeout(function () {
@@ -610,19 +750,38 @@
         return res.json();
       })
       .then(function (data) {
-        if (data.map) {
-          if (data.trip) {
-            data.map.status = data.trip.status;
-            data.map.picked_up = data.trip.picked_up;
-            data.map.route_mode = data.trip.picked_up ? "to_destination" : "to_pickup";
-          }
-          lastNavKey = "";
-          refreshNavigation(data.map);
+        if (data.map && data.trip) {
+          data.map.status = data.trip.status;
+          data.map.picked_up = data.trip.picked_up;
+          data.map.route_mode = data.trip.picked_up ? "to_destination" : "to_pickup";
         }
+
+        var forceRoute = false;
+        if (data.trip && currentTripData) {
+          var prevMode = currentTripData.route_mode || (isPrePickup(currentTripData) ? "to_pickup" : "to_destination");
+          var nextMode = data.trip.picked_up ? "to_destination" : "to_pickup";
+          forceRoute = prevMode !== nextMode || currentTripData.status !== data.trip.status;
+        }
+
+        if (data.map) {
+          if (currentTripData && data.map.vehicle_position) {
+            data.map.start = data.map.start || currentTripData.start;
+            data.map.end = data.map.end || currentTripData.end;
+          }
+          if (forceRoute) {
+            resetMapLayers();
+            mapInitialized = false;
+          }
+          refreshNavigation(data.map, forceRoute);
+        }
+
         if (data.trip) {
           updateMetrics(data.trip);
           updateTripActions(data.trip);
-          startPolling(data.trip);
+          if (!pollStarted) {
+            pollStarted = true;
+            startPolling(data.trip);
+          }
         }
       })
       .catch(function () {
@@ -631,8 +790,8 @@
   }
 
   function startPolling(trip) {
-    if (pollTimer) window.clearInterval(pollTimer);
-    var interval = trip && !trip.picked_up ? 12000 : 30000;
+    if (pollTimer) return;
+    var interval = trip && !trip.picked_up ? 30000 : 45000;
     pollTimer = window.setInterval(fetchLiveTrip, interval);
   }
 
@@ -640,23 +799,17 @@
     if (geoWatchId != null || !navigator.geolocation) return;
     geoWatchId = navigator.geolocation.watchPosition(
       function (position) {
-        if (!currentTripData) return;
-        currentTripData.vehicle_position = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        if (window.DriverApi) {
-          window.DriverApi.post(window.DriverApi.base + "/location", {
+        onPositionUpdate(
+          {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
             accuracy: position.coords.accuracy,
-          }).catch(function () {});
-        }
-        lastNavKey = "";
-        refreshNavigation(currentTripData);
+          },
+          true
+        );
       },
       function () {},
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
   }
 
@@ -665,13 +818,6 @@
       navigator.geolocation.clearWatch(geoWatchId);
       geoWatchId = null;
     }
-  }
-
-  function onDriverLocationUpdate(coords) {
-    if (!coords || !currentTripData) return;
-    currentTripData.vehicle_position = { lat: coords.lat, lng: coords.lng };
-    lastNavKey = "";
-    refreshNavigation(currentTripData);
   }
 
   function onResize() {
@@ -684,10 +830,6 @@
     initMap();
     fetchLiveTrip();
     startGeoWatch();
-    if (window.DriverGeolocation) {
-      window.DriverGeolocation.onUpdate(onDriverLocationUpdate);
-      window.DriverGeolocation.detectAndApply({ forceFresh: false }).catch(function () {});
-    }
     initChat(tripConfig);
     initCancel(tripConfig);
     window.addEventListener("resize", onResize);
