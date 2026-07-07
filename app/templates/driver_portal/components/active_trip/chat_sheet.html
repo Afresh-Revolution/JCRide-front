@@ -1,0 +1,39 @@
+{# Full-screen driver ↔ rider chat sheet #}
+<dialog class="driver-trip-chat-sheet" id="driver-trip-chat-panel" aria-labelledby="driver-trip-chat-title">
+  <div class="driver-trip-chat-sheet__panel">
+    <header class="driver-trip-chat-sheet__header">
+      <button type="button" class="driver-trip-chat-sheet__close" id="driver-trip-chat-close" aria-label="Close chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="driver-trip-chat-sheet__heading">
+        <h2 class="driver-trip-chat-sheet__title" id="driver-trip-chat-title">Chat with rider</h2>
+        <p class="driver-trip-chat-sheet__subtitle" id="driver-trip-chat-subtitle">{{ trip.rider_name }}</p>
+      </div>
+    </header>
+
+    <div class="driver-trip-chat-sheet__body">
+      <ul id="driver-trip-chat-list" class="driver-trip-chat-sheet__messages ride-chat-list" aria-live="polite"></ul>
+    </div>
+
+    <form id="driver-trip-chat-form" class="driver-trip-chat-sheet__compose ride-chat-compose">
+      <label class="sr-only" for="driver-trip-chat-input">Message rider</label>
+      <input
+        type="text"
+        id="driver-trip-chat-input"
+        class="ride-chat-input driver-trip-chat-sheet__input"
+        maxlength="500"
+        placeholder="Message {{ trip.rider_name }}"
+        autocomplete="off"
+      >
+      <button type="submit" class="driver-btn driver-btn--primary driver-trip-chat-sheet__send" id="driver-trip-chat-send" aria-label="Send message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        <span>Send</span>
+      </button>
+    </form>
+  </div>
+</dialog>

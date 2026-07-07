@@ -355,7 +355,7 @@ def accept_ride(request_id):
 
     try:
         result = accept_driver_ride(token, request_id)
-        trip = api_ride_to_active_trip(result.get("ride") or result)
+        trip = api_ride_to_active_trip(result.get("ride") or result, token=token)
         if trip.get("id"):
             session["active_trip_id"] = trip["id"]
         flash("Ride accepted! Head to pickup.", "success")
@@ -389,7 +389,7 @@ def active_trip():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token())
+    trip = resolve_active_trip(_driver_token(), session)
     context = _portal_context("active_trip", api_connected=bool(_driver_token()))
     if trip:
         context["trip"] = trip
@@ -407,7 +407,7 @@ def api_active_trip_map():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token())
+    trip = resolve_active_trip(_driver_token(), session)
     if not trip:
         return jsonify({"trip": None, "map": None})
 
@@ -450,7 +450,7 @@ def active_trip_arrived():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token())
+    trip = resolve_active_trip(_driver_token(), session)
     if not trip:
         flash("No active trip.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
@@ -476,7 +476,7 @@ def active_trip_start():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token())
+    trip = resolve_active_trip(_driver_token(), session)
     if not trip:
         flash("No active trip.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
@@ -502,7 +502,7 @@ def complete_trip():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token())
+    trip = resolve_active_trip(_driver_token(), session)
     if not trip:
         flash("No active trip to complete.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
@@ -538,7 +538,7 @@ def cancel_trip():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token())
+    trip = resolve_active_trip(_driver_token(), session)
     if not trip:
         flash("No active trip to cancel.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
@@ -710,12 +710,25 @@ def driver_api_active_navigation():
     guard = _require_driver_api()
     if guard:
         return guard
-    try:
-        from app.services.api_client import get_driver_active_trip_navigation
 
-        return jsonify(get_driver_active_trip_navigation(_driver_token()) or {})
-    except ApiError as exc:
-        return _driver_api_error(exc)
+    trip = resolve_active_trip(_driver_token(), session)
+    if not trip:
+        return jsonify({})
+
+    vehicle = (trip.get("map") or {}).get("vehicle_position") or {}
+    return jsonify(
+        {
+            "distance_remaining_km": trip.get("distance_left_km"),
+            "live_fare_ngn": trip.get("earnings_live"),
+            "elapsed_minutes": trip.get("trip_time"),
+            "speed_kmh": trip.get("speed_kmh"),
+            "next_maneuver": trip.get("next_maneuver"),
+            "next_maneuver_distance_m": trip.get("next_maneuver_distance_m"),
+            "driver_lat": vehicle.get("lat"),
+            "driver_lng": vehicle.get("lng"),
+            "at_destination": trip.get("at_destination"),
+        }
+    )
 
 
 @driver_portal_bp.route("/api/performance")

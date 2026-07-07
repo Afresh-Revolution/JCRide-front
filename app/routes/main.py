@@ -131,6 +131,7 @@ from app.rider_defaults import (
     WALLET_TRANSACTIONS,
     build_live_area_map,
     build_route_map,
+    build_route_map_from_ride,
 )
 from app.services.landing_content import load_landing_page
 from app.services.navigation_guard import (
@@ -362,11 +363,19 @@ def _tracking_page_context() -> dict:
     if active.get("booking_id"):
         tracking["booking_id"] = active["booking_id"]
 
-    route_map = build_route_map(
-        tracking["pickup"],
-        tracking["destination"],
-        badge_label=tracking.get("status_label", "Live trip"),
-        vehicle_type=vehicle_type,
+    route_map = (
+        build_route_map_from_ride(
+            ride,
+            badge_label=tracking.get("status_label", "Live trip"),
+            vehicle_type=vehicle_type,
+        )
+        if ok and ride
+        else build_route_map(
+            tracking["pickup"],
+            tracking["destination"],
+            badge_label=tracking.get("status_label", "Live trip"),
+            vehicle_type=vehicle_type,
+        )
     )
     return {
         "tracking": tracking,

@@ -44,16 +44,6 @@
         </div>
       </article>
 
-      <article class="active-trip-card active-trip-card--chat" id="driver-trip-chat-panel" hidden>
-        <h2 class="active-trip-card__title">Chat with rider</h2>
-        <ul id="driver-trip-chat-list" class="ride-chat-list" aria-live="polite"></ul>
-        <form id="driver-trip-chat-form" class="ride-chat-compose">
-          <label class="sr-only" for="driver-trip-chat-input">Message rider</label>
-          <input type="text" id="driver-trip-chat-input" class="ride-chat-input" maxlength="500" placeholder="Message rider" autocomplete="off">
-          <button type="submit" class="driver-btn driver-btn--primary driver-btn--sm" id="driver-trip-chat-send">Send</button>
-        </form>
-      </article>
-
       <div class="active-trip-actions">
         {% if trip.can_arrive %}
         <form method="post" action="{{ url_for('driver_portal.active_trip_arrived') }}" class="active-trip-arrive-form">
@@ -96,6 +86,8 @@
       </div>
     </aside>
   </div>
+
+  {% include "components/active_trip/chat_sheet.html" %}
 </section>
 {% else %}
 <section class="active-trip-empty">
@@ -114,6 +106,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/ride-chat.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/driver-trip-chat.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/driver-active-trip.js') }}" defer></script>
 {% endif %}
 {% endblock %}

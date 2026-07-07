@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import math
+from datetime import UTC, datetime
 
-from app.services.api_client import ApiError, get_driver_active_ride, get_driver_active_trip_navigation
+from app.services.api_client import ApiError, get_driver_active_ride, get_driver_profile
 
 DESTINATION_RADIUS_KM = 0.15
 ARRIVAL_READY_STATUSES = frozenset({"accepted", "driver_assigned", "assigned"})
@@ -34,6 +35,65 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
         + math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lng2 - lng1) * p)) / 2
     )
     return 2 * radius * math.asin(math.sqrt(a))
+
+
+def _driver_coords_from_ride(payload: dict, token: str | None = None) -> tuple[float, float] | None:
+    driver_loc = payload.get("driver_location")
+    if isinstance(driver_loc, dict) and driver_loc.get("lat") is not None and driver_loc.get("lng") is not None:
+        return float(driver_loc["lat"]), float(driver_loc["lng"])
+
+    driver = payload.get("driver") or {}
+    if driver.get("current_lat") is not None and driver.get("current_lng") is not None:
+        return float(driver["current_lat"]), float(driver["current_lng"])
+
+    if payload.get("driver_lat") is not None and payload.get("driver_lng") is not None:
+        return float(payload["driver_lat"]), float(payload["driver_lng"])
+
+    if token:
+        try:
+            profile = get_driver_profile(token)
+            if profile.get("current_lat") is not None and profile.get("current_lng") is not None:
+                return float(profile["current_lat"]), float(profile["current_lng"])
+        except ApiError:
+            pass
+    return None
+
+
+def _elapsed_trip_time(payload: dict) -> str:
+    started_at = payload.get("started_at")
+    if not started_at:
+        return "-"
+    try:
+        if isinstance(started_at, str):
+            started = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
+        else:
+            started = started_at
+        delta = datetime.now(UTC) - started.astimezone(UTC)
+        return f"{max(0, int(delta.total_seconds() // 60))} min"
+    except (TypeError, ValueError):
+        return "-"
+
+
+def _distance_left_km(payload: dict, vehicle: dict | None, start: dict | None, end: dict | None) -> float:
+    status = str(payload.get("status") or "").lower()
+    target = end if status in TRIP_STARTED_STATUSES else start
+    if vehicle and target:
+        try:
+            return round(
+                _haversine_km(
+                    float(vehicle["lat"]),
+                    float(vehicle["lng"]),
+                    float(target["lat"]),
+                    float(target["lng"]),
+                ),
+                1,
+            )
+        except (TypeError, ValueError, KeyError):
+            pass
+    try:
+        return round(float(payload.get("distance_km") or payload.get("distance_remaining_km") or 0), 1)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _vehicle_to_destination_km(trip: dict) -> float | None:
@@ -108,7 +168,7 @@ def trip_action_flags(trip: dict) -> dict:
     }
 
 
-def api_ride_to_active_trip(ride: dict) -> dict:
+def api_ride_to_active_trip(ride: dict, token: str | None = None) -> dict:
     """Map GET /drivers/rides/active payload to the driver portal view model."""
     if not ride:
         return {}
@@ -123,16 +183,15 @@ def api_ride_to_active_trip(ride: dict) -> dict:
     pickup_lng = payload.get("pickup_lng")
     dest_lat = payload.get("destination_lat")
     dest_lng = payload.get("destination_lng")
-    driver_lat = payload.get("driver_lat") or payload.get("current_lat")
-    driver_lng = payload.get("driver_lng") or payload.get("current_lng")
+    driver_coords = _driver_coords_from_ride(payload, token)
 
     route = []
     start = end = vehicle = None
     if pickup_lat is not None and pickup_lng is not None:
         start = {"lat": float(pickup_lat), "lng": float(pickup_lng)}
         route.append(start)
-    if driver_lat is not None and driver_lng is not None:
-        vehicle = {"lat": float(driver_lat), "lng": float(driver_lng)}
+    if driver_coords:
+        vehicle = {"lat": driver_coords[0], "lng": driver_coords[1]}
         if not route or route[-1] != vehicle:
             route.append(vehicle)
     if dest_lat is not None and dest_lng is not None:
@@ -145,10 +204,10 @@ def api_ride_to_active_trip(ride: dict) -> dict:
         center_lat = sum(p["lat"] for p in route) / len(route)
         center_lng = sum(p["lng"] for p in route) / len(route)
 
-    distance_left = payload.get("distance_remaining_km") or payload.get("distance_left_km") or 0
     fare = payload.get("live_fare_ngn") or payload.get("estimated_fare_ngn") or payload.get("final_fare_ngn") or 0
     status = payload.get("status", "in_progress")
     status_label = str(status).replace("_", " ").upper()
+    distance_left = _distance_left_km(payload, vehicle, start, end)
 
     return enrich_trip_actions({
         "id": str(payload.get("id") or payload.get("ride_id") or ""),
@@ -158,9 +217,9 @@ def api_ride_to_active_trip(ride: dict) -> dict:
         "rider_initials": _initials(rider_name),
         "rider_tier": str(payload.get("service_tier") or "economy").replace("_", " ").title() + " rider",
         "rating": float(customer.get("rating") or payload.get("rider_rating") or 0),
-        "distance_left_km": round(float(distance_left), 1),
+        "distance_left_km": distance_left,
         "earnings_live": _fmt_ngn(fare),
-        "trip_time": payload.get("elapsed_time") or payload.get("trip_time") or "-",
+        "trip_time": _elapsed_trip_time(payload) if trip_is_picked_up({"status": status}) else "-",
         "speed_kmh": int(payload.get("speed_kmh") or payload.get("current_speed_kmh") or 0),
         "next_maneuver": payload.get("next_maneuver") or "-",
         "next_maneuver_distance_m": int(payload.get("next_maneuver_distance_m") or 0),
@@ -196,33 +255,42 @@ def trip_map_payload(trip: dict) -> dict:
     }
 
 
+def _apply_session_driver_location(trip: dict, session: dict | None) -> dict:
+    session = session or {}
+    sess_lat = session.get("driver_lat")
+    sess_lng = session.get("driver_lng")
+    if sess_lat is None or sess_lng is None:
+        return trip
+    trip.setdefault("map", {})["vehicle_position"] = {
+        "lat": float(sess_lat),
+        "lng": float(sess_lng),
+    }
+    return trip
+
+
+def _enrich_distance_left(trip: dict) -> dict:
+    try:
+        current = float(trip.get("distance_left_km") or 0)
+    except (TypeError, ValueError):
+        current = 0
+    if current > 0:
+        return trip
+    geo_distance = _vehicle_to_destination_km(trip)
+    if geo_distance is not None:
+        trip["distance_left_km"] = round(geo_distance, 1)
+    return trip
+
+
 def resolve_active_trip(token: str | None, session: dict | None = None) -> dict | None:
     if not token:
         return None
     try:
         api_ride = get_driver_active_ride(token)
-        nav = None
-        try:
-            nav = get_driver_active_trip_navigation(token)
-        except ApiError:
-            pass
         if api_ride:
-            trip = api_ride_to_active_trip(api_ride)
-            if nav and trip:
-                trip["distance_left_km"] = float(nav.get("distance_remaining_km") or trip.get("distance_left_km") or 0)
-                trip["earnings_live"] = _fmt_ngn(nav.get("live_fare_ngn") or 0)
-                trip["trip_time"] = f"{nav.get('elapsed_minutes', 0)} min"
-                trip["speed_kmh"] = int(nav.get("speed_kmh") or trip.get("speed_kmh") or 0)
-                trip["next_maneuver"] = nav.get("next_maneuver") or trip.get("next_maneuver")
-                trip["next_maneuver_distance_m"] = int(nav.get("next_maneuver_distance_m") or 0)
-                if nav.get("driver_lat") is not None:
-                    trip.setdefault("map", {})["vehicle_position"] = {
-                        "lat": float(nav["driver_lat"]),
-                        "lng": float(nav["driver_lng"]),
-                    }
-                if nav.get("at_destination") is not None:
-                    trip["at_destination"] = bool(nav.get("at_destination"))
+            trip = api_ride_to_active_trip(api_ride, token=token)
             if trip.get("id"):
+                trip = _apply_session_driver_location(trip, session)
+                trip = _enrich_distance_left(trip)
                 return enrich_trip_actions(trip)
     except ApiError as exc:
         if exc.status_code not in (404, 204):

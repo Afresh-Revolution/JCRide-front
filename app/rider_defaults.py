@@ -114,7 +114,74 @@ def build_route_map(
     """Build Leaflet route map config for book ride and bike delivery."""
     pickup = resolve_location_coords(pickup_label)
     dropoff = resolve_location_coords(dropoff_label)
-    vehicle = {
+    return _build_route_map_coords(
+        pickup,
+        dropoff,
+        pickup_label=pickup_label,
+        dropoff_label=dropoff_label,
+        badge_label=badge_label,
+        vehicle_type=vehicle_type,
+    )
+
+
+def build_route_map_from_ride(
+    ride: dict,
+    *,
+    badge_label: str | None = None,
+    vehicle_type: str | None = None,
+) -> dict:
+    """Build route map config from backend ride coordinates when available."""
+    pickup_label = ride.get("pickup_address") or ""
+    dropoff_label = ride.get("destination_address") or ""
+    pickup_lat = ride.get("pickup_lat")
+    pickup_lng = ride.get("pickup_lng")
+    dest_lat = ride.get("destination_lat")
+    dest_lng = ride.get("destination_lng")
+
+    if pickup_lat is not None and pickup_lng is not None:
+        pickup = {"lat": float(pickup_lat), "lng": float(pickup_lng)}
+    else:
+        pickup = resolve_location_coords(pickup_label)
+
+    if dest_lat is not None and dest_lng is not None:
+        dropoff = {"lat": float(dest_lat), "lng": float(dest_lng)}
+    else:
+        dropoff = resolve_location_coords(dropoff_label)
+
+    driver_loc = ride.get("driver_location") or {}
+    vehicle_override = None
+    if driver_loc.get("lat") is not None and driver_loc.get("lng") is not None:
+        vehicle_override = {
+            "lat": float(driver_loc["lat"]),
+            "lng": float(driver_loc["lng"]),
+        }
+
+    resolved_vehicle_type = vehicle_type
+    if not resolved_vehicle_type:
+        resolved_vehicle_type = "bike" if ride.get("vehicle_category") == "bike" else "car"
+
+    return _build_route_map_coords(
+        pickup,
+        dropoff,
+        pickup_label=pickup_label,
+        dropoff_label=dropoff_label,
+        badge_label=badge_label,
+        vehicle_type=resolved_vehicle_type,
+        vehicle_override=vehicle_override,
+    )
+
+
+def _build_route_map_coords(
+    pickup: dict,
+    dropoff: dict,
+    *,
+    pickup_label: str,
+    dropoff_label: str,
+    badge_label: str | None = None,
+    vehicle_type: str = "car",
+    vehicle_override: dict | None = None,
+) -> dict:
+    vehicle = vehicle_override or {
         "lat": round((pickup["lat"] + dropoff["lat"]) / 2 + 0.002, 6),
         "lng": round((pickup["lng"] + dropoff["lng"]) / 2 - 0.001, 6),
     }

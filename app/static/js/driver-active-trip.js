@@ -16,6 +16,12 @@
   var lastRouteFetchTime = 0;
   var lastRouteMode = "";
   var lastRenderedPos = null;
+  var liveDriverPos = null;
+  var liveDriverPosAt = 0;
+  var smoothedPos = null;
+  var lastPanPos = null;
+  var lastMarkerUpdateAt = 0;
+  var lastServerSyncAt = 0;
   var mapInitialized = false;
   var followDriver = true;
   var routeRefreshTimer = null;
@@ -29,12 +35,18 @@
   };
 
   var PRE_PICKUP_STATUSES = ["accepted", "driver_assigned", "assigned", "driver_arrived"];
+  var TRIP_STARTED_STATUSES = ["in_progress", "started", "on_trip"];
   var ROUTE_COLOR_PICKUP = "#2563eb";
   var ROUTE_COLOR_TRIP = "#0a4f2a";
-  var MIN_MOVE_M = 15;
-  var ROUTE_REFETCH_M = 150;
-  var ROUTE_REFETCH_MS = 90000;
-  var ROUTE_REFRESH_DEBOUNCE_MS = 3000;
+  var MIN_MOVE_M = 30;
+  var PAN_MIN_MOVE_M = 120;
+  var MAX_JUMP_M = 250;
+  var MARKER_UPDATE_MS = 2500;
+  var SERVER_SYNC_MS = 15000;
+  var ROUTE_REFETCH_M = 200;
+  var ROUTE_REFETCH_MS = 120000;
+  var ROUTE_REFRESH_DEBOUNCE_MS = 5000;
+  var GPS_SMOOTH_ALPHA = 0.28;
 
   function readMapData() {
     if (!mapDataEl) return null;
@@ -91,6 +103,28 @@
   function movedEnough(a, b, minM) {
     if (!b) return true;
     return distanceM(a, b) >= minM;
+  }
+
+  function smoothGps(raw) {
+    if (!raw || raw.lat == null || raw.lng == null) return null;
+
+    if (smoothedPos) {
+      var jump = distanceM(raw, smoothedPos);
+      if (jump > MAX_JUMP_M) {
+        return smoothedPos;
+      }
+      if (raw.accuracy && smoothedPos.accuracy && raw.accuracy > smoothedPos.accuracy * 2.5) {
+        return smoothedPos;
+      }
+      var alpha = GPS_SMOOTH_ALPHA;
+      return {
+        lat: smoothedPos.lat * (1 - alpha) + raw.lat * alpha,
+        lng: smoothedPos.lng * (1 - alpha) + raw.lng * alpha,
+        accuracy: raw.accuracy != null ? raw.accuracy : smoothedPos.accuracy,
+      };
+    }
+
+    return { lat: raw.lat, lng: raw.lng, accuracy: raw.accuracy };
   }
 
   function shouldRefetchRoute(from, to, tripData) {
@@ -207,19 +241,32 @@
   }
 
   function updateManeuverFromPosition(pos) {
-    if (!cachedNav || !pos || !currentTripData) return;
+    if (!pos || !currentTripData) return;
     var target = navTarget(currentTripData);
     if (!target) return;
 
     var distanceEl = document.getElementById("active-trip-maneuver-distance");
     var etaEl = document.getElementById("active-trip-maneuver-eta");
-    var distKm = distanceM(pos, target) / 1000;
-    var durationMin = Math.max(1, Math.round((distKm / 30) * 60));
+    var labelEl = document.getElementById("active-trip-maneuver-label");
+    var prePickup = isPrePickup(currentTripData);
 
-    if (distanceEl && cachedNav.steps && cachedNav.steps.length) {
+    if (labelEl) {
+      labelEl.textContent = prePickup ? "HEAD TO PICKUP" : "NEXT MANEUVER";
+    }
+
+    var distKm = cachedNav
+      ? cachedNav.distance_km
+      : distanceM(pos, target) / 1000;
+    var durationMin = cachedNav
+      ? cachedNav.duration_min
+      : Math.max(1, Math.round((distKm / 30) * 60));
+
+    if (distanceEl && cachedNav && cachedNav.steps && cachedNav.steps.length) {
       var step = cachedNav.steps[0];
       var stepDist = Math.max(0, Math.round(step.distance || 0));
       distanceEl.textContent = stepDist > 0 ? "in " + stepDist + " m" : "On route";
+    } else if (distanceEl) {
+      distanceEl.textContent = "in " + Math.max(1, Math.round(distKm * 1000)) + " m";
     }
     if (etaEl) {
       etaEl.textContent =
@@ -228,9 +275,19 @@
         " min · " +
         distKm.toFixed(1) +
         " km" +
-        (isPrePickup(currentTripData) ? " to pickup" : " remaining");
+        (prePickup ? " to pickup" : " remaining");
       etaEl.hidden = false;
       etaEl.classList.remove("is-hidden");
+    }
+
+    updateMetricsDistance(distKm);
+  }
+
+  function updateMetricsDistance(distKm) {
+    if (distKm == null || isNaN(distKm)) return;
+    var distanceEl = document.querySelector('[data-metric="distance"]');
+    if (distanceEl) {
+      distanceEl.textContent = distKm.toFixed(1) + " km";
     }
   }
 
@@ -245,24 +302,47 @@
   function onPositionUpdate(pos, syncServer) {
     if (!currentTripData || !pos) return;
 
-    var moved = movedEnough(pos, lastRenderedPos, MIN_MOVE_M);
-    currentTripData.vehicle_position = { lat: pos.lat, lng: pos.lng };
+    var now = Date.now();
+    var prev = lastRenderedPos ? { lat: lastRenderedPos.lat, lng: lastRenderedPos.lng } : null;
+    setLiveDriverPos(pos);
+    var stable = smoothedPos || liveDriverPos;
+    if (!stable) return;
 
-    if (moved) {
-      lastRenderedPos = { lat: pos.lat, lng: pos.lng };
-      updateVehicleMarker(pos);
-      updateManeuverFromPosition(pos);
-      if (followDriver && liveMap && mapInitialized) {
-        liveMap.panTo([pos.lat, pos.lng], { animate: true, duration: 0.8 });
+    var moved = movedEnough(stable, prev, MIN_MOVE_M);
+    var due = now - lastMarkerUpdateAt >= MARKER_UPDATE_MS;
+
+    if ((moved || !lastRenderedPos) && due) {
+      lastRenderedPos = { lat: stable.lat, lng: stable.lng };
+      lastMarkerUpdateAt = now;
+      updateVehicleMarker(stable);
+      updateManeuverFromPosition(stable);
+
+      if (followDriver && liveMap) {
+        if (!mapInitialized) {
+          liveMap.setView([stable.lat, stable.lng], Math.max(liveMap.getZoom(), 15), {
+            animate: false,
+          });
+          mapInitialized = true;
+          lastPanPos = { lat: stable.lat, lng: stable.lng };
+        } else if (movedEnough(stable, lastPanPos, PAN_MIN_MOVE_M)) {
+          liveMap.panTo([stable.lat, stable.lng], { animate: true, duration: 1.2 });
+          lastPanPos = { lat: stable.lat, lng: stable.lng };
+        }
       }
     }
 
-    if (syncServer && window.DriverApi) {
-      window.DriverApi.post(window.DriverApi.base + "/location", {
-        lat: pos.lat,
-        lng: pos.lng,
-        accuracy: pos.accuracy,
-      }).catch(function () {});
+    if (syncServer && now - lastServerSyncAt >= SERVER_SYNC_MS) {
+      lastServerSyncAt = now;
+      if (window.DriverRealtime && window.DriverRealtime.sendLocationUpdate(stable)) {
+        /* backend receives live coords via WebSocket */
+      }
+      if (window.DriverApi) {
+        DriverApi.post(DriverApi.base + "/location", {
+          lat: stable.lat,
+          lng: stable.lng,
+          accuracy: stable.accuracy,
+        }).catch(function () {});
+      }
     }
 
     scheduleRouteRefresh(currentTripData, false);
@@ -271,15 +351,39 @@
   function isPrePickup(tripData) {
     if (!tripData) return true;
     if (tripData.picked_up) return false;
-    return PRE_PICKUP_STATUSES.indexOf(tripData.status || "") >= 0;
+    var status = String(tripData.status || "").toLowerCase();
+    if (TRIP_STARTED_STATUSES.indexOf(status) >= 0) return false;
+    return PRE_PICKUP_STATUSES.indexOf(status) >= 0;
+  }
+
+  function readLiveGps() {
+    if (liveDriverPos && Date.now() - liveDriverPosAt < 120000) {
+      return liveDriverPos;
+    }
+    if (window.DriverGeolocation) {
+      var cached = window.DriverGeolocation.getCached();
+      if (cached && cached.lat != null) {
+        return { lat: cached.lat, lng: cached.lng, accuracy: cached.accuracy };
+      }
+    }
+    return null;
+  }
+
+  function setLiveDriverPos(pos) {
+    if (!pos || pos.lat == null || pos.lng == null) return;
+    smoothedPos = smoothGps(pos);
+    if (!smoothedPos) return;
+    liveDriverPos = { lat: smoothedPos.lat, lng: smoothedPos.lng };
+    liveDriverPosAt = Date.now();
+    if (currentTripData) {
+      currentTripData.vehicle_position = liveDriverPos;
+    }
   }
 
   function resolveDriverPosition(tripData) {
+    var live = readLiveGps();
+    if (live) return live;
     if (tripData && tripData.vehicle_position) return tripData.vehicle_position;
-    if (window.DriverGeolocation) {
-      var cached = window.DriverGeolocation.getCached();
-      if (cached && cached.lat != null) return { lat: cached.lat, lng: cached.lng };
-    }
     return null;
   }
 
@@ -398,6 +502,10 @@
     if (!tripData) return null;
     var driver = resolveDriverPosition(tripData);
     if (driver) tripData.vehicle_position = driver;
+    if (tripData.status) {
+      tripData.picked_up = isPrePickup(tripData) ? false : true;
+      tripData.route_mode = isPrePickup(tripData) ? "to_pickup" : "to_destination";
+    }
     return tripData;
   }
 
@@ -435,7 +543,6 @@
     }
 
     if (!forceRoute && !shouldRefetchRoute(from, to, tripData)) {
-      updateManeuverFromPosition(from);
       return Promise.resolve();
     }
 
@@ -450,7 +557,10 @@
         lastRouteMode = mode;
         drawOrUpdateRoute(nav.route, prePickup);
         updateManeuverCard(tripData, nav);
-        fitToRouteOnce(nav.route, tripData);
+        updateMetricsDistance(nav.distance_km);
+        if (!mapInitialized) {
+          fitToRouteOnce(nav.route, tripData);
+        }
       } else if (!cachedNav) {
         updateManeuverCard(tripData, null);
       }
@@ -506,21 +616,26 @@
 
   function updateMetrics(metrics) {
     if (!metrics) return;
-    var distanceEl = document.querySelector('[data-metric="distance"]');
     var earningsEl = document.querySelector('[data-metric="earnings"]');
     var timeEl = document.querySelector('[data-metric="time"]');
     var speedEl = document.querySelector('[data-metric="speed"]');
 
-    if (distanceEl && metrics.distance_left_km != null) {
-      distanceEl.textContent = metrics.distance_left_km + " km";
+    var apiDistance = metrics.distance_left_km;
+    if (apiDistance != null && Number(apiDistance) > 0) {
+      updateMetricsDistance(Number(apiDistance));
+    } else if (cachedNav && cachedNav.distance_km) {
+      updateMetricsDistance(cachedNav.distance_km);
     }
+
     if (earningsEl && metrics.earnings_live) {
       earningsEl.textContent = metrics.earnings_live;
     }
-    if (timeEl && metrics.trip_time) {
+    if (timeEl && metrics.trip_time && metrics.trip_time !== "-") {
       timeEl.textContent = metrics.trip_time;
+    } else if (timeEl && cachedNav) {
+      timeEl.textContent = cachedNav.duration_min + " min";
     }
-    if (speedEl && metrics.speed_kmh != null) {
+    if (speedEl && metrics.speed_kmh != null && Number(metrics.speed_kmh) > 0) {
       speedEl.textContent = metrics.speed_kmh + " km/h";
     }
   }
@@ -556,72 +671,6 @@
     } catch (err) {
       return {};
     }
-  }
-
-  function initChat(config) {
-    var rideId = config.rideId;
-    if (!rideId || !window.DriverApi) return;
-
-    var chatBtn = document.querySelector(".active-trip-comms__btn--chat");
-    var chatPanel = document.getElementById("driver-trip-chat-panel");
-    var chatList = document.getElementById("driver-trip-chat-list");
-    var chatForm = document.getElementById("driver-trip-chat-form");
-    var chatInput = document.getElementById("driver-trip-chat-input");
-    var chatSendBtn = document.getElementById("driver-trip-chat-send");
-
-    function loadMessages() {
-      if (!chatList) return;
-      DriverApi.request(DriverApi.base + "/rides/" + encodeURIComponent(rideId) + "/messages")
-        .then(function (data) {
-          if (window.RideChat) {
-            window.RideChat.renderMessages(chatList, (data && data.messages) || [], "driver");
-          }
-        })
-        .catch(function () {});
-    }
-
-    function appendMessage(msg) {
-      if (window.RideChat && chatList) {
-        window.RideChat.appendMessage(chatList, msg, "driver");
-      }
-    }
-
-    if (chatBtn && chatPanel) {
-      chatBtn.addEventListener("click", function () {
-        chatPanel.hidden = !chatPanel.hidden;
-        if (!chatPanel.hidden) loadMessages();
-      });
-    }
-
-    function sendMessage() {
-      var text = chatInput ? chatInput.value.trim() : "";
-      if (!text) return;
-      if (chatSendBtn) chatSendBtn.disabled = true;
-      DriverApi.post(DriverApi.base + "/rides/" + encodeURIComponent(rideId) + "/messages", {
-        message: text,
-      })
-        .then(function (msg) {
-          if (chatInput) chatInput.value = "";
-          appendMessage(msg);
-          if (chatPanel) chatPanel.hidden = false;
-        })
-        .catch(function (err) {
-          window.alert(err.message || "Could not send message.");
-        })
-        .finally(function () {
-          if (chatSendBtn) chatSendBtn.disabled = false;
-        });
-    }
-
-    if (chatForm) {
-      chatForm.addEventListener("submit", function (event) {
-        event.preventDefault();
-        sendMessage();
-      });
-    }
-
-    window.__driverAppendChatMessage = appendMessage;
-    loadMessages();
   }
 
   function initCancel(config) {
@@ -763,18 +812,6 @@
           forceRoute = prevMode !== nextMode || currentTripData.status !== data.trip.status;
         }
 
-        if (data.map) {
-          if (currentTripData && data.map.vehicle_position) {
-            data.map.start = data.map.start || currentTripData.start;
-            data.map.end = data.map.end || currentTripData.end;
-          }
-          if (forceRoute) {
-            resetMapLayers();
-            mapInitialized = false;
-          }
-          refreshNavigation(data.map, forceRoute);
-        }
-
         if (data.trip) {
           updateMetrics(data.trip);
           updateTripActions(data.trip);
@@ -782,6 +819,18 @@
             pollStarted = true;
             startPolling(data.trip);
           }
+        }
+
+        if (data.map && forceRoute) {
+          if (currentTripData) {
+            data.map.start = data.map.start || currentTripData.start;
+            data.map.end = data.map.end || currentTripData.end;
+          }
+          if (liveDriverPos) {
+            data.map.vehicle_position = { lat: liveDriverPos.lat, lng: liveDriverPos.lng };
+          }
+          resetMapLayers();
+          refreshNavigation(data.map, true);
         }
       })
       .catch(function () {
@@ -809,7 +858,7 @@
         );
       },
       function () {},
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 8000, timeout: 20000 }
     );
   }
 
@@ -824,14 +873,75 @@
     if (liveMap) liveMap.invalidateSize();
   }
 
+  function acquireInitialPosition() {
+    return new Promise(function (resolve) {
+      if (!navigator.geolocation) {
+        resolve(readLiveGps());
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          var pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          };
+          setLiveDriverPos(pos);
+          resolve(pos);
+        },
+        function () {
+          resolve(readLiveGps());
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    });
+  }
+
+  function handleRideRealtimeEvent(event) {
+    var detail = (event && event.detail) || {};
+    var type = detail.type || "";
+    var payload = detail.payload || {};
+    if (!currentTripData) return;
+
+    if (type === "ride.driver.arrived") {
+      currentTripData.status = payload.status || "driver_arrived";
+      currentTripData.picked_up = false;
+      updateTripActions(currentTripData);
+      refreshNavigation(currentTripData, true);
+      return;
+    }
+
+    if (type === "ride.started") {
+      currentTripData.status = payload.status || "in_progress";
+      currentTripData.picked_up = true;
+      updateTripActions(currentTripData);
+      resetMapLayers();
+      refreshNavigation(currentTripData, true);
+      return;
+    }
+
+    if (type === "ride.updated" || type === "ride.snapshot") {
+      if (payload.status) currentTripData.status = payload.status;
+      if (payload.picked_up != null) currentTripData.picked_up = payload.picked_up;
+      updateTripActions(currentTripData);
+      fetchLiveTrip();
+    }
+  }
+
   function init() {
-    if (!mapEl) return;
     var tripConfig = readTripConfig();
+    initCancel(tripConfig);
+    if (!mapEl) return;
     initMap();
+    acquireInitialPosition().then(function (pos) {
+      if (pos && currentTripData) {
+        onPositionUpdate(pos, true);
+        refreshNavigation(currentTripData, true);
+      }
+    });
     fetchLiveTrip();
     startGeoWatch();
-    initChat(tripConfig);
-    initCancel(tripConfig);
+    window.addEventListener("driver-ride-event", handleRideRealtimeEvent);
     window.addEventListener("resize", onResize);
     window.addEventListener("beforeunload", stopGeoWatch);
   }
