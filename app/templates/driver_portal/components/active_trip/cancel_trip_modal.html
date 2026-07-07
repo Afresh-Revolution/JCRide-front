@@ -1,0 +1,65 @@
+{# Driver-initiated trip cancellation modal #}
+<dialog class="driver-cancel-trip-modal" id="driver-cancel-trip-modal" aria-labelledby="driver-cancel-trip-title">
+  <div class="driver-cancel-trip-modal__panel">
+    <button type="button" class="driver-cancel-trip-modal__close" id="driver-cancel-trip-close" aria-label="Close">&times;</button>
+
+    <header class="driver-cancel-trip-modal__hero">
+      <span class="driver-cancel-trip-modal__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </span>
+      <h2 class="driver-cancel-trip-modal__title" id="driver-cancel-trip-title">Cancel trip?</h2>
+      <p class="driver-cancel-trip-modal__lead" id="driver-cancel-trip-lead">
+        The rider will be notified. You can accept new requests after cancelling.
+      </p>
+    </header>
+
+    <div class="driver-cancel-trip-modal__body" id="driver-cancel-trip-form-section">
+      <p class="driver-cancel-trip-modal__label">Why are you cancelling?</p>
+      <div class="driver-cancel-reason-list" id="driver-cancel-reason-list">
+        <label class="driver-cancel-reason">
+          <input type="radio" name="driver_cancel_reason" value="Vehicle issue" checked>
+          <span>Vehicle issue</span>
+        </label>
+        <label class="driver-cancel-reason">
+          <input type="radio" name="driver_cancel_reason" value="Rider no-show">
+          <span>Rider no-show</span>
+        </label>
+        <label class="driver-cancel-reason">
+          <input type="radio" name="driver_cancel_reason" value="Emergency">
+          <span>Emergency</span>
+        </label>
+        <label class="driver-cancel-reason">
+          <input type="radio" name="driver_cancel_reason" value="Unsafe pickup">
+          <span>Unsafe pickup</span>
+        </label>
+        <label class="driver-cancel-reason">
+          <input type="radio" name="driver_cancel_reason" value="other">
+          <span>Other</span>
+        </label>
+      </div>
+      <label class="driver-cancel-trip-modal__other is-hidden" id="driver-cancel-other-wrap" hidden>
+        <span class="driver-cancel-trip-modal__label">Tell us more</span>
+        <textarea id="driver-cancel-other" rows="3" maxlength="500" placeholder="Brief reason for the rider"></textarea>
+      </label>
+    </div>
+
+    <div class="driver-cancel-trip-modal__blocked is-hidden" id="driver-cancel-trip-blocked" hidden>
+      <p>You cannot cancel after the trip has started. Complete the trip or contact support if you need help.</p>
+    </div>
+
+    <p class="driver-cancel-trip-modal__error is-hidden" id="driver-cancel-trip-error" hidden></p>
+
+    <div class="driver-cancel-trip-modal__actions" id="driver-cancel-trip-actions">
+      <button type="button" class="driver-btn driver-btn--outline" id="driver-cancel-trip-back">Keep trip</button>
+      <button type="button" class="driver-btn driver-cancel-trip-modal__confirm" id="driver-cancel-trip-confirm">Confirm cancellation</button>
+    </div>
+
+    <div class="driver-cancel-trip-modal__actions driver-cancel-trip-modal__actions--single is-hidden" id="driver-cancel-trip-blocked-actions" hidden>
+      <button type="button" class="driver-btn driver-btn--primary driver-btn--block" id="driver-cancel-trip-dismiss">Got it</button>
+    </div>
+  </div>
+</dialog>

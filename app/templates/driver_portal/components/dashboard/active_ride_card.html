@@ -1,22 +1,57 @@
 {# Active ride summary on dashboard when driver has an accepted trip #}
 {% if active_ride_id %}
-<article class="panel driver-active-ride-card">
-  <div class="panel__header">
-    <div>
-      <h3 class="panel__title">Active trip</h3>
-      <p class="panel__subtitle">{{ active_ride_status|replace('_', ' ')|title }}</p>
+{% set ride_status = active_ride_status or 'accepted' %}
+{% set status_label = ride_status|replace('_', ' ')|title %}
+{% set status_slug = ride_status|replace('_', '-') %}
+{% set status_hints = {
+  'accepted': 'Head to the pickup location',
+  'driver_assigned': 'Head to the pickup location',
+  'driver_arrived': 'Waiting for rider at pickup',
+  'in_progress': 'Driving to destination'
+} %}
+<article class="driver-active-ride-card" aria-label="Active trip summary">
+  <header class="driver-active-ride-card__header">
+    <div class="driver-active-ride-card__heading">
+      <span class="driver-active-ride-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </span>
+      <div class="driver-active-ride-card__titles">
+        <h3 class="driver-active-ride-card__title">Active trip</h3>
+        <span class="driver-active-ride-card__status driver-active-ride-card__status--{{ status_slug }}">
+          <span class="driver-active-ride-card__status-dot" aria-hidden="true"></span>
+          {{ status_label }}
+        </span>
+      </div>
     </div>
-    <a href="{{ url_for('driver_portal.active_trip') }}" class="driver-btn driver-btn--primary driver-btn--sm">Open trip</a>
+    <a href="{{ url_for('driver_portal.active_trip') }}" class="driver-active-ride-card__cta">
+      Open trip
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </header>
+
+  <div class="driver-active-ride-card__route" role="list" aria-label="Trip route">
+    <div class="driver-active-ride-card__stop" role="listitem">
+      <span class="driver-active-ride-card__dot driver-active-ride-card__dot--pickup" aria-hidden="true"></span>
+      <div class="driver-active-ride-card__stop-body">
+        <span class="driver-active-ride-card__label">Pickup</span>
+        <p class="driver-active-ride-card__address">{{ active_pickup_address or 'Pickup location' }}</p>
+      </div>
+    </div>
+    <span class="driver-active-ride-card__connector" aria-hidden="true"></span>
+    <div class="driver-active-ride-card__stop" role="listitem">
+      <span class="driver-active-ride-card__dot driver-active-ride-card__dot--dest" aria-hidden="true"></span>
+      <div class="driver-active-ride-card__stop-body">
+        <span class="driver-active-ride-card__label">Destination</span>
+        <p class="driver-active-ride-card__address">{{ active_destination_address or 'Destination' }}</p>
+      </div>
+    </div>
   </div>
-  <div class="driver-active-ride-card__route">
-    <div>
-      <span class="driver-active-ride-card__label">Pickup</span>
-      <strong>{{ active_pickup_address or 'Pickup location' }}</strong>
-    </div>
-    <div>
-      <span class="driver-active-ride-card__label">Destination</span>
-      <strong>{{ active_destination_address or 'Destination' }}</strong>
-    </div>
-  </div>
+
+  <footer class="driver-active-ride-card__footer">
+    <p class="driver-active-ride-card__hint">{{ status_hints.get(ride_status, 'Continue your trip in the active trip view') }}</p>
+  </footer>
 </article>
 {% endif %}

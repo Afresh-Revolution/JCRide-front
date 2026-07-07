@@ -181,6 +181,7 @@ def api_ride_to_active_trip(ride: dict) -> dict:
 def trip_map_payload(trip: dict) -> dict:
     """Map data shape consumed by active-trip.js."""
     map_data = trip.get("map") or {}
+    picked_up = bool(trip.get("picked_up"))
     return {
         "map_center": map_data.get("map_center"),
         "map_zoom": map_data.get("map_zoom", 14),
@@ -188,6 +189,9 @@ def trip_map_payload(trip: dict) -> dict:
         "start": map_data.get("start"),
         "end": map_data.get("end"),
         "vehicle_position": map_data.get("vehicle_position"),
+        "status": trip.get("status"),
+        "picked_up": picked_up,
+        "route_mode": "to_destination" if picked_up else "to_pickup",
         "markers": [],
     }
 
