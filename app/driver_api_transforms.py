@@ -302,11 +302,15 @@ def profile_from_api(data: dict, performance: dict | None = None) -> dict:
         "on_time": f"{performance.get('on_time_rate_pct', 0):.0f}%" if performance.get("on_time_rate_pct") is not None else "-",
         "vehicle": {
             "make_model": make_model or "-",
+            "make": make or "",
+            "model": model or "",
             "color": driver.get("vehicle_color") or "-",
             "plate": driver.get("plate_number") or "-",
             "category": str(driver.get("service_tier") or driver.get("vehicle_category") or "-")
             .replace("_", " ")
             .title(),
+            "vehicle_category": driver.get("vehicle_category") or "car",
+            "service_tier": driver.get("service_tier") or "economy",
         },
         "documents": driver.get("documents") or [],
     }

@@ -285,11 +285,14 @@ def _rider_context() -> dict:
     has_gps = session.get("rider_lat") is not None and session.get("rider_lng") is not None
     location = session.get("rider_location") if has_gps else "Detecting location…"
     badge = session.get("rider_badge") or "Rider"
+    notifications = _notifications_inbox()
+    unread_count = sum(1 for item in notifications if item.get("unread"))
     return {
         "rider_name": name,
         "rider_initials": _rider_initials(name),
         "rider_location": location,
         "rider_meta": f"{location} · {badge}",
+        "notifications_unread_count": unread_count,
     }
 
 

@@ -150,6 +150,50 @@ def update_driver_profile(token, payload):
     )
 
 
+def get_vehicle_change_status(token):
+    return _request("GET", f"{API_PREFIX}/drivers/me/vehicle-change", token=token)
+
+
+def submit_vehicle_change_request(token, form_data, files):
+    headers = {"Authorization": f"Bearer {token}"}
+    timeout = get_api_timeout()
+    max_attempts = 2
+    api_urls = get_api_urls()
+    last_exc: RequestException | None = None
+    response = None
+
+    for api_url in api_urls:
+        for attempt in range(max_attempts):
+            try:
+                for upload in files.values():
+                    if hasattr(upload, "stream"):
+                        upload.stream.seek(0)
+                response = requests.post(
+                    f"{api_url}{API_PREFIX}/drivers/me/vehicle-change",
+                    headers=headers,
+                    data=form_data,
+                    files=files,
+                    timeout=timeout,
+                )
+                break
+            except RequestException as exc:
+                last_exc = exc
+                retryable = isinstance(exc, (ReadTimeout, Timeout, RequestsConnectionError))
+                if attempt < max_attempts - 1 and retryable:
+                    time.sleep(2)
+                    continue
+                response = None
+                break
+        if response is not None:
+            break
+
+    if response is None:
+        raise ApiError(_connection_error_message(api_urls, last_exc)) from last_exc
+    if not response.ok:
+        raise ApiError(_parse_error(response), response.status_code)
+    return response.json() if response.content else {}
+
+
 def get_driver_ride_requests(token):
     return _request("GET", f"{API_PREFIX}/drivers/ride-requests", token=token)
 
@@ -1021,6 +1065,37 @@ def update_admin_driver_status(token, driver_id, status):
 
 def delete_admin_driver(token, driver_id):
     return _request("DELETE", f"{API_PREFIX}/admin/drivers/{driver_id}", token=token)
+
+
+def get_admin_vehicle_changes(token, status="pending", page=1, limit=20):
+    params = {"page": page, "limit": limit}
+    if status:
+        params["status"] = status
+    return _request("GET", f"{API_PREFIX}/admin/vehicle-changes", token=token, params=params)
+
+
+def get_admin_vehicle_change(token, request_id):
+    return _request("GET", f"{API_PREFIX}/admin/vehicle-changes/{request_id}", token=token)
+
+
+def approve_admin_vehicle_change(token, request_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/vehicle-changes/{request_id}/approve",
+        token=token,
+    )
+
+
+def reject_admin_vehicle_change(token, request_id, reason=None):
+    payload = {}
+    if reason:
+        payload["reason"] = reason
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/vehicle-changes/{request_id}/reject",
+        token=token,
+        json=payload,
+    )
 
 
 def get_admin_bike_delivery_stats(token):

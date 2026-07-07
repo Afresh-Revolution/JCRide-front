@@ -10,6 +10,7 @@ from app.driver_portal.earnings_service import resolve_earnings_page, resolve_ea
 from app.driver_portal.notifications_service import (
     resolve_notification_settings,
     resolve_notifications_inbox,
+    resolve_notifications_unread_count,
 )
 from app.driver_portal.profile_service import resolve_profile_page
 from app.driver_portal.ride_requests_service import resolve_ride_requests
@@ -21,6 +22,7 @@ from app.driver_portal.settings_service import (
     settings_to_session_payload,
     settings_toggle_to_api,
 )
+from app.driver_portal.vehicle_change_service import resolve_vehicle_change_status
 from app.driver_portal.trip_service import (
     api_ride_to_active_trip,
     resolve_active_trip,
@@ -166,6 +168,7 @@ def _portal_context(active_nav: str, **extra):
         "active_trip_id": active_trip_id,
         "driver_open": online and not on_active_trip,
         "online": online,
+        "notifications_unread_count": resolve_notifications_unread_count(token),
         **extra,
     }
 
@@ -565,6 +568,7 @@ def earnings():
 
     page_data, api_connected = resolve_earnings_page(_driver_token())
     transactions, tx_ok = resolve_earnings_transactions(_driver_token())
+    vehicle_change, _ = resolve_vehicle_change_status(_driver_token())
     payout = None
     token = _driver_token()
     if token:
@@ -585,6 +589,7 @@ def earnings():
                 "weekly_trend": page_data["weekly_trend"],
                 "daily_trips": page_data["daily_trips"],
             },
+            vehicle_change=vehicle_change,
         ),
     )
 
@@ -879,11 +884,107 @@ def profile():
     if guard:
         return guard
 
-    driver_profile, api_connected = resolve_profile_page(_driver_token())
+    token = _driver_token()
+    driver_profile, api_connected = resolve_profile_page(token)
+    vehicle_change, vehicle_change_ok = resolve_vehicle_change_status(token)
     return render_template(
         "pages/profile.html",
-        **_portal_context("profile", driver_profile=driver_profile, api_connected=api_connected),
+        **_portal_context(
+            "profile",
+            driver_profile=driver_profile,
+            api_connected=api_connected,
+            vehicle_change=vehicle_change,
+            vehicle_change_ok=vehicle_change_ok,
+            service_tiers=SERVICE_TIERS,
+            vehicle_categories=VEHICLE_CATEGORIES,
+        ),
     )
+
+
+@driver_portal_bp.route("/profile/vehicle-change", methods=["POST"])
+def submit_vehicle_change():
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    token = _driver_token()
+    if not token:
+        flash("Please sign in again.", "error")
+        return redirect(url_for("driver_portal.profile"))
+
+    vehicle_make = request.form.get("vehicle_make", "").strip()
+    vehicle_model = request.form.get("vehicle_model", "").strip()
+    vehicle_color = request.form.get("vehicle_color", "").strip()
+    plate_number = request.form.get("plate_number", "").strip()
+    vehicle_category = request.form.get("vehicle_category", "").strip().lower()
+    service_tier = request.form.get("service_tier", "").strip().lower()
+    photo_plate_distance = request.files.get("photo_plate_distance")
+    photo_interior = request.files.get("photo_interior")
+    photo_driver_with_car = request.files.get("photo_driver_with_car")
+
+    missing = []
+    if not vehicle_make:
+        missing.append("make")
+    if not vehicle_model:
+        missing.append("model")
+    if not vehicle_color:
+        missing.append("color")
+    if not plate_number:
+        missing.append("plate number")
+    if vehicle_category not in VEHICLE_CATEGORIES:
+        missing.append("vehicle category")
+    if service_tier not in SERVICE_TIERS:
+        missing.append("service tier")
+    if not photo_plate_distance or not photo_plate_distance.filename:
+        missing.append("plate distance photo")
+    if not photo_interior or not photo_interior.filename:
+        missing.append("interior photo")
+    if not photo_driver_with_car or not photo_driver_with_car.filename:
+        missing.append("driver with car photo")
+
+    if missing:
+        flash("Complete all vehicle fields and upload all three verification photos.", "error")
+        return redirect(url_for("driver_portal.profile"))
+
+    try:
+        from app.services.api_client import submit_vehicle_change_request
+
+        submit_vehicle_change_request(
+            token,
+            {
+                "vehicle_make": vehicle_make,
+                "vehicle_model": vehicle_model,
+                "vehicle_color": vehicle_color,
+                "plate_number": plate_number,
+                "vehicle_category": vehicle_category,
+                "service_tier": service_tier,
+            },
+            {
+                "photo_plate_distance": (
+                    photo_plate_distance.filename,
+                    photo_plate_distance.stream,
+                    photo_plate_distance.content_type or "image/jpeg",
+                ),
+                "photo_interior": (
+                    photo_interior.filename,
+                    photo_interior.stream,
+                    photo_interior.content_type or "image/jpeg",
+                ),
+                "photo_driver_with_car": (
+                    photo_driver_with_car.filename,
+                    photo_driver_with_car.stream,
+                    photo_driver_with_car.content_type or "image/jpeg",
+                ),
+            },
+        )
+        flash(
+            "Vehicle change submitted for review. Your account is offline until an admin verifies your update.",
+            "success",
+        )
+    except ApiError as exc:
+        flash(exc.message, "error")
+
+    return redirect(url_for("driver_portal.profile"))
 
 
 @driver_portal_bp.route("/settings")

@@ -30,10 +30,28 @@
 
     <div class="driver-profile-main">
       <article class="driver-profile-card">
-        <h2 class="driver-profile-card__title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
-          Vehicle
-        </h2>
+        <div class="driver-profile-card__header">
+          <h2 class="driver-profile-card__title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+            Vehicle
+          </h2>
+          {% if vehicle_change.can_submit %}
+          <button type="button" class="driver-btn driver-btn--ghost driver-profile-vehicle-edit" id="vehicle-edit-open">
+            Edit vehicle
+          </button>
+          {% elif vehicle_change.vehicle_change_locked %}
+          <span class="driver-profile-vehicle-lock">Under review</span>
+          {% elif vehicle_change.days_until_next_edit %}
+          <span class="driver-profile-vehicle-lock">Edit in {{ vehicle_change.days_until_next_edit }} day{% if vehicle_change.days_until_next_edit != 1 %}s{% endif %}</span>
+          {% endif %}
+        </div>
+
+        {% if vehicle_change.vehicle_change_locked %}
+        <div class="driver-profile-vehicle-banner" role="status">
+          Your vehicle change is under admin review. You are offline and withdrawals are paused until verification completes.
+        </div>
+        {% endif %}
+
         <dl class="driver-profile-vehicle-grid">
           <div>
             <dt>Make &amp; model</dt>
@@ -54,6 +72,78 @@
         </dl>
       </article>
 
+      <dialog class="driver-vehicle-modal" id="vehicle-edit-modal" aria-labelledby="vehicle-edit-title">
+        <form method="post" action="{{ url_for('driver_portal.submit_vehicle_change') }}" enctype="multipart/form-data" class="driver-vehicle-modal__form">
+          <header class="driver-vehicle-modal__header">
+            <div>
+              <h2 id="vehicle-edit-title">Request vehicle update</h2>
+              <p class="driver-vehicle-modal__sub">You can submit one vehicle change every {{ vehicle_change.monthly_limit_days }} days. Your account goes offline until an admin verifies the update.</p>
+            </div>
+            <button type="button" class="driver-vehicle-modal__close" data-vehicle-modal-close aria-label="Close">&times;</button>
+          </header>
+
+          <div class="driver-vehicle-modal__grid">
+            <label class="driver-vehicle-field">
+              <span>Make</span>
+              <input type="text" name="vehicle_make" value="{{ driver_profile.vehicle.make }}" required maxlength="120">
+            </label>
+            <label class="driver-vehicle-field">
+              <span>Model</span>
+              <input type="text" name="vehicle_model" value="{{ driver_profile.vehicle.model }}" required maxlength="120">
+            </label>
+            <label class="driver-vehicle-field">
+              <span>Color</span>
+              <input type="text" name="vehicle_color" value="{{ '' if driver_profile.vehicle.color == '-' else driver_profile.vehicle.color }}" required maxlength="80">
+            </label>
+            <label class="driver-vehicle-field">
+              <span>Plate number</span>
+              <input type="text" name="plate_number" value="{{ '' if driver_profile.vehicle.plate == '-' else driver_profile.vehicle.plate }}" required maxlength="40">
+            </label>
+            <label class="driver-vehicle-field">
+              <span>Vehicle type</span>
+              <select name="vehicle_category" required>
+                {% for category in vehicle_categories %}
+                <option value="{{ category }}"{% if driver_profile.vehicle.vehicle_category == category %} selected{% endif %}>{{ category|title }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="driver-vehicle-field">
+              <span>Service tier</span>
+              <select name="service_tier" required>
+                {% for tier in service_tiers %}
+                <option value="{{ tier }}"{% if driver_profile.vehicle.service_tier == tier %} selected{% endif %}>{{ tier|title }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+
+          <div class="driver-vehicle-modal__photos">
+            <h3>Verification photos</h3>
+            <p>Upload all three clear photos. JPEG, PNG, or WEBP only.</p>
+            <label class="driver-vehicle-photo">
+              <span>1. Plate number on the car (taken at a distance)</span>
+              <input type="file" name="photo_plate_distance" accept="image/jpeg,image/png,image/webp" required data-vehicle-photo>
+              <span class="driver-vehicle-photo__name" data-vehicle-photo-name>No file chosen</span>
+            </label>
+            <label class="driver-vehicle-photo">
+              <span>2. Wide-angle view of the interior</span>
+              <input type="file" name="photo_interior" accept="image/jpeg,image/png,image/webp" required data-vehicle-photo>
+              <span class="driver-vehicle-photo__name" data-vehicle-photo-name>No file chosen</span>
+            </label>
+            <label class="driver-vehicle-photo">
+              <span>3. Your face and the car</span>
+              <input type="file" name="photo_driver_with_car" accept="image/jpeg,image/png,image/webp" required data-vehicle-photo>
+              <span class="driver-vehicle-photo__name" data-vehicle-photo-name>No file chosen</span>
+            </label>
+          </div>
+
+          <footer class="driver-vehicle-modal__footer">
+            <button type="button" class="driver-btn driver-btn--ghost" data-vehicle-modal-close>Cancel</button>
+            <button type="submit" class="driver-btn driver-btn--primary">Submit for review</button>
+          </footer>
+        </form>
+      </dialog>
+
       <article class="driver-profile-card">
         <h2 class="driver-profile-card__title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -72,25 +162,55 @@
             </li>
           {% endfor %}
         </ul>
-        <form method="post" action="{{ url_for('driver_portal.upload_profile_document') }}" enctype="multipart/form-data" class="driver-profile-upload">
-          <label>
-            <span>Upload document</span>
-            <select name="document_type" required>
-              <option value="license">Driver License</option>
-              <option value="vehicle_papers">Vehicle Papers</option>
-              <option value="nin">NIN</option>
-              <option value="insurance">Insurance</option>
-              <option value="profile_photo">Profile Photo</option>
-            </select>
-          </label>
-          <label>
-            <span>File</span>
-            <input type="file" name="file" accept="image/*,.pdf" required>
-          </label>
-          <button type="submit" class="driver-btn driver-btn--primary">Upload</button>
-        </form>
+        <div class="driver-profile-upload">
+          <h3 class="driver-profile-upload__title">Upload a document</h3>
+          <p class="driver-profile-upload__hint">Add or replace a verification document. PDF or image up to 5MB.</p>
+          <form
+            method="post"
+            action="{{ url_for('driver_portal.upload_profile_document') }}"
+            enctype="multipart/form-data"
+            class="driver-profile-upload__form"
+          >
+            <label class="driver-profile-upload__field">
+              <span class="driver-profile-upload__label">Document type</span>
+              <select name="document_type" class="driver-profile-upload__select" required>
+                <option value="license">Driver license</option>
+                <option value="vehicle_papers">Vehicle papers</option>
+                <option value="nin">NIN</option>
+                <option value="insurance">Insurance</option>
+                <option value="profile_photo">Profile photo</option>
+              </select>
+            </label>
+
+            <div class="driver-profile-upload__dropzone" data-profile-upload>
+              <div class="driver-profile-upload__dropzone-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                  <path d="M12 16V4m0 0L8 8m4-4 4 4"/>
+                  <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                </svg>
+              </div>
+              <div class="driver-profile-upload__dropzone-copy">
+                <strong>Select a file</strong>
+                <span>PDF, JPG, PNG or WEBP</span>
+                <span class="driver-profile-upload__filename" data-profile-filename>No file chosen</span>
+              </div>
+              <label class="driver-profile-upload__browse">
+                Browse
+                <input type="file" name="file" accept="image/*,.pdf,application/pdf" required hidden data-profile-file>
+              </label>
+            </div>
+
+            <button type="submit" class="driver-btn driver-btn--primary driver-profile-upload__submit">
+              Upload document
+            </button>
+          </form>
+        </div>
       </article>
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/driver-profile.js') }}" defer></script>
 {% endblock %}

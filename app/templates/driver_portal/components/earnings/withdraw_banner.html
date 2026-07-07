@@ -1,29 +1,70 @@
-{# Withdraw to bank banner #}
-<article class="earnings-withdraw-banner">
-  <div class="earnings-withdraw-banner__info">
-    <p class="earnings-withdraw-banner__label">Withdraw to bank</p>
-    <p class="earnings-withdraw-banner__amount">{{ withdrawal.amount }}</p>
-    {% if withdrawal.bank_name or withdrawal.account_masked %}
-      <p class="earnings-withdraw-banner__bank">
+{# Withdraw to bank #}
+<article class="earnings-withdraw-card">
+  <header class="earnings-withdraw-card__hero">
+    <p class="earnings-withdraw-card__eyebrow">Withdraw to bank</p>
+    <p class="earnings-withdraw-card__amount">{{ withdrawal.amount }}</p>
+    {% if vehicle_change and vehicle_change.vehicle_change_locked %}
+      <p class="earnings-withdraw-card__meta earnings-withdraw-card__meta--locked">
+        Withdrawals are paused while your vehicle change is under review.
+      </p>
+    {% elif withdrawal.bank_name or withdrawal.account_masked %}
+      <p class="earnings-withdraw-card__meta">
         {{ withdrawal.bank_name }} · {{ withdrawal.account_masked }} · {{ withdrawal.provider }}
       </p>
     {% else %}
-      <p class="earnings-withdraw-banner__bank">Enter your payout bank details below.</p>
+      <p class="earnings-withdraw-card__meta">Enter your payout bank details below.</p>
     {% endif %}
-  </div>
+  </header>
+
   <form method="post" action="{{ url_for('driver_portal.withdraw_earnings') }}" class="earnings-withdraw-form">
-    <label class="earnings-withdraw-field">
-      <span>Bank name</span>
-      <input type="text" name="bank_name" placeholder="GTBank" value="{{ payout.bank_name if payout else '' }}" required>
-    </label>
-    <label class="earnings-withdraw-field">
-      <span>Account number</span>
-      <input type="text" name="account_number" inputmode="numeric" placeholder="0123456789" required>
-    </label>
-    <label class="earnings-withdraw-field">
-      <span>Account name</span>
-      <input type="text" name="account_name" placeholder="{{ profile.name }}" value="{{ payout.account_name if payout else '' }}" required>
-    </label>
-    <button type="submit" class="earnings-withdraw-banner__btn">Withdraw now</button>
+    <fieldset class="earnings-withdraw-form__fields"{% if vehicle_change and vehicle_change.vehicle_change_locked %} disabled{% endif %}>
+      <label class="earnings-withdraw-field">
+        <span class="earnings-withdraw-field__label">Bank name</span>
+        <input
+          type="text"
+          name="bank_name"
+          class="earnings-withdraw-field__input"
+          placeholder="e.g. GTBank"
+          value="{{ payout.bank_name if payout else '' }}"
+          autocomplete="organization"
+          required
+        >
+      </label>
+      <label class="earnings-withdraw-field">
+        <span class="earnings-withdraw-field__label">Account number</span>
+        <input
+          type="text"
+          name="account_number"
+          class="earnings-withdraw-field__input"
+          inputmode="numeric"
+          maxlength="10"
+          placeholder="10-digit account number"
+          autocomplete="off"
+          required
+        >
+      </label>
+      <label class="earnings-withdraw-field earnings-withdraw-field--full">
+        <span class="earnings-withdraw-field__label">Account name</span>
+        <input
+          type="text"
+          name="account_name"
+          class="earnings-withdraw-field__input"
+          placeholder="{{ profile.name }}"
+          value="{{ payout.account_name if payout else '' }}"
+          autocomplete="name"
+          required
+        >
+      </label>
+    </fieldset>
+    <div class="earnings-withdraw-form__actions">
+      <button type="submit" class="earnings-withdraw-form__submit"{% if vehicle_change and vehicle_change.vehicle_change_locked %} disabled{% endif %}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 3v12"/>
+          <path d="m7 10 5 5 5-5"/>
+          <path d="M5 21h14"/>
+        </svg>
+        Withdraw now
+      </button>
+    </div>
   </form>
 </article>

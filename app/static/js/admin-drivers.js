@@ -124,7 +124,6 @@
     if (kpiPending) kpiPending.textContent = formatCount(stats.pending_approval);
     if (kpiActive) kpiActive.textContent = formatCount(stats.active_drivers);
     if (kpiSuspended) kpiSuspended.textContent = formatCount(stats.suspended);
-    if (kpiExpiring) kpiExpiring.textContent = formatCount(stats.documents_expiring);
   }
 
   function loadStats() {

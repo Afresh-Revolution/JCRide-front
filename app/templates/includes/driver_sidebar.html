@@ -1,4 +1,5 @@
 {# Reusable driver portal sidebar - pass active_nav: dashboard | requests | active_trip | earnings | notifications | profile | settings #}
+{% set unread_notifications = notifications_unread_count|default(0)|int %}
 <aside class="admin-sidebar" id="{{ sidebar_id|default('driver-sidebar') }}" aria-label="Driver navigation">
   {% from "includes/brand_assets.html" import brand_mark %}
   <div class="admin-sidebar__brand">
@@ -28,8 +29,18 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
       Earnings
     </a>
-    <a href="{{ url_for('driver_portal.notifications') }}" class="admin-nav-item{% if active_nav == 'notifications' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    <a
+      href="{{ url_for('driver_portal.notifications') }}"
+      class="admin-nav-item admin-nav-item--notifications{% if active_nav == 'notifications' %} is-active{% endif %}{% if unread_notifications > 0 %} has-unread{% endif %}"
+      aria-label="{% if unread_notifications > 0 %}{{ unread_notifications }} unread notification{% if unread_notifications != 1 %}s{% endif %}{% else %}Notifications{% endif %}"
+    >
+      <span class="admin-nav-item__icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        {% if unread_notifications > 0 %}
+        {% set badge_label = unread_notifications if unread_notifications < 100 else '99+' %}
+        <span class="notification-badge admin-nav-item__badge{% if badge_label|string|length > 1 %} notification-badge--wide{% endif %}">{{ badge_label }}</span>
+        {% endif %}
+      </span>
       Notifications
     </a>
     <a href="{{ url_for('driver_portal.profile') }}" class="admin-nav-item{% if active_nav == 'profile' %} is-active{% endif %}">

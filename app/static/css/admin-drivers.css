@@ -622,3 +622,64 @@
     justify-content: center;
   }
 }
+
+.drivers-vehicle-changes {
+  margin-bottom: 1rem;
+}
+
+.drivers-vehicle-changes__header {
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.drivers-vehicle-changes__title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.drivers-vehicle-changes__sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--dash-muted, #6b7280);
+}
+
+.drivers-table__meta {
+  font-size: 0.75rem;
+  color: var(--dash-muted, #6b7280);
+}
+
+.vehicle-change-review__cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.vehicle-change-review__cols h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.875rem;
+}
+
+.vehicle-change-review__cols p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.vehicle-change-review__photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.vehicle-change-review__photos img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.65rem;
+  border: 1px solid var(--dash-border, #e5e7eb);
+}
+
+@media (max-width: 768px) {
+  .vehicle-change-review__photos {
+    grid-template-columns: 1fr;
+  }
+}
