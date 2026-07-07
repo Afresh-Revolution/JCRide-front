@@ -135,6 +135,14 @@ from app.rider_defaults import (
     build_route_map,
 )
 from app.services.landing_content import load_landing_page
+from app.services.navigation_guard import (
+    grant_driver_entry,
+    grant_rider_entry,
+    is_authenticated_driver,
+    is_authenticated_rider,
+    revoke_driver_entry,
+    revoke_rider_entry,
+)
 
 main_bp = Blueprint("main", __name__)
 
@@ -553,6 +561,7 @@ def _handle_login(portal: str):
                     if portal == "driver":
                         _establish_driver_session(result, identifier, remember=remember)
                         _clear_driver_signup()
+                        grant_driver_entry()
                         flash("Signed in successfully.", "success")
                         return redirect(url_for("driver_portal.dashboard"))
 
@@ -568,6 +577,7 @@ def _handle_login(portal: str):
                     if wallet.get("balance_ngn") is not None:
                         session["wallet_balance_ngn"] = wallet.get("balance_ngn")
                     session.permanent = remember
+                    grant_rider_entry()
                     flash(
                         "Signed in with JosCity."
                         if portal == "rider" and user.get("joscity_user_id")
@@ -596,6 +606,38 @@ def home():
 @main_bp.route("/portals")
 def portals_page():
     return render_template("portals.html")
+
+
+@main_bp.route("/enter/rider", methods=["POST"])
+def enter_rider_portal():
+    grant_rider_entry()
+    if is_authenticated_rider():
+        return redirect(url_for("main.user_dashboard"))
+    return redirect(url_for("main.rider_login_page"))
+
+
+@main_bp.route("/enter/driver", methods=["POST"])
+def enter_driver_portal():
+    grant_driver_entry()
+    if is_authenticated_driver():
+        return redirect(url_for("driver_portal.dashboard"))
+    return redirect(url_for("main.driver_login_page"))
+
+
+@main_bp.route("/enter/rider/register", methods=["POST"])
+def enter_rider_register():
+    grant_rider_entry()
+    if is_authenticated_rider():
+        return redirect(url_for("main.user_dashboard"))
+    return redirect(url_for("main.user_register_page"))
+
+
+@main_bp.route("/enter/driver/register", methods=["POST"])
+def enter_driver_register():
+    grant_driver_entry()
+    if is_authenticated_driver():
+        return redirect(url_for("driver_portal.dashboard"))
+    return redirect(url_for("main.driver_register_page"))
 
 
 @main_bp.route("/login", methods=["GET", "POST"])
@@ -1200,6 +1242,7 @@ def user_register_page():
                     session["name"] = user.get("full_name") or signup.get("full_name")
                     session["role"] = user.get("role", "customer")
                     session["portal"] = "rider"
+                    grant_rider_entry()
                     _clear_rider_signup()
                     flash("Welcome to JosRide! Your account is ready.", "success")
                     return redirect(url_for("main.user_dashboard"))
@@ -2364,7 +2407,7 @@ def driver_page():
     """Legacy URL - send drivers to the real driver portal."""
     if session.get("driver_token") or session.get("role") == "driver":
         return redirect(url_for("driver_portal.dashboard"))
-    return redirect(url_for("driver_portal.login"))
+    return redirect(url_for("main.home"))
 
 
 @main_bp.route("/logout")

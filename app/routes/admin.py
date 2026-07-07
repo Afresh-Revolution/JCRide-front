@@ -98,10 +98,25 @@ from app.admin_ops_transforms import (
     normalize_withdrawal_list,
 )
 from app.admin_defaults import build_empty_admin_stats
+from app.services.navigation_guard import (
+    grant_admin_entry,
+    has_admin_entry,
+    revoke_admin_entry,
+)
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 EMPTY_STATS = build_empty_admin_stats()
+
+
+def admin_entry_required(view):
+    @wraps(view)
+    def wrapped(**kwargs):
+        if not has_admin_entry():
+            return redirect(url_for("main.home"))
+        return view(**kwargs)
+
+    return wrapped
 
 
 def _normalize_live_trips_payload(raw):
@@ -245,6 +260,8 @@ def _wallet_stats_fallback(token):
 def admin_required(view):
     @wraps(view)
     def wrapped(**kwargs):
+        if not has_admin_entry():
+            return redirect(url_for("main.home"))
         if not session.get("admin_token"):
             flash("Please sign in to the admin portal.", "error")
             return redirect(url_for("admin.login_page"))
@@ -276,7 +293,16 @@ def _login_flash_messages():
     flash(message, category)
 
 
+@admin_bp.route("/enter", methods=["POST"])
+def enter_portal():
+    grant_admin_entry()
+    if session.get("admin_token"):
+        return redirect(url_for("admin.dashboard"))
+    return redirect(url_for("admin.login_page"))
+
+
 @admin_bp.route("/login", methods=["GET", "POST"])
+@admin_entry_required
 def login_page():
     if session.get("admin_token"):
         return redirect(url_for("admin.dashboard"))
@@ -294,6 +320,7 @@ def login_page():
             result = admin_login(email, password)
             session["admin_token"] = result.get("access_token")
             session["admin_email"] = email
+            grant_admin_entry()
             flash("Signed in successfully.", "success")
             return redirect(url_for("admin.dashboard"))
         except ApiError as exc:
@@ -1186,5 +1213,6 @@ def api_landing_page_settings_update():
 def logout():
     session.pop("admin_token", None)
     session.pop("admin_email", None)
+    revoke_admin_entry()
     flash("Signed out of admin portal.", "success")
-    return redirect(url_for("admin.login_page"))
+    return redirect(url_for("main.home"))

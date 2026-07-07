@@ -40,10 +40,9 @@
 
       <div class="landing-header__actions">
         <a href="{{ url_for('main.portals_page') }}" class="landing-link">Log in</a>
-        <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--primary landing-btn--sm">
-          Get started
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </a>
+        <form method="post" action="{{ url_for('main.enter_rider_register') }}" class="landing-entry-form">
+          <button type="submit" class="landing-btn landing-btn--primary landing-btn--sm">Get started</button>
+        </form>
         <button type="button" class="landing-menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="landing-nav">
           <span></span><span></span><span></span>
         </button>
@@ -71,7 +70,9 @@
         <p class="landing-footer__desc">Nigeria's premium ride-hailing platform. Pay-per-km, instant payments, verified drivers - built right here in Lagos.</p>
         <div class="landing-footer__cta">
           <a href="{{ url_for('main.portals_page') }}" class="landing-btn landing-btn--primary landing-btn--sm">Log in</a>
-          <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--outline landing-btn--sm">Sign up</a>
+          <form method="post" action="{{ url_for('main.enter_rider_register') }}" class="landing-entry-form">
+            <button type="submit" class="landing-btn landing-btn--outline landing-btn--sm">Sign up</button>
+          </form>
         </div>
       </div>
 
@@ -81,7 +82,11 @@
           <li><a href="#features">Features</a></li>
           <li><a href="#pricing">Pricing</a></li>
           <li><a href="#cities">Cities</a></li>
-          <li><a href="{{ url_for('main.ride_page') }}">Schedule a ride</a></li>
+          <li>
+            <form method="post" action="{{ url_for('main.enter_rider_portal') }}" class="landing-entry-form landing-entry-form--footer-link">
+              <button type="submit">Schedule a ride</button>
+            </form>
+          </li>
           <li><a href="#drive-with-us">Safety</a></li>
         </ul>
       </div>
@@ -89,8 +94,16 @@
       <div class="landing-footer__col">
         <h4>Drivers</h4>
         <ul>
-          <li><a href="{{ url_for('main.driver_page') }}">Become a driver</a></li>
-          <li><a href="{{ url_for('main.driver_page') }}">Driver app</a></li>
+          <li>
+            <form method="post" action="{{ url_for('main.enter_driver_register') }}" class="landing-entry-form landing-entry-form--footer-link">
+              <button type="submit">Become a driver</button>
+            </form>
+          </li>
+          <li>
+            <form method="post" action="{{ url_for('main.enter_driver_portal') }}" class="landing-entry-form landing-entry-form--footer-link">
+              <button type="submit">Driver app</button>
+            </form>
+          </li>
           <li><a href="#drive-with-us">Earnings</a></li>
           <li><a href="#drive-with-us">Requirements</a></li>
           <li><a href="#faq">Support</a></li>
@@ -123,7 +136,11 @@
     <div class="landing-footer__bar">
       <div class="landing-container landing-footer__bar-inner">
         <p>&copy; 2026 JosRide Technologies Ltd &middot; Lagos, Nigeria</p>
-        <p class="landing-footer__status"><span class="landing-footer__dot" aria-hidden="true"></span> All systems operational</p>
+        <form method="post" action="{{ url_for('admin.enter_portal') }}" class="landing-footer__status-form">
+          <button type="submit" class="landing-footer__status" aria-label="Open admin portal">
+            <span class="landing-footer__dot" aria-hidden="true"></span> All systems operational
+          </button>
+        </form>
       </div>
     </div>
   </footer>
