@@ -51,6 +51,7 @@ from app.services.api_client import (
     upsert_driver_payout_account,
     withdraw_wallet,
 )
+from app.services.navigation_guard import grant_driver_entry, revoke_driver_entry
 
 driver_portal_bp = Blueprint(
     "driver_portal",
@@ -203,6 +204,7 @@ def login():
             session["driver_phone"] = session["phone"]
             session["driver_online"] = False
             session.permanent = remember
+            grant_driver_entry()
             flash("Welcome back, captain!", "success")
             return redirect(url_for("driver_portal.dashboard"))
         except ApiError as exc:
@@ -1058,8 +1060,9 @@ def logout():
         DRIVER_APP_SETTINGS_KEY,
     ):
         session.pop(key, None)
+    revoke_driver_entry()
     flash("Signed out.", "success")
-    return redirect(url_for("main.driver_login_page"))
+    return redirect(url_for("main.home"))
 
 
 # ── Driver JSON API (proxies to JosRide-back) ──

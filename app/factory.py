@@ -11,6 +11,7 @@ from app.driver_portal.routes import driver_portal_bp
 from app.routes.admin import admin_bp
 from app.routes.main import main_bp
 from app.routes.pwa import pwa_bp
+from app.services.navigation_guard import enforce_navigation_guard
 from app.static_utils import static_url
 
 
@@ -22,6 +23,8 @@ def create_app() -> Flask:
     app.register_blueprint(pwa_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(driver_portal_bp)
+
+    app.before_request(enforce_navigation_guard)
 
     app.jinja_env.globals["static_url"] = static_url
 

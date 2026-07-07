@@ -30,14 +30,18 @@
       <p class="landing-hero__subtitle">{{ h.subtitle }}</p>
 
       <div class="landing-hero__actions">
-        <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--primary">
-          {{ h.primary_cta_label }}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </a>
-        <a href="{{ url_for('main.driver_login_page') }}" class="landing-btn landing-btn--ghost">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
-          {{ h.secondary_cta_label }}
-        </a>
+        <form method="post" action="{{ url_for('main.enter_rider_register') }}" class="landing-entry-form">
+          <button type="submit" class="landing-btn landing-btn--primary">
+            {{ h.primary_cta_label }}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('main.enter_driver_portal') }}" class="landing-entry-form">
+          <button type="submit" class="landing-btn landing-btn--ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+            {{ h.secondary_cta_label }}
+          </button>
+        </form>
         <a href="{{ h.watch_href }}" class="landing-hero__watch">
           <span class="landing-hero__watch-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -208,10 +212,12 @@
         <li>{{ bullet }}</li>
         {% endfor %}
       </ul>
-      <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--primary">
-        {{ au.rider_cta_label }}
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
+      <form method="post" action="{{ url_for('main.enter_rider_register') }}" class="landing-entry-form">
+        <button type="submit" class="landing-btn landing-btn--primary">
+          {{ au.rider_cta_label }}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
     </article>
     <article class="landing-audience-card landing-audience-card--driver">
       <p class="landing-eyebrow landing-eyebrow--light">{{ au.driver_eyebrow }}</p>
@@ -222,10 +228,12 @@
         <div><strong>{{ stat.value }}</strong><span>{{ stat.label }}</span></div>
         {% endfor %}
       </div>
-      <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--accent">
-        {{ au.driver_cta_label }}
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
+      <form method="post" action="{{ url_for('main.enter_driver_register') }}" class="landing-entry-form">
+        <button type="submit" class="landing-btn landing-btn--accent">
+          {{ au.driver_cta_label }}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
     </article>
   </div>
 </section>
@@ -283,7 +291,9 @@
         <li>{{ feature }}</li>
         {% endfor %}
       </ul>
-      <a href="{{ url_for('main.ride_page') }}" class="landing-btn {% if tier.featured %}landing-btn--accent{% else %}landing-btn--primary{% endif %} landing-btn--block">{{ tier.cta_label }}</a>
+      <form method="post" action="{{ url_for('main.enter_rider_portal') }}" class="landing-entry-form landing-entry-form--block">
+        <button type="submit" class="landing-btn {% if tier.featured %}landing-btn--accent{% else %}landing-btn--primary{% endif %} landing-btn--block">{{ tier.cta_label }}</button>
+      </form>
     </article>
     {% endfor %}
   </div>
@@ -344,14 +354,18 @@
       <h2>{{ cta.title }}</h2>
       <p>{{ cta.subtitle }}</p>
       <div class="landing-cta__actions">
-        <a href="{{ url_for('main.register_page') }}" class="landing-btn landing-btn--accent">
-          {{ cta.primary_label }}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </a>
-        <a href="{{ url_for('main.driver_page') }}" class="landing-btn landing-btn--outline-light">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
-          {{ cta.secondary_label }}
-        </a>
+        <form method="post" action="{{ url_for('main.enter_rider_register') }}" class="landing-entry-form">
+          <button type="submit" class="landing-btn landing-btn--accent">
+            {{ cta.primary_label }}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+        <form method="post" action="{{ url_for('main.enter_driver_portal') }}" class="landing-entry-form">
+          <button type="submit" class="landing-btn landing-btn--outline-light">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+            {{ cta.secondary_label }}
+          </button>
+        </form>
       </div>
     </div>
     <div class="landing-cta__stats">

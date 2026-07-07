@@ -445,6 +445,12 @@ html {
     color: #a7f3d0;
   }
 
+  .landing-flash--info {
+    background: rgba(30, 64, 175, 0.25);
+    border-color: rgba(96, 165, 250, 0.35);
+    color: #bfdbfe;
+  }
+
   /* Landing — FAQ, testimonials, accents */
   .landing-faq {
     background: var(--surface-muted);
