@@ -1967,6 +1967,270 @@ body.driver-cancel-trip-modal-open {
   }
 }
 
+/* Driver trip chat — full-page sheet sliding up */
+.driver-trip-chat-sheet {
+  border: none;
+  padding: 0;
+  margin: 0;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  background: transparent;
+  color: var(--dash-text, #0f172a);
+  overflow: hidden;
+}
+
+.driver-trip-chat-sheet:not([open]):not(.is-open) {
+  display: none;
+}
+
+.driver-trip-chat-sheet[open],
+.driver-trip-chat-sheet.is-open {
+  display: flex;
+  flex-direction: column;
+  z-index: 10050;
+}
+
+.driver-trip-chat-sheet::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  animation: driver-chat-backdrop-in 0.32s ease forwards;
+}
+
+.driver-trip-chat-sheet__panel {
+  margin-top: auto;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--dash-card, #ffffff);
+  border-top: 1px solid var(--dash-border, #e2e8f0);
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.12);
+  animation: driver-chat-sheet-in 0.38s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes driver-chat-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes driver-chat-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.driver-trip-chat-sheet__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: max(0.85rem, env(safe-area-inset-top)) 1rem 0.85rem;
+  border-bottom: 1px solid var(--dash-border, #e2e8f0);
+  background: var(--dash-card, #ffffff);
+  flex-shrink: 0;
+}
+
+.driver-trip-chat-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--dash-border, #e2e8f0);
+  border-radius: 999px;
+  background: var(--dash-bg, #f8fafc);
+  color: var(--dash-text, #0f172a);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.driver-trip-chat-sheet__close:hover {
+  background: var(--dash-border, #e2e8f0);
+}
+
+.driver-trip-chat-sheet__close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.driver-trip-chat-sheet__heading {
+  min-width: 0;
+}
+
+.driver-trip-chat-sheet__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.driver-trip-chat-sheet__subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--dash-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.driver-trip-chat-sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--dash-bg, #f8fafc) 0%, var(--dash-card, #ffffff) 100%);
+}
+
+.driver-trip-chat-sheet__messages {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 1rem 1rem 0.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.driver-trip-chat-sheet__compose {
+  flex-shrink: 0;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--dash-border, #e2e8f0);
+  background: var(--dash-card, #ffffff);
+}
+
+.driver-trip-chat-sheet__input {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border-radius: 999px;
+}
+
+.driver-trip-chat-sheet__send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0 1rem;
+  min-width: 3rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.driver-trip-chat-sheet__send svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.driver-trip-chat-sheet__send span {
+  display: none;
+}
+
+.driver-trip-chat-sheet__messages .ride-chat-item {
+  max-width: min(88%, 420px);
+  padding: 0.625rem 0.875rem;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.driver-trip-chat-sheet__messages .ride-chat-item--mine {
+  background: #0a4f2a;
+  color: #f8fafc;
+}
+
+.driver-trip-chat-sheet__messages .ride-chat-item--mine .ride-chat-item__meta {
+  color: rgba(248, 250, 252, 0.72);
+}
+
+.driver-trip-chat-sheet__messages .ride-chat-item--theirs {
+  background: var(--dash-card, #ffffff);
+  border: 1px solid var(--dash-border, #e2e8f0);
+}
+
+.driver-trip-chat-sheet__messages .ride-chat-empty {
+  margin: auto;
+  padding: 2rem 1rem;
+  max-width: 18rem;
+  line-height: 1.5;
+}
+
+body.driver-trip-chat-open {
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .driver-trip-chat-sheet__send span {
+    display: inline;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .driver-trip-chat-sheet__panel {
+    background: #0f172a;
+    border-top-color: #1e293b;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .driver-trip-chat-sheet__header,
+  .driver-trip-chat-sheet__compose {
+    background: #0f172a;
+    border-color: #1e293b;
+  }
+
+  .driver-trip-chat-sheet__body {
+    background: linear-gradient(180deg, #0b1220 0%, #0f172a 100%);
+  }
+
+  .driver-trip-chat-sheet__close {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .driver-trip-chat-sheet__close:hover {
+    background: #334155;
+  }
+
+  .driver-trip-chat-sheet__subtitle {
+    color: #94a3b8;
+  }
+
+  .driver-trip-chat-sheet__messages .ride-chat-item--mine {
+    background: #0a4f2a;
+  }
+
+  .driver-trip-chat-sheet__messages .ride-chat-item--theirs {
+    background: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+  }
+
+  .driver-trip-chat-sheet__messages .ride-chat-item--theirs .ride-chat-item__meta {
+    color: #94a3b8;
+  }
+
+  .driver-trip-chat-sheet__input {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+  }
+}
+
 .ride-chat-list {
   list-style: none;
   margin: 0 0 0.75rem;

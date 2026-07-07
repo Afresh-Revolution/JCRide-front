@@ -21,7 +21,11 @@
   function renderMessages(listEl, messages, viewerRole) {
     if (!listEl) return;
     if (!messages || !messages.length) {
-      listEl.innerHTML = '<li class="ride-chat-empty">No messages yet. Say hello to your driver.</li>';
+      var emptyCopy =
+        viewerRole === "driver"
+          ? "No messages yet. Say hello to your rider."
+          : "No messages yet. Say hello to your driver.";
+      listEl.innerHTML = '<li class="ride-chat-empty">' + emptyCopy + "</li>";
       return;
     }
     listEl.innerHTML = messages

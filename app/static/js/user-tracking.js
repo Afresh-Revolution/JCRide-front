@@ -54,6 +54,24 @@
     }
   }
 
+  function readRouteMapConfig() {
+    var el = document.getElementById("rider-route-map-data");
+    if (!el) return null;
+    try {
+      return JSON.parse(el.textContent || "{}");
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function updateDriverOnMap(location) {
+    if (!location || location.lat == null || location.lng == null || !window.RiderRouteMap) return;
+    var mapConfig = readRouteMapConfig();
+    if (!mapConfig) return;
+    mapConfig.vehicle_position = { lat: location.lat, lng: location.lng };
+    window.RiderRouteMap.update(mapConfig);
+  }
+
   function stopFindingPoll() {
     if (pollTimer) {
       window.clearInterval(pollTimer);
@@ -207,6 +225,9 @@
 
     var driver = ride.driver || {};
     updateDriverPanel(driver, status);
+    if (ride.driver_location) {
+      updateDriverOnMap(ride.driver_location);
+    }
     updateCancelButtonVisibility();
   }
 
@@ -249,11 +270,15 @@
     if (window.RideRealtimeEvents) {
       var next = window.RideRealtimeEvents.applyRideEvent(activeRideState, message);
       if (next) updateRideUi(next);
-      if (type === "driver.location.updated") refreshTrackingMap();
+      if (type === "driver.location.updated") {
+        updateDriverOnMap(message.payload || message.data || {});
+      }
       return;
     }
 
-    if (type === "driver.location.updated") refreshTrackingMap();
+    if (type === "driver.location.updated") {
+      updateDriverOnMap(message.payload || message.data || {});
+    }
   }
 
   function scheduleReconnect() {

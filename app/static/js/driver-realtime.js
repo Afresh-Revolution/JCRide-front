@@ -79,6 +79,34 @@
     dismissBtn.addEventListener("click", hideCancelOverlay);
   }
 
+  function sendLocationUpdate(pos) {
+    if (!socket || socket.readyState !== 1 || !pos || pos.lat == null || pos.lng == null) {
+      return false;
+    }
+    var message =
+      window.RideRealtimeEvents && window.RideRealtimeEvents.driverLocationMessage
+        ? window.RideRealtimeEvents.driverLocationMessage(pos)
+        : {
+            type: "driver.location.update",
+            payload: {
+              lat: pos.lat,
+              lng: pos.lng,
+              accuracy: pos.accuracy,
+            },
+          };
+    if (!message) return false;
+    socket.send(JSON.stringify(message));
+    return true;
+  }
+
+  function dispatchTripEvent(type, payload) {
+    window.dispatchEvent(
+      new CustomEvent("driver-ride-event", {
+        detail: { type: type, payload: payload || {} },
+      })
+    );
+  }
+
   function notifyNewRideRequest(payload) {
     if (window.location.pathname.indexOf("/ride-requests") < 0) return;
     var countEl = document.querySelector(".ride-requests-count");
@@ -143,8 +171,9 @@
         type === "ride.updated" ||
         type === "ride.snapshot"
       ) {
-        if (window.location.pathname.indexOf("/active-trip") >= 0) {
-          window.location.reload();
+        dispatchTripEvent(type, payload);
+        if (type === "ride.completed" && window.location.pathname.indexOf("/active-trip") >= 0) {
+          window.location.href = config.dashboardUrl || "/driver-portal/dashboard";
         }
       }
     } catch (err) {
@@ -186,6 +215,13 @@
       if (socket) socket.close();
     });
   }
+
+  window.DriverRealtime = {
+    sendLocationUpdate: sendLocationUpdate,
+    isConnected: function () {
+      return !!(socket && socket.readyState === 1);
+    },
+  };
 
   connect();
 })();

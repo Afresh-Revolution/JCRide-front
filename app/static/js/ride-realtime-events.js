@@ -173,6 +173,18 @@
     };
   }
 
+  function driverLocationMessage(pos) {
+    if (!pos || pos.lat == null || pos.lng == null) return null;
+    var payload = { lat: pos.lat, lng: pos.lng };
+    if (pos.accuracy != null) payload.accuracy = pos.accuracy;
+    if (pos.heading != null) payload.heading = pos.heading;
+    if (pos.speed != null) payload.speed = pos.speed;
+    return {
+      type: "driver.location.update",
+      payload: payload,
+    };
+  }
+
   global.RideRealtimeEvents = {
     applyRideEvent: applyRideEvent,
     normalizeRide: normalizeRide,
@@ -181,6 +193,7 @@
     isDriverMatched: isDriverMatched,
     subscribeMessage: subscribeMessage,
     sendChatMessage: sendChatMessage,
+    driverLocationMessage: driverLocationMessage,
     DRIVER_READY_STATUSES: DRIVER_READY_STATUSES,
   };
 })(window);
