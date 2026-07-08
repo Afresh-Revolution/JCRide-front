@@ -127,6 +127,18 @@
   </aside>
 </div>
 
+<dialog class="cancel-ride-modal cancel-ride-modal--confirm" id="cancel-request-modal" aria-labelledby="cancel-request-title">
+  <div class="cancel-ride-modal__panel rider-panel">
+    <button type="button" class="cancel-ride-modal__close" id="cancel-request-close" aria-label="Close">&times;</button>
+    <h2 class="rider-panel__title" id="cancel-request-title">Cancel ride request?</h2>
+    <p class="cancel-ride-modal__lead">No fee will be charged. We'll stop searching for a driver.</p>
+    <div class="cancel-ride-modal__actions">
+      <button type="button" class="rider-btn rider-btn--outline" id="cancel-request-back">Keep looking</button>
+      <button type="button" class="rider-btn rider-btn--danger" id="cancel-request-confirm">Cancel request</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog class="cancel-ride-modal" id="cancel-ride-modal" aria-labelledby="cancel-ride-title">
   <form method="dialog" class="cancel-ride-modal__panel rider-panel" id="cancel-ride-form">
     <button type="button" class="cancel-ride-modal__close" id="cancel-ride-close" aria-label="Close">&times;</button>

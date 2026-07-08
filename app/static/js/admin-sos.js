@@ -110,18 +110,20 @@
       });
   }
 
-  function acknowledgeAlert(id) {
+  function acknowledgeAlert(id, button) {
+    if (button && window.ButtonLoading) window.ButtonLoading.start(button);
     return apiRequest("/admin/api/sos/" + encodeURIComponent(id) + "/acknowledge", { method: "POST" })
       .then(function () {
         showToast("SOS acknowledged");
         return loadAlerts();
       })
       .catch(function (err) {
+        if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
         showToast(err.message, true);
       });
   }
 
-  function resolveAlert(id, status) {
+  function resolveAlert(id, status, button) {
     const label = status === "false_alarm" ? "false alarm" : "resolved";
     return window.AdminConfirm.show({
       title: "Resolve SOS",
@@ -129,6 +131,7 @@
       confirmLabel: "Confirm",
     }).then(function (confirmed) {
       if (!confirmed) return;
+      if (button && window.ButtonLoading) window.ButtonLoading.start(button);
       return apiRequest("/admin/api/sos/" + encodeURIComponent(id) + "/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,6 +142,7 @@
           return loadAlerts();
         })
         .catch(function (err) {
+          if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
           showToast(err.message, true);
         });
     });
@@ -164,12 +168,15 @@
         const ackId = target.getAttribute("data-sos-ack");
         const resolveId = target.getAttribute("data-sos-resolve");
         const resolveStatus = target.getAttribute("data-resolve-status") || "resolved";
-        if (ackId && !target.disabled) acknowledgeAlert(ackId);
-        if (resolveId && !target.disabled) resolveAlert(resolveId, resolveStatus);
+        if (ackId && !target.disabled) acknowledgeAlert(ackId, target);
+        if (resolveId && !target.disabled) resolveAlert(resolveId, resolveStatus, target);
       });
     }
     if (refreshBtn) {
-      refreshBtn.addEventListener("click", loadAlerts);
+      refreshBtn.addEventListener("click", function () {
+        var p = loadAlerts();
+        if (window.ButtonLoading) window.ButtonLoading.wrap(refreshBtn, p);
+      });
     }
   }
 

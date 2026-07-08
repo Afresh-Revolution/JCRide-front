@@ -339,21 +339,65 @@
       "/user/dashboard?cancelled=1&message=" + encodeURIComponent(message || "Ride cancelled.");
   }
 
-  function cancelRideRequest() {
-    var rideId = config.rideId;
-    if (!rideId) {
-      window.alert("Ride request is still being created. Please try again.");
-      return;
-    }
-    if (!window.confirm("Cancel this ride request? No fee will be charged.")) return;
+  function performCancelRequest(confirmBtn) {
+    if (window.ButtonLoading) window.ButtonLoading.start(confirmBtn, { text: "Cancelling…" });
 
-    UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/cancel", {})
+    // Use the server-side cancel route: it resolves the ride from the session
+    // (even before config.rideId is populated) and always clears the finding
+    // state, so the rider is never left stuck on "Finding your driver…".
+    UserApi.post("/user/live-tracking/cancel", {})
       .then(function (result) {
-        redirectAfterCancel(formatCancelRedirectMessage(result));
+        redirectAfterCancel(formatCancelRedirectMessage(result || {}));
       })
       .catch(function (err) {
+        if (window.ButtonLoading) window.ButtonLoading.stop(confirmBtn);
         window.alert(err.message || "Could not cancel ride request.");
       });
+  }
+
+  function initCancelRequestModal() {
+    var modal = document.getElementById("cancel-request-modal");
+    if (!modal) return null;
+
+    var confirmBtn = document.getElementById("cancel-request-confirm");
+    var backBtn = document.getElementById("cancel-request-back");
+    var closeBtn = document.getElementById("cancel-request-close");
+
+    function closeModal() {
+      if (typeof modal.close === "function") {
+        modal.close();
+      } else {
+        modal.removeAttribute("open");
+        modal.hidden = true;
+      }
+      document.body.classList.remove("cancel-ride-modal-open");
+    }
+
+    function openModal() {
+      if (typeof modal.showModal === "function") {
+        modal.showModal();
+      } else {
+        modal.setAttribute("open", "open");
+        modal.hidden = false;
+      }
+      document.body.classList.add("cancel-ride-modal-open");
+    }
+
+    if (backBtn) backBtn.addEventListener("click", closeModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+
+    modal.addEventListener("cancel", function (event) {
+      event.preventDefault();
+      closeModal();
+    });
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener("click", function () {
+        performCancelRequest(confirmBtn);
+      });
+    }
+
+    return openModal;
   }
 
   function initCancelRideModal() {
@@ -479,7 +523,9 @@
         return;
       }
 
-      if (confirmBtn) {
+      if (confirmBtn && window.ButtonLoading) {
+        window.ButtonLoading.start(confirmBtn, { text: "Cancelling…" });
+      } else if (confirmBtn) {
         confirmBtn.disabled = true;
         confirmBtn.textContent = "Cancelling…";
       }
@@ -499,9 +545,10 @@
             errorEl.hidden = false;
             errorEl.classList.remove("is-hidden");
           }
+          if (confirmBtn && window.ButtonLoading) window.ButtonLoading.stop(confirmBtn);
         })
         .finally(function () {
-          if (confirmBtn) {
+          if (confirmBtn && !window.ButtonLoading) {
             confirmBtn.disabled = false;
             confirmBtn.textContent = "Confirm cancellation";
           }
@@ -517,6 +564,7 @@
     if (!finding || !active) return;
 
     var openCancelModal = initCancelRideModal();
+    var openCancelRequestModal = initCancelRequestModal();
 
     var params = new URLSearchParams(window.location.search);
     if (params.get("reset") === "1") {
@@ -536,7 +584,8 @@
     if (cancelBtn) {
       cancelBtn.addEventListener("click", function () {
         if (["requested", "searching"].indexOf(currentRideStatus) >= 0) {
-          cancelRideRequest();
+          if (openCancelRequestModal) openCancelRequestModal();
+          else performCancelRequest(cancelBtn);
           return;
         }
         if (openCancelModal) openCancelModal();
@@ -561,13 +610,16 @@
     var startBtn = document.getElementById("tracking-start-trip");
     if (startBtn) {
       startBtn.addEventListener("click", function () {
-        startBtn.disabled = true;
+        if (window.ButtonLoading) window.ButtonLoading.start(startBtn, { text: "Starting…" });
+        else startBtn.disabled = true;
         UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/start", {})
           .then(function (ride) {
+            if (window.ButtonLoading) window.ButtonLoading.stop(startBtn);
             updateRideUi(ride);
             startBtn.textContent = "Trip started";
           })
           .catch(function (err) {
+            if (window.ButtonLoading) window.ButtonLoading.stop(startBtn);
             alert(err.message || "Could not start trip.");
             startBtn.disabled = false;
           });
@@ -577,8 +629,10 @@
     var callBtn = document.getElementById("tracking-call-driver");
     if (callBtn) {
       callBtn.addEventListener("click", function () {
+        if (window.ButtonLoading) window.ButtonLoading.start(callBtn);
         UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/call", { target: "driver" })
           .then(function (data) {
+            if (window.ButtonLoading) window.ButtonLoading.stop(callBtn);
             if (data.masked_phone) {
               window.location.href = "tel:" + data.masked_phone;
               return;
@@ -586,6 +640,7 @@
             alert("Call request sent. Your phone will ring shortly.");
           })
           .catch(function (err) {
+            if (window.ButtonLoading) window.ButtonLoading.stop(callBtn);
             alert(err.message || "Call request failed.");
           });
       });
@@ -595,6 +650,7 @@
     if (sosBtn) {
       sosBtn.addEventListener("click", function () {
         if (!window.confirm("Send SOS alert to JosRide safety team?")) return;
+        if (window.ButtonLoading) window.ButtonLoading.start(sosBtn, { text: "Sending…" });
         var payload = {};
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(function (pos) {
@@ -613,9 +669,11 @@
     function sendSos(payload) {
       UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/sos", payload)
         .then(function () {
+          if (window.ButtonLoading) window.ButtonLoading.stop(sosBtn);
           alert("SOS alert sent. Help is on the way.");
         })
         .catch(function (err) {
+          if (window.ButtonLoading) window.ButtonLoading.stop(sosBtn);
           alert(err.message || "SOS failed.");
         });
     }

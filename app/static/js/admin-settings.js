@@ -262,11 +262,15 @@
     saveBtn.addEventListener("click", function () {
       const isLanding = window.LandingSettings && window.LandingSettings.isLandingTabActive();
       if (isLanding) {
-        saveBtn.disabled = true;
+        if (window.ButtonLoading) window.ButtonLoading.start(saveBtn, { text: "Publishing…" });
+        else saveBtn.disabled = true;
         Promise.resolve(window.LandingSettings.save())
           .then(function () { showToast("Landing page published."); })
           .catch(function (err) { showToast(err.message, true); })
-          .finally(function () { saveBtn.disabled = false; });
+          .finally(function () {
+            if (window.ButtonLoading) window.ButtonLoading.stop(saveBtn);
+            else saveBtn.disabled = false;
+          });
         return;
       }
 
@@ -280,7 +284,8 @@
       const hasBike = Object.keys(bikePayload).length > 0;
       const hasPlatform = Object.keys(platformPayload).length > 0;
 
-      saveBtn.disabled = true;
+      if (window.ButtonLoading) window.ButtonLoading.start(saveBtn, { text: "Saving…" });
+      else saveBtn.disabled = true;
       Promise.all([
         hasPlatform ? savePlatformSettings() : Promise.resolve(),
         hasBike ? saveBikePricing() : Promise.resolve(false),
@@ -300,7 +305,10 @@
           return loadSettings();
         })
         .catch(function (err) { showToast(err.message, true); })
-        .finally(function () { saveBtn.disabled = false; });
+        .finally(function () {
+          if (window.ButtonLoading) window.ButtonLoading.stop(saveBtn);
+          else saveBtn.disabled = false;
+        });
     });
   }
 

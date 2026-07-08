@@ -130,6 +130,7 @@
 
   function approveRequest() {
     if (!activeRequestId) return;
+    if (window.ButtonLoading) window.ButtonLoading.start(approveBtn, { text: "Approving…" });
     apiRequest("/admin/api/vehicle-changes/" + encodeURIComponent(activeRequestId) + "/approve", { method: "POST" })
       .then(function () {
         showToast("Vehicle change approved.");
@@ -138,6 +139,9 @@
       })
       .catch(function (err) {
         showToast(err.message, true);
+      })
+      .finally(function () {
+        if (window.ButtonLoading) window.ButtonLoading.stop(approveBtn);
       });
   }
 
@@ -145,6 +149,7 @@
     if (!activeRequestId) return;
     var reason = window.prompt("Optional reason for the driver:");
     if (reason === null) return;
+    if (window.ButtonLoading) window.ButtonLoading.start(rejectBtn, { text: "Rejecting…" });
     apiRequest("/admin/api/vehicle-changes/" + encodeURIComponent(activeRequestId) + "/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -157,6 +162,9 @@
       })
       .catch(function (err) {
         showToast(err.message, true);
+      })
+      .finally(function () {
+        if (window.ButtonLoading) window.ButtonLoading.stop(rejectBtn);
       });
   }
 

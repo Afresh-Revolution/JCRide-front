@@ -55,21 +55,29 @@
   bindToggle(document.getElementById("settings-share-analytics"), "share_trip_data_for_analytics");
   bindToggle(document.getElementById("settings-share-name"), "allow_driver_see_name");
 
+  function withBtn(btn, promise) {
+    if (btn && window.ButtonLoading) return window.ButtonLoading.wrap(btn, promise);
+    return promise;
+  }
+
   var exportBtn = document.getElementById("settings-export-btn");
   if (exportBtn) {
     exportBtn.addEventListener("click", function () {
-      UserApi.request("/user/api/settings/data-export")
-        .then(function (data) {
-          var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-          var link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = "josride-data-export.json";
-          link.click();
-          URL.revokeObjectURL(link.href);
-        })
-        .catch(function (err) {
-          alert(err.message || "Export failed.");
-        });
+      withBtn(
+        exportBtn,
+        UserApi.request("/user/api/settings/data-export")
+          .then(function (data) {
+            var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            var link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "josride-data-export.json";
+            link.click();
+            URL.revokeObjectURL(link.href);
+          })
+          .catch(function (err) {
+            alert(err.message || "Export failed.");
+          })
+      );
     });
   }
 
@@ -79,13 +87,16 @@
       var days = Number(window.prompt("Pause account for how many days?", "7") || 0);
       if (!days) return;
       var pauseUntil = new Date(Date.now() + days * 86400000).toISOString();
-      UserApi.post("/user/api/settings/pause", { pause_until: pauseUntil })
-        .then(function () {
-          alert("Account paused until " + new Date(pauseUntil).toLocaleString());
-        })
-        .catch(function (err) {
-          alert(err.message || "Could not pause account.");
-        });
+      withBtn(
+        pauseBtn,
+        UserApi.post("/user/api/settings/pause", { pause_until: pauseUntil })
+          .then(function () {
+            alert("Account paused until " + new Date(pauseUntil).toLocaleString());
+          })
+          .catch(function (err) {
+            alert(err.message || "Could not pause account.");
+          })
+      );
     });
   }
 
@@ -93,13 +104,16 @@
   if (deleteBtn) {
     deleteBtn.addEventListener("click", function () {
       if (!window.confirm("Request permanent account deletion? This cannot be undone.")) return;
-      UserApi.post("/user/api/settings/delete-request", {})
-        .then(function () {
-          alert("Deletion request submitted.");
-        })
-        .catch(function (err) {
-          alert(err.message || "Could not request deletion.");
-        });
+      withBtn(
+        deleteBtn,
+        UserApi.post("/user/api/settings/delete-request", {})
+          .then(function () {
+            alert("Deletion request submitted.");
+          })
+          .catch(function (err) {
+            alert(err.message || "Could not request deletion.");
+          })
+      );
     });
   }
 

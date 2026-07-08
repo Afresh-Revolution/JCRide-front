@@ -317,31 +317,34 @@
       });
   }
 
-  function approveWithdrawal(id) {
+  function approveWithdrawal(id, button) {
     window.AdminConfirm.show({
       title: "Approve withdrawal",
       message: "Approve this payout request? You will still need to mark it paid after sending funds.",
       confirmLabel: "Approve",
     }).then(function (confirmed) {
       if (!confirmed) return;
+      if (button && window.ButtonLoading) window.ButtonLoading.start(button, { text: "Approving…" });
       return apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(id) + "/approve", { method: "POST" })
         .then(function () {
           showToast("Withdrawal approved");
           loadWithdrawals();
         })
         .catch(function (err) {
+          if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
           showToast(err.message, true);
         });
     });
   }
 
-  function markWithdrawalPaid(id) {
+  function markWithdrawalPaid(id, button) {
     window.AdminConfirm.show({
       title: "Mark as paid",
       message: "Confirm the bank transfer has been completed?",
       confirmLabel: "Mark paid",
     }).then(function (confirmed) {
       if (!confirmed) return;
+      if (button && window.ButtonLoading) window.ButtonLoading.start(button, { text: "Saving…" });
       return apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(id) + "/mark-paid", { method: "POST" })
         .then(function () {
           showToast("Withdrawal marked paid");
@@ -349,6 +352,7 @@
           loadStats();
         })
         .catch(function (err) {
+          if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
           showToast(err.message, true);
         });
     });
@@ -376,6 +380,8 @@
     const error = document.getElementById("withdrawal-reject-error");
     const reason = reasonEl ? reasonEl.value.trim() : "";
     if (!withdrawalState.rejectId || reason.length < 2) return;
+    var submitBtn = event.target.querySelector('button[type="submit"], input[type="submit"]');
+    if (submitBtn && window.ButtonLoading) window.ButtonLoading.start(submitBtn, { text: "Rejecting…" });
     apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(withdrawalState.rejectId) + "/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -391,6 +397,9 @@
           error.textContent = err.message;
           error.hidden = false;
         }
+      })
+      .finally(function () {
+        if (submitBtn && window.ButtonLoading) window.ButtonLoading.stop(submitBtn);
       });
   }
 
@@ -439,8 +448,8 @@
         const approveId = target.getAttribute("data-withdrawal-approve");
         const paidId = target.getAttribute("data-withdrawal-paid");
         const rejectId = target.getAttribute("data-withdrawal-reject");
-        if (approveId && !target.disabled) approveWithdrawal(approveId);
-        if (paidId && !target.disabled) markWithdrawalPaid(paidId);
+        if (approveId && !target.disabled) approveWithdrawal(approveId, target);
+        if (paidId && !target.disabled) markWithdrawalPaid(paidId, target);
         if (rejectId && !target.disabled) openWithdrawalRejectModal(rejectId);
       });
     }

@@ -1156,6 +1156,18 @@ def get_admin_trips(token, status="all", page=1, limit=20):
     return _request("GET", f"{API_PREFIX}/admin/rides", token=token, params=params)
 
 
+def cancel_admin_ride(token, ride_id, reason=None):
+    payload = {}
+    if reason:
+        payload["reason"] = reason
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/rides/{ride_id}/cancel",
+        token=token,
+        json=payload,
+    )
+
+
 def get_admin_payment_stats(token):
     return _request("GET", f"{API_PREFIX}/admin/payments/stats", token=token)
 

@@ -267,7 +267,7 @@
     }
 
     showToast("Preparing full export…");
-    fetchPage(1)
+    return fetchPage(1)
       .then(function (first) {
         const allItems = (first.items || []).slice();
         const totalPages = first.total_pages || 1;
@@ -338,11 +338,17 @@
     if (runBtn) {
       runBtn.addEventListener("click", function () {
         state.page = 1;
-        loadReport();
+        var p = loadReport();
+        if (window.ButtonLoading) window.ButtonLoading.wrap(runBtn, p);
       });
     }
     if (clearBtn) clearBtn.addEventListener("click", clearFilters);
-    if (exportBtn) exportBtn.addEventListener("click", exportAllCsv);
+    if (exportBtn) {
+      exportBtn.addEventListener("click", function () {
+        var p = exportAllCsv();
+        if (window.ButtonLoading) window.ButtonLoading.wrap(exportBtn, p);
+      });
+    }
     if (prevBtn) {
       prevBtn.addEventListener("click", function () {
         if (state.page > 1) {

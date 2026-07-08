@@ -1317,6 +1317,16 @@ html {
     border-color: rgba(96, 165, 250, 0.45);
   }
 
+  .wallet-policy-banner--warn {
+    background: #422006;
+    color: #fed7aa;
+  }
+
+  .wallet-policy-banner--danger {
+    background: #450a0a;
+    color: #fecaca;
+  }
+
   body.user-body .admin-nav-item:hover:not(.admin-nav-item--soon) {
     background: #1f2937;
     color: var(--user-text);
@@ -2278,6 +2288,16 @@ html[data-user-theme="dark"] {
   --user-field-bg: #1f2937;
   --user-field-icon-bg: #243044;
   --user-surface-subtle: #1f2937;
+}
+
+html[data-user-theme="dark"] .wallet-policy-banner--warn {
+  background: #422006;
+  color: #fed7aa;
+}
+
+html[data-user-theme="dark"] .wallet-policy-banner--danger {
+  background: #450a0a;
+  color: #fecaca;
 }
 
 html[data-user-theme="dark"] .wallet-balance-card {

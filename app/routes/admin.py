@@ -737,14 +737,32 @@ def api_trips():
     status = request.args.get("status", "all")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 20, type=int)
-    fetch_status = "all" if status == "active" else status
-    fetch_limit = max(limit, 100) if status == "active" else limit
+    # The BFF filters authoritatively (backend status filtering is unreliable), so
+    # for any specific tab fetch a broad pool and trim after filtering.
+    is_filtered = status in {"active", "completed", "cancelled"}
+    fetch_status = "all" if is_filtered else status
+    fetch_limit = max(limit, 100) if is_filtered else limit
     try:
         data = get_admin_trips(_admin_token(), status=fetch_status, page=page, limit=fetch_limit)
         normalized = normalize_admin_trips_list(data, status_filter=status)
-        if status == "active":
+        if is_filtered:
             normalized["trips"] = normalized["trips"][:limit]
         return jsonify(normalized)
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/rides/<ride_id>/cancel", methods=["POST"])
+@admin_required
+def api_cancel_ride(ride_id):
+    payload = request.get_json(silent=True) or {}
+    reason = (payload.get("reason") or "").strip()
+    if not reason:
+        return jsonify({"message": "A cancellation reason is required."}), 422
+    try:
+        from app.services.api_client import cancel_admin_ride
+
+        return jsonify(cancel_admin_ride(_admin_token(), ride_id, reason=reason))
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 

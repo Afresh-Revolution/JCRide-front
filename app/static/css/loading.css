@@ -1,0 +1,42 @@
+/* Global button loading state.
+   Works across all button families because the spinner uses currentColor,
+   inheriting the button's text colour. */
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.is-loading {
+  pointer-events: none;
+  cursor: wait;
+}
+
+button.is-loading,
+a.is-loading,
+input.is-loading {
+  opacity: 0.9;
+}
+
+.btn-loading-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.6s linear infinite;
+  vertical-align: -0.15em;
+  flex: none;
+}
+
+.btn-loading-label {
+  line-height: 1;
+}

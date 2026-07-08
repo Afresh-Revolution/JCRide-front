@@ -33,6 +33,11 @@
 
   function setBusy(button, busy, label) {
     if (!button) return;
+    if (window.ButtonLoading) {
+      if (busy) window.ButtonLoading.start(button, { text: label || "Processing…" });
+      else window.ButtonLoading.stop(button);
+      return;
+    }
     if (busy) {
       button.disabled = true;
       button.setAttribute("data-original-text", button.textContent);

@@ -188,6 +188,15 @@ def _risk_to_marker_status(risk_status: str, delay_minutes: int = 0) -> str:
     return "active"
 
 
+def _coord(value) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def live_trips_to_map(live_trips: list[dict]) -> dict:
     if not live_trips:
         return {
@@ -197,6 +206,7 @@ def live_trips_to_map(live_trips: list[dict]) -> dict:
             "map_center": dict(NIGERIA_CENTER),
             "map_zoom": NIGERIA_ZOOM,
             "markers": [],
+            "trips": [],
             "legend": {"active": 0, "delayed": 0, "incident": 0},
             "route": [],
             "vehicle_position": None,
@@ -205,52 +215,101 @@ def live_trips_to_map(live_trips: list[dict]) -> dict:
         }
 
     markers = []
+    trips = []
     legend = {"active": 0, "delayed": 0, "incident": 0}
     lats: list[float] = []
     lngs: list[float] = []
 
     for trip in live_trips:
-        lat = trip.get("driver_lat") or trip.get("pickup_lat")
-        lng = trip.get("driver_lng") or trip.get("pickup_lng")
-        if lat is None or lng is None:
+        driver_lat = _coord(trip.get("driver_lat"))
+        driver_lng = _coord(trip.get("driver_lng"))
+        pickup_lat = _coord(trip.get("pickup_lat"))
+        pickup_lng = _coord(trip.get("pickup_lng"))
+        dest_lat = _coord(trip.get("destination_lat"))
+        dest_lng = _coord(trip.get("destination_lng"))
+
+        # Prefer the live driver location; fall back to pickup so every ride is placed.
+        marker_lat = driver_lat if driver_lat is not None else pickup_lat
+        marker_lng = driver_lng if driver_lng is not None else pickup_lng
+        if marker_lat is None or marker_lng is None:
             continue
-        lat_f = float(lat)
-        lng_f = float(lng)
+
         marker_status = _risk_to_marker_status(
             str(trip.get("risk_status") or "green"),
             int(trip.get("delay_minutes") or 0),
         )
         legend[marker_status] = legend.get(marker_status, 0) + 1
-        pickup = str(trip.get("pickup_address") or trip.get("booking_id") or "Active trip")
+
+        booking_id = str(trip.get("booking_id") or trip.get("id") or "Active trip")
+        pickup_address = str(trip.get("pickup_address") or "Pickup")
+        destination_address = str(trip.get("destination_address") or "Destination")
+        driver_name = str(trip.get("driver_name") or trip.get("driver_full_name") or "Driver")
+        rider_name = str(
+            trip.get("customer_name")
+            or trip.get("rider_name")
+            or trip.get("customer_full_name")
+            or "Rider"
+        )
+        ride_status = str(trip.get("status") or "in_progress")
+
+        route = []
+        if pickup_lat is not None and pickup_lng is not None and dest_lat is not None and dest_lng is not None:
+            route = [
+                {"lat": pickup_lat, "lng": pickup_lng},
+                {"lat": dest_lat, "lng": dest_lng},
+            ]
+
+        vehicle_position = (
+            {"lat": driver_lat, "lng": driver_lng}
+            if driver_lat is not None and driver_lng is not None
+            else None
+        )
+
+        # Backward-compatible flat marker list.
         markers.append(
             {
-                "lat": lat_f,
-                "lng": lng_f,
-                "city": pickup[:48],
+                "lat": marker_lat,
+                "lng": marker_lng,
+                "city": pickup_address[:48],
                 "status": marker_status,
             }
         )
-        lats.append(lat_f)
-        lngs.append(lng_f)
+
+        # Rich per-trip payload so the map can draw every ride at its exact location.
+        trips.append(
+            {
+                "id": trip.get("id"),
+                "booking_id": booking_id,
+                "status": marker_status,
+                "ride_status": ride_status,
+                "status_label": RIDE_STATUS_LABELS.get(ride_status, ride_status.replace("_", " ").title()),
+                "vehicle_position": vehicle_position,
+                "pickup": {"lat": pickup_lat, "lng": pickup_lng}
+                if pickup_lat is not None and pickup_lng is not None
+                else None,
+                "destination": {"lat": dest_lat, "lng": dest_lng}
+                if dest_lat is not None and dest_lng is not None
+                else None,
+                "route": route,
+                "pickup_address": pickup_address,
+                "destination_address": destination_address,
+                "driver_name": driver_name,
+                "rider_name": rider_name,
+                "delay_minutes": int(trip.get("delay_minutes") or 0),
+            }
+        )
+
+        lats.append(marker_lat)
+        lngs.append(marker_lng)
 
     map_center = {
         "lat": sum(lats) / len(lats) if lats else NIGERIA_CENTER["lat"],
         "lng": sum(lngs) / len(lngs) if lngs else NIGERIA_CENTER["lng"],
     }
-    map_zoom = 11 if len(markers) == 1 else (8 if len(markers) <= 4 else NIGERIA_ZOOM)
-    active_count = len(markers)
+    map_zoom = 12 if len(trips) == 1 else (9 if len(trips) <= 4 else NIGERIA_ZOOM)
+    active_count = len(trips)
 
-    first = live_trips[0]
-    route = []
-    if first.get("pickup_lat") is not None and first.get("destination_lat") is not None:
-        route = [
-            {"lat": float(first["pickup_lat"]), "lng": float(first["pickup_lng"])},
-            {"lat": float(first["destination_lat"]), "lng": float(first["destination_lng"])},
-        ]
-
-    vehicle_position = None
-    if first.get("driver_lat") is not None and first.get("driver_lng") is not None:
-        vehicle_position = {"lat": float(first["driver_lat"]), "lng": float(first["driver_lng"])}
+    first_trip = trips[0] if trips else None
 
     return {
         "count": active_count,
@@ -259,11 +318,13 @@ def live_trips_to_map(live_trips: list[dict]) -> dict:
         "map_center": map_center,
         "map_zoom": map_zoom,
         "markers": markers,
+        "trips": trips,
         "legend": legend,
-        "route": route,
-        "vehicle_position": vehicle_position,
-        "start": route[0] if route else None,
-        "end": route[1] if len(route) > 1 else None,
+        # Kept for backward compatibility with any cached/older clients.
+        "route": first_trip["route"] if first_trip else [],
+        "vehicle_position": first_trip["vehicle_position"] if first_trip else None,
+        "start": (first_trip["route"][0] if first_trip and first_trip["route"] else None),
+        "end": (first_trip["route"][1] if first_trip and len(first_trip["route"]) > 1 else None),
     }
 
 
@@ -289,6 +350,8 @@ def normalize_admin_trip(ride: dict) -> dict:
         "route_display": f"{pickup} → {destination}",
         "participants_display": f"{customer_name} · {driver_name}",
         "meta_display": f"{city} · {_fmt_ngn(fare)}",
+        "cancellable": status not in {"completed", "cancelled"},
+        "driver_name": driver_name,
     }
 
 
@@ -312,10 +375,18 @@ def normalize_heatmap(raw: dict) -> dict:
     }
 
 
+STATUS_FILTER_SETS = {
+    "active": ACTIVE_RIDE_STATUSES,
+    "completed": {"completed"},
+    "cancelled": {"cancelled", "expired"},
+}
+
+
 def normalize_admin_trips_list(data: dict, *, status_filter: str = "all") -> dict:
     rides = data.get("rides") or []
-    if status_filter == "active":
-        rides = [ride for ride in rides if str(ride.get("status")) in ACTIVE_RIDE_STATUSES]
+    allowed = STATUS_FILTER_SETS.get(status_filter)
+    if allowed is not None:
+        rides = [ride for ride in rides if str(ride.get("status")) in allowed]
     return {
         "trips": [normalize_admin_trip(ride) for ride in rides],
         "total": data.get("total") or len(rides),

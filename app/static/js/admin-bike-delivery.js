@@ -489,6 +489,8 @@
         if (onboardError) onboardError.hidden = true;
         const formData = new FormData(onboardForm);
         const payload = Object.fromEntries(formData.entries());
+        const onboardSubmit = e.target.querySelector('button[type="submit"], input[type="submit"]');
+        if (onboardSubmit && window.ButtonLoading) window.ButtonLoading.start(onboardSubmit, { text: "Onboarding…" });
         apiRequest(API.onboard, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -507,6 +509,9 @@
             } else {
               showToast(err.message, true);
             }
+          })
+          .finally(function () {
+            if (onboardSubmit && window.ButtonLoading) window.ButtonLoading.stop(onboardSubmit);
           });
       });
     }

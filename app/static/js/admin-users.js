@@ -412,6 +412,9 @@
           return;
         }
 
+        var inviteSubmit = e.target.querySelector('button[type="submit"], input[type="submit"]');
+        if (inviteSubmit && window.ButtonLoading) window.ButtonLoading.start(inviteSubmit, { text: "Inviting…" });
+
         apiRequest("/admin/api/users/invite-admin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -430,6 +433,9 @@
           .catch(function (err) {
             inviteFormError.textContent = err.message;
             inviteFormError.hidden = false;
+          })
+          .finally(function () {
+            if (inviteSubmit && window.ButtonLoading) window.ButtonLoading.stop(inviteSubmit);
           });
       });
     }
