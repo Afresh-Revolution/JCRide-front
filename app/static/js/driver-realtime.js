@@ -41,10 +41,13 @@
     if (!overlay) return;
     var booking = payload.booking_id || "this trip";
     var reason = (payload.reason || payload.cancellation_reason || "").trim();
+    var byAdmin = payload.actor_type === "admin";
     if (leadEl) {
       leadEl.textContent =
         payload.driver_message ||
-        "The rider cancelled " + booking + ". You are back on the map for new requests.";
+        (byAdmin
+          ? "Support cancelled " + booking + ". You are back on the map for new requests."
+          : "The rider cancelled " + booking + ". You are back on the map for new requests.");
     }
     if (reasonWrap && reasonEl) {
       if (reason) {
@@ -137,7 +140,10 @@
         return;
       }
 
-      if (type === "ride.cancelled" && payload.actor_type === "customer") {
+      if (
+        type === "ride.cancelled" &&
+        (payload.actor_type === "customer" || payload.actor_type === "admin")
+      ) {
         showCancelOverlay(payload);
         return;
       }

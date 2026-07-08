@@ -10,6 +10,8 @@
   let revenueChart = null;
   let tierChart = null;
   let liveMap = null;
+  let liveTripLayer = null;
+  let liveHasFitBounds = false;
   let revenueUnit = "raw";
 
   const chartGreen = "#0a4f2a";
@@ -17,6 +19,38 @@
   const NIGERIA_BOUNDS = [[4.2, 2.8], [13.9, 14.6]];
 
   let liveMapTileLayer = null;
+
+  // Real road geometry cache (OSRM) keyed by pickup→destination.
+  const OSRM_URL = "https://router.project-osrm.org/route/v1/driving/";
+  const roadCache = {};
+  const roadPending = {};
+  let lastLiveTripData = null;
+
+  function roadKey(a, b) {
+    return a.lat.toFixed(5) + "," + a.lng.toFixed(5) + "|" + b.lat.toFixed(5) + "," + b.lng.toFixed(5);
+  }
+
+  function requestRoad(pickup, destination) {
+    const key = roadKey(pickup, destination);
+    if (roadCache[key] || roadPending[key]) return;
+    roadPending[key] = true;
+    const url =
+      OSRM_URL +
+      pickup.lng + "," + pickup.lat + ";" + destination.lng + "," + destination.lat +
+      "?overview=full&geometries=geojson";
+    fetch(url)
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        delete roadPending[key];
+        if (data && data.routes && data.routes[0] && data.routes[0].geometry) {
+          roadCache[key] = data.routes[0].geometry.coordinates.map(function (c) {
+            return [c[1], c[0]];
+          });
+          if (lastLiveTripData) renderLiveTrips(lastLiveTripData);
+        }
+      })
+      .catch(function () { delete roadPending[key]; });
+  }
 
   function isDarkTheme() {
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -45,12 +79,16 @@
     }
   }
 
-  function fitMapToNigeria(map, boundsPoints, markerCount) {
+  function fitMapToNigeria(map, boundsPoints) {
     if (boundsPoints.length > 1) {
       map.fitBounds(L.latLngBounds(boundsPoints), {
         padding: [48, 48],
-        maxZoom: markerCount > 3 ? 7 : 10,
+        maxZoom: 14,
       });
+      return;
+    }
+    if (boundsPoints.length === 1) {
+      map.setView(boundsPoints[0], 13);
       return;
     }
     map.fitBounds(NIGERIA_BOUNDS, { padding: [24, 24] });
@@ -311,106 +349,147 @@
     return { color: chartGreen, fillColor: "#0d6b38" };
   }
 
-  function initLiveMap(tripData) {
-    if (!mapEl || typeof L === "undefined") return;
+  const CAR_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">' +
+    '<path d="M7 17h10M5 11l1.5-4h11L19 11"/>' +
+    '<circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>' +
+    "</svg>";
 
-    if (liveMap) {
-      liveMap.remove();
-      liveMap = null;
+  function escapeMapHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function liveTripsFromData(tripData) {
+    if (Array.isArray(tripData.trips) && tripData.trips.length) {
+      return tripData.trips;
+    }
+    return (tripData.markers || []).map(function (m) {
+      return {
+        booking_id: m.city,
+        status: m.status,
+        vehicle_position: { lat: m.lat, lng: m.lng },
+        pickup: null,
+        destination: null,
+      };
+    });
+  }
+
+  function liveTripTooltip(trip) {
+    const lines = [];
+    if (trip.booking_id) lines.push("<strong>" + escapeMapHtml(trip.booking_id) + "</strong>");
+    if (trip.pickup_address || trip.destination_address) {
+      lines.push(escapeMapHtml(trip.pickup_address || "?") + " → " + escapeMapHtml(trip.destination_address || "?"));
+    }
+    const people = [trip.rider_name, trip.driver_name].filter(Boolean).map(escapeMapHtml).join(" · ");
+    if (people) lines.push(people);
+    return lines.join("<br>");
+  }
+
+  function drawLiveTrip(trip, layer, boundsPoints) {
+    const colors = markerColors(trip.status);
+
+    if (trip.pickup && trip.destination) {
+      const key = roadKey(trip.pickup, trip.destination);
+      const road = roadCache[key];
+      if (road && road.length >= 2) {
+        L.polyline(road, {
+          color: colors.color, weight: 5, opacity: 0.9, lineCap: "round", lineJoin: "round",
+        }).addTo(layer);
+        road.forEach(function (pt) { boundsPoints.push(pt); });
+      } else {
+        const straight = [
+          [trip.pickup.lat, trip.pickup.lng],
+          [trip.destination.lat, trip.destination.lng],
+        ];
+        L.polyline(straight, {
+          color: colors.color, weight: 4, opacity: 0.55, dashArray: "10, 8", lineCap: "round",
+        }).addTo(layer);
+        straight.forEach(function (pt) { boundsPoints.push(pt); });
+        requestRoad(trip.pickup, trip.destination);
+      }
     }
 
+    if (trip.pickup) {
+      L.marker([trip.pickup.lat, trip.pickup.lng], {
+        icon: createMapIcon('<div class="map-marker-start"></div>', [14, 14], [7, 7]),
+        zIndexOffset: 100,
+      }).addTo(layer);
+      boundsPoints.push([trip.pickup.lat, trip.pickup.lng]);
+    }
+
+    if (trip.destination) {
+      L.marker([trip.destination.lat, trip.destination.lng], {
+        icon: createMapIcon('<div class="map-marker-end"></div>', [16, 16], [8, 8]),
+        zIndexOffset: 100,
+      }).addTo(layer);
+      boundsPoints.push([trip.destination.lat, trip.destination.lng]);
+    }
+
+    const pos = trip.vehicle_position;
+    if (pos && pos.lat != null && pos.lng != null) {
+      const carHtml =
+        '<div class="map-marker-vehicle map-marker-vehicle--' + escapeMapHtml(trip.status || "active") + '">' +
+        CAR_SVG + "</div>";
+      L.marker([pos.lat, pos.lng], {
+        icon: createMapIcon(carHtml, [36, 36], [18, 18]),
+        zIndexOffset: 200,
+      })
+        .bindTooltip(liveTripTooltip(trip), { direction: "top", offset: [0, -14] })
+        .addTo(layer);
+      boundsPoints.push([pos.lat, pos.lng]);
+    }
+  }
+
+  function ensureLiveMap(tripData) {
+    if (liveMap) return;
     const mapCenter = tripData.map_center || { lat: 9.082, lng: 8.675 };
     const mapZoom = tripData.map_zoom || 6;
-    const route = (tripData.route && tripData.route.length)
-      ? tripData.route.map(function (p) { return [p.lat, p.lng]; })
-      : [];
-    const markers = tripData.markers || [];
 
     liveMap = L.map(mapEl, {
       zoomControl: false,
       attributionControl: false,
     }).setView([mapCenter.lat, mapCenter.lng], mapZoom);
 
-    liveMapTileLayer = L.tileLayer(adminTileLayerUrl(), {
-      maxZoom: 19,
-    }).addTo(liveMap);
-
+    liveMapTileLayer = L.tileLayer(adminTileLayerUrl(), { maxZoom: 19 }).addTo(liveMap);
     bindAdminMapTheme();
-
     L.control.zoom({ position: "topright" }).addTo(liveMap);
+    liveTripLayer = L.layerGroup().addTo(liveMap);
+  }
 
-    markers.forEach(function (marker) {
-      const colors = markerColors(marker.status);
-      L.circleMarker([marker.lat, marker.lng], {
-        radius: 7,
-        color: colors.color,
-        fillColor: colors.fillColor,
-        fillOpacity: 0.92,
-        weight: 2,
-      })
-        .bindTooltip(marker.city, { direction: "top", offset: [0, -6] })
-        .addTo(liveMap);
+  function renderLiveTrips(tripData) {
+    if (!liveMap) return;
+    const trips = liveTripsFromData(tripData);
+    if (liveTripLayer) liveTripLayer.clearLayers();
+
+    const boundsPoints = [];
+    trips.forEach(function (trip) {
+      drawLiveTrip(trip, liveTripLayer || liveMap, boundsPoints);
     });
 
-    if (route.length >= 2) {
-      L.polyline(route, {
-        color: chartGreen,
-        weight: 5,
-        opacity: 0.9,
-        dashArray: "12, 10",
-        lineCap: "round",
-      }).addTo(liveMap);
+    if (!liveHasFitBounds && boundsPoints.length) {
+      fitMapToNigeria(liveMap, boundsPoints);
+      liveHasFitBounds = true;
     }
-
-    if (tripData.start) {
-      L.marker([tripData.start.lat, tripData.start.lng], {
-        icon: createMapIcon('<div class="map-marker-start"></div>', [14, 14], [7, 7]),
-        zIndexOffset: 100,
-      }).addTo(liveMap);
-    }
-
-    if (tripData.vehicle_position) {
-      const carSvg =
-        '<div class="map-marker-vehicle">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">' +
-        '<path d="M7 17h10M5 11l1.5-4h11L19 11"/>' +
-        '<circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>' +
-        "</svg></div>";
-
-      L.marker([tripData.vehicle_position.lat, tripData.vehicle_position.lng], {
-        icon: createMapIcon(carSvg, [36, 36], [18, 18]),
-        zIndexOffset: 200,
-      }).addTo(liveMap);
-    }
-
-    if (tripData.end) {
-      L.marker([tripData.end.lat, tripData.end.lng], {
-        icon: createMapIcon('<div class="map-marker-end"></div>', [16, 16], [8, 8]),
-        zIndexOffset: 100,
-      }).addTo(liveMap);
-    }
-
-    const boundsPoints = markers.map(function (m) { return [m.lat, m.lng]; });
-    if (route.length >= 2) {
-      boundsPoints.push.apply(boundsPoints, route);
-    }
-    if (tripData.start) boundsPoints.push([tripData.start.lat, tripData.start.lng]);
-    if (tripData.end) boundsPoints.push([tripData.end.lat, tripData.end.lng]);
-    if (tripData.vehicle_position) {
-      boundsPoints.push([tripData.vehicle_position.lat, tripData.vehicle_position.lng]);
-    }
-
-    fitMapToNigeria(liveMap, boundsPoints, markers.length);
 
     const badge = document.getElementById("map-city-badge");
     if (badge) {
       badge.textContent = tripData.label || "Nigeria · Live ops";
     }
-
     const countEl = document.getElementById("live-trip-count");
     if (countEl && tripData.count !== undefined) {
       countEl.textContent = tripData.count.toLocaleString() + " trips in progress nationwide";
     }
+  }
+
+  function initLiveMap(tripData) {
+    if (!mapEl || typeof L === "undefined") return;
+    lastLiveTripData = tripData;
+    ensureLiveMap(tripData);
+    renderLiveTrips(tripData);
   }
 
   function fetchLiveTrips() {

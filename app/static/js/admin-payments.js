@@ -264,7 +264,10 @@
     if (notesInput && notesInput.value.trim()) {
       payload.notes = notesInput.value.trim();
     }
-    if (settleBtn) settleBtn.disabled = true;
+    if (settleBtn) {
+      if (window.ButtonLoading) window.ButtonLoading.start(settleBtn, { text: "Settling…" });
+      else settleBtn.disabled = true;
+    }
     apiRequest("/admin/api/payments/settle", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -290,7 +293,10 @@
         }
       })
       .finally(function () {
-        if (settleBtn) settleBtn.disabled = false;
+        if (settleBtn) {
+          if (window.ButtonLoading) window.ButtonLoading.stop(settleBtn);
+          else settleBtn.disabled = false;
+        }
       });
   }
 
@@ -460,13 +466,14 @@
       });
   }
 
-  function approveFunding(requestId) {
+  function approveFunding(requestId, button) {
     window.AdminConfirm.show({
       title: "Approve funding",
       message: "Credit this user's wallet with the requested amount?",
       confirmLabel: "Approve",
     }).then(function (confirmed) {
       if (!confirmed) return;
+      if (button && window.ButtonLoading) window.ButtonLoading.start(button, { text: "Approving…" });
       return apiRequest("/admin/api/payments/funding-requests/" + encodeURIComponent(requestId) + "/approve", {
         method: "POST",
       })
@@ -476,6 +483,7 @@
           loadStats();
         })
         .catch(function (err) {
+          if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
           showToast(err.message, true);
         });
     });
@@ -504,6 +512,8 @@
     const reason = reasonEl ? reasonEl.value.trim() : "";
     if (!fundingState.rejectId || reason.length < 2) return;
     if (error) error.hidden = true;
+    var submitBtn = event.target.querySelector('button[type="submit"], input[type="submit"]');
+    if (submitBtn && window.ButtonLoading) window.ButtonLoading.start(submitBtn, { text: "Rejecting…" });
     apiRequest(
       "/admin/api/payments/funding-requests/" + encodeURIComponent(fundingState.rejectId) + "/reject",
       {
@@ -522,6 +532,9 @@
           error.textContent = err.message;
           error.hidden = false;
         }
+      })
+      .finally(function () {
+        if (submitBtn && window.ButtonLoading) window.ButtonLoading.stop(submitBtn);
       });
   }
 
@@ -567,7 +580,7 @@
         if (!(target instanceof HTMLElement)) return;
         const approveId = target.getAttribute("data-funding-approve");
         const rejectId = target.getAttribute("data-funding-reject");
-        if (approveId && !target.disabled) approveFunding(approveId);
+        if (approveId && !target.disabled) approveFunding(approveId, target);
         if (rejectId && !target.disabled) openFundingRejectModal(rejectId);
       });
     }

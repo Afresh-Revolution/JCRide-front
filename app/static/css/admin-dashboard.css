@@ -943,6 +943,33 @@ body.admin-body a {
   color: var(--dash-green-dark);
 }
 
+.map-marker-vehicle--active {
+  border-color: #0d6b38;
+  box-shadow: 0 0 0 6px rgba(13, 107, 56, 0.22), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.map-marker-vehicle--active svg {
+  color: #0d6b38;
+}
+
+.map-marker-vehicle--delayed {
+  border-color: #ca8a04;
+  box-shadow: 0 0 0 6px rgba(234, 179, 8, 0.28), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.map-marker-vehicle--delayed svg {
+  color: #ca8a04;
+}
+
+.map-marker-vehicle--incident {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.28), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.map-marker-vehicle--incident svg {
+  color: #dc2626;
+}
+
 /* ── Responsive ── */
 
 @media (max-width: 1200px) {

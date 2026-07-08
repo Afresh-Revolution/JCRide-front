@@ -223,7 +223,8 @@
     loadDrivers();
   }
 
-  function updateDriverStatus(driverId, status, message, driver) {
+  function updateDriverStatus(driverId, status, message, driver, button) {
+    if (button && window.ButtonLoading) window.ButtonLoading.start(button);
     return apiRequest("/admin/api/drivers/" + encodeURIComponent(driverId) + "/status", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -250,6 +251,7 @@
         loadStats();
       })
       .catch(function (err) {
+        if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
         showToast(err.message, true);
       });
   }
@@ -361,7 +363,7 @@
             confirmLabel: "Approve",
           }).then(function (confirmed) {
             if (confirmed) {
-              updateDriverStatus(id, "approved", driver.full_name + " approved", driver);
+              updateDriverStatus(id, "approved", driver.full_name + " approved", driver, btn);
             }
           });
         } else if (action === "reject") {
@@ -372,7 +374,7 @@
             variant: "danger",
           }).then(function (confirmed) {
             if (confirmed) {
-              updateDriverStatus(id, "rejected", driver.full_name + " rejected", driver);
+              updateDriverStatus(id, "rejected", driver.full_name + " rejected", driver, btn);
             }
           });
         } else if (action === "suspend") {
@@ -383,7 +385,7 @@
             variant: "danger",
           }).then(function (confirmed) {
             if (confirmed) {
-              updateDriverStatus(id, "suspended", driver.full_name + " suspended", driver);
+              updateDriverStatus(id, "suspended", driver.full_name + " suspended", driver, btn);
             }
           });
         } else if (action === "delete") {

@@ -783,7 +783,8 @@
           return;
         }
         if (reasonInput) reasonInput.value = reason;
-        confirmBtn.disabled = true;
+        if (window.ButtonLoading) window.ButtonLoading.start(confirmBtn, { text: "Cancelling…" });
+        else confirmBtn.disabled = true;
         cancelForm.submit();
       });
     }

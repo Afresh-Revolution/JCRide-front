@@ -36,6 +36,53 @@
   flex-wrap: wrap;
 }
 
+.trips-recent-header__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trips-reload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--dash-border);
+  background: transparent;
+  color: var(--dash-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.trips-reload-btn:hover {
+  color: var(--dash-text);
+  border-color: var(--dash-green);
+}
+
+.trips-reload-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.trips-reload-btn.is-spinning svg {
+  animation: trips-reload-spin 0.7s linear infinite;
+}
+
+@keyframes trips-reload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 520px) {
+  .trips-reload-btn__label {
+    display: none;
+  }
+}
+
 .trips-filter-tabs {
   display: inline-flex;
   align-items: center;
@@ -93,7 +140,7 @@
   padding: 0.9rem 1rem;
   border: 1px solid var(--dash-border);
   border-radius: var(--dash-radius-sm);
-  background: #fff;
+  background: var(--dash-card);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -128,7 +175,7 @@
 }
 
 .trip-card__status--completed {
-  background: #fff;
+  background: var(--dash-card);
   color: var(--dash-green);
   border: 1px solid rgba(13, 107, 56, 0.35);
 }
@@ -158,6 +205,271 @@
   font-size: 0.75rem;
   color: var(--dash-muted);
   white-space: nowrap;
+}
+
+.trip-card__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--dash-border);
+}
+
+.trip-card__cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: transparent;
+  border: 1px solid rgba(185, 28, 28, 0.35);
+  border-radius: var(--dash-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.trip-card__cancel:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
+}
+
+.trip-card__cancel:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Cancel-ride modal */
+.trip-cancel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(17, 24, 39, 0.5);
+}
+
+.trip-cancel-overlay[hidden] {
+  display: none;
+}
+
+.trip-cancel-modal {
+  width: 100%;
+  max-width: 460px;
+  background: var(--dash-card);
+  color: var(--dash-text);
+  border-radius: var(--dash-radius);
+  box-shadow: var(--dash-shadow-hover);
+  animation: trip-cancel-pop 0.16s ease-out;
+}
+
+@keyframes trip-cancel-pop {
+  from { transform: translateY(8px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.trip-cancel-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.35rem;
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.trip-cancel-modal__header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.trip-cancel-modal__close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--dash-muted);
+  cursor: pointer;
+}
+
+.trip-cancel-modal__close:hover {
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--dash-text);
+}
+
+.trip-cancel-modal__body {
+  padding: 1.25rem 1.35rem 0.5rem;
+}
+
+.trip-cancel-modal__lead {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--dash-muted);
+}
+
+.trip-cancel-modal__lead strong {
+  color: var(--dash-text);
+}
+
+.trip-cancel-modal__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--dash-muted);
+}
+
+.trip-cancel-modal__reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.trip-cancel-chip {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--dash-text);
+  background: transparent;
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.trip-cancel-chip:hover {
+  border-color: rgba(13, 107, 56, 0.4);
+}
+
+.trip-cancel-chip.is-active {
+  background: rgba(13, 107, 56, 0.12);
+  border-color: var(--dash-green);
+  color: var(--dash-green);
+}
+
+.trip-cancel-modal__input {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--dash-text);
+  background: var(--dash-bg, transparent);
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius-sm);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.trip-cancel-modal__input:focus {
+  outline: none;
+  border-color: var(--dash-green);
+  box-shadow: 0 0 0 3px rgba(13, 107, 56, 0.15);
+}
+
+.trip-cancel-modal__error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: #b91c1c;
+}
+
+.trip-cancel-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 1.1rem 1.35rem 1.35rem;
+}
+
+.trips-btn {
+  height: 40px;
+  padding: 0 1.1rem;
+  border-radius: var(--dash-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.trips-btn--ghost {
+  background: transparent;
+  border: 1px solid var(--dash-border);
+  color: var(--dash-text);
+}
+
+.trips-btn--ghost:hover {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.trips-btn--danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.trips-btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.trips-btn--danger:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .trip-cancel-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .trip-cancel-modal {
+    max-width: none;
+    border-radius: var(--dash-radius) var(--dash-radius) 0 0;
+  }
+
+  .trip-cancel-modal__footer {
+    flex-direction: column-reverse;
+  }
+
+  .trips-btn {
+    width: 100%;
+  }
+}
+
+/* Live vehicle markers coloured by trip risk status */
+.map-marker-vehicle--active {
+  border-color: #0d6b38;
+  box-shadow: 0 0 0 6px rgba(13, 107, 56, 0.22), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.map-marker-vehicle--active svg {
+  color: #0d6b38;
+}
+
+.map-marker-vehicle--delayed {
+  border-color: #ca8a04;
+  box-shadow: 0 0 0 6px rgba(234, 179, 8, 0.28), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.map-marker-vehicle--delayed svg {
+  color: #ca8a04;
+}
+
+.map-marker-vehicle--incident {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.28), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.map-marker-vehicle--incident svg {
+  color: #dc2626;
 }
 
 @media (max-width: 1100px) {

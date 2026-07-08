@@ -42,7 +42,16 @@
 
     <article class="dash-card trips-recent-card">
       <div class="trips-recent-header">
-        <h2 class="dash-card__title">Recent trips</h2>
+        <div class="trips-recent-header__title">
+          <h2 class="dash-card__title">Recent trips</h2>
+          <button type="button" class="trips-reload-btn" id="trips-reload" aria-label="Reload trips" title="Reload trips">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" aria-hidden="true" focusable="false">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+              <polyline points="21 3 21 9 15 9"/>
+            </svg>
+            <span class="trips-reload-btn__label">Reload</span>
+          </button>
+        </div>
         <div class="trips-filter-tabs" role="tablist" aria-label="Filter trips by status">
           <button type="button" class="trips-filter-tab is-active" data-status="all" role="tab">All</button>
           <button type="button" class="trips-filter-tab" data-status="active" role="tab">Active</button>
@@ -56,6 +65,35 @@
     </article>
   </div>
 </section>
+
+<div class="trip-cancel-overlay" id="trip-cancel-modal" hidden>
+  <div class="trip-cancel-modal" role="dialog" aria-labelledby="trip-cancel-title" aria-modal="true">
+    <div class="trip-cancel-modal__header">
+      <h2 id="trip-cancel-title">Cancel ride</h2>
+      <button type="button" class="trip-cancel-modal__close" data-cancel-dismiss aria-label="Close">&times;</button>
+    </div>
+    <div class="trip-cancel-modal__body">
+      <p class="trip-cancel-modal__lead">
+        You're about to cancel <strong id="trip-cancel-ref">this ride</strong>. The rider and driver
+        will be notified and the driver will return to available.
+      </p>
+      <label class="trip-cancel-modal__label" for="trip-cancel-reason">Reason for cancellation</label>
+      <div class="trip-cancel-modal__reasons" id="trip-cancel-reasons">
+        <button type="button" class="trip-cancel-chip" data-reason="Rider unreachable">Rider unreachable</button>
+        <button type="button" class="trip-cancel-chip" data-reason="Driver unavailable">Driver unavailable</button>
+        <button type="button" class="trip-cancel-chip" data-reason="Duplicate request">Duplicate request</button>
+        <button type="button" class="trip-cancel-chip" data-reason="Safety concern">Safety concern</button>
+      </div>
+      <textarea id="trip-cancel-reason" class="trip-cancel-modal__input" rows="3"
+        placeholder="Add a short reason (required)…" maxlength="500"></textarea>
+      <p class="trip-cancel-modal__error" id="trip-cancel-error" hidden></p>
+    </div>
+    <div class="trip-cancel-modal__footer">
+      <button type="button" class="trips-btn trips-btn--ghost" data-cancel-dismiss>Keep ride</button>
+      <button type="button" class="trips-btn trips-btn--danger" id="trip-cancel-confirm">Cancel ride</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block page_scripts %}

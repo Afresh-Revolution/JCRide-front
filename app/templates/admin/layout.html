@@ -28,6 +28,7 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/admin-confirm.js') }}"></script>
+<script src="{{ url_for('static', filename='js/loading.js') }}"></script>
 {% if dashboard_charts or analytics_charts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 {% endif %}

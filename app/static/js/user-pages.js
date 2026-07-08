@@ -96,15 +96,18 @@
       var rating = Number(window.prompt("Rate your driver (1-5 stars):", "5") || 0);
       if (rating < 1 || rating > 5) return;
       var comment = window.prompt("Optional comment:") || "";
+      if (window.ButtonLoading) window.ButtonLoading.start(btn, { text: "Submitting…" });
       UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/rate", {
         rating: rating,
         comment: comment,
       })
         .then(function () {
+          if (window.ButtonLoading) window.ButtonLoading.stop(btn);
           btn.textContent = "Rated";
           btn.disabled = true;
         })
         .catch(function (err) {
+          if (window.ButtonLoading) window.ButtonLoading.stop(btn);
           alert(err.message || "Could not submit rating.");
         });
     });
@@ -113,8 +116,10 @@
   var historyExport = document.getElementById("history-export-btn");
   if (historyExport && window.UserApi) {
     historyExport.addEventListener("click", function () {
+      if (window.ButtonLoading) window.ButtonLoading.start(historyExport, { text: "Exporting…" });
       UserApi.request("/user/api/settings/data-export")
         .then(function (data) {
+          if (window.ButtonLoading) window.ButtonLoading.stop(historyExport);
           var rides = data.rides || data;
           var blob = new Blob([JSON.stringify(rides, null, 2)], { type: "application/json" });
           var link = document.createElement("a");
@@ -124,6 +129,7 @@
           URL.revokeObjectURL(link.href);
         })
         .catch(function (err) {
+          if (window.ButtonLoading) window.ButtonLoading.stop(historyExport);
           alert(err.message || "Export failed.");
         });
     });

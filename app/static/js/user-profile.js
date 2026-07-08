@@ -9,6 +9,7 @@
       var label = window.prompt("Label (e.g. Home, Work):");
       var address = window.prompt("Address:");
       if (!label || !address) return;
+      if (window.ButtonLoading) window.ButtonLoading.start(addBtn, { text: "Saving…" });
       UserApi.post("/user/api/saved-locations", {
         label: label.trim(),
         address: address.trim(),
@@ -18,6 +19,7 @@
           window.location.reload();
         })
         .catch(function (err) {
+          if (window.ButtonLoading) window.ButtonLoading.stop(addBtn);
           alert(err.message || "Could not save location.");
         });
     });

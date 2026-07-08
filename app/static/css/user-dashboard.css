@@ -2204,8 +2204,20 @@ button.rider-link:hover {
   background: transparent;
 }
 
+.cancel-ride-modal[open] {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+}
+
 .cancel-ride-modal::backdrop {
   background: rgba(15, 23, 42, 0.55);
+}
+
+.cancel-ride-modal--confirm {
+  max-width: 420px;
 }
 
 .cancel-ride-modal__panel {
