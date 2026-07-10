@@ -67,11 +67,11 @@
     tbody.innerHTML = requests.map(function (item) {
       return (
         '<tr>' +
-        '<td><strong>' + escapeHtml(item.driver_name || "Driver") + '</strong><br><span class="drivers-table__meta">' + escapeHtml(item.driver_email || "") + '</span></td>' +
-        '<td>' + escapeHtml(vehicleLabel(item.previous_vehicle_make, item.previous_vehicle_model, item.previous_vehicle_color, item.previous_plate_number, item.previous_service_tier)) + '</td>' +
-        '<td>' + escapeHtml(vehicleLabel(item.vehicle_make, item.vehicle_model, item.vehicle_color, item.plate_number, item.service_tier)) + '</td>' +
-        '<td>' + escapeHtml(formatDate(item.submitted_at)) + '</td>' +
-        '<td><button type="button" class="drivers-btn drivers-btn--ghost" data-review-id="' + escapeHtml(item.id) + '">Review</button></td>' +
+        '<td data-label="Driver"><strong>' + escapeHtml(item.driver_name || "Driver") + '</strong><br><span class="drivers-table__meta">' + escapeHtml(item.driver_email || "") + '</span></td>' +
+        '<td data-label="Current vehicle">' + escapeHtml(vehicleLabel(item.previous_vehicle_make, item.previous_vehicle_model, item.previous_vehicle_color, item.previous_plate_number, item.previous_service_tier)) + '</td>' +
+        '<td data-label="Requested vehicle">' + escapeHtml(vehicleLabel(item.vehicle_make, item.vehicle_model, item.vehicle_color, item.plate_number, item.service_tier)) + '</td>' +
+        '<td data-label="Submitted">' + escapeHtml(formatDate(item.submitted_at)) + '</td>' +
+        '<td class="drivers-table__actions" data-label="Actions"><button type="button" class="drivers-btn drivers-btn--ghost" data-review-id="' + escapeHtml(item.id) + '">Review</button></td>' +
         '</tr>'
       );
     }).join("");

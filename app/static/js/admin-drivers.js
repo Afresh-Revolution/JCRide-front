@@ -152,17 +152,17 @@
 
         return (
           "<tr data-driver-id=\"" + escapeHtml(driver.id) + "\">" +
-          "<td><div class=\"drivers-cell-driver\">" +
+          "<td data-label=\"Driver\"><div class=\"drivers-cell-driver\">" +
           "<span class=\"drivers-avatar\">" + escapeHtml(driver.initials) + "</span>" +
           "<div><span class=\"drivers-cell-driver__name\">" + escapeHtml(driver.full_name) + "</span>" +
           "<span class=\"drivers-cell-driver__id\">ID - " + escapeHtml(driver.public_id) + "</span></div></div></td>" +
-          "<td class=\"drivers-cell-vehicle\">" + escapeHtml(driver.vehicle_display) + "</td>" +
-          "<td class=\"drivers-cell-plate\">" + escapeHtml(driver.license_plate) + "</td>" +
-          "<td class=\"drivers-cell-trips\">" + escapeHtml(driver.trip_count) + "</td>" +
-          "<td class=\"drivers-cell-earnings\">" + escapeHtml(driver.earnings_display) + "</td>" +
-          "<td class=\"drivers-cell-rating\">" + starSvg + escapeHtml(driver.rating_display) + "</td>" +
-          "<td><span class=\"" + statusClass(driver.status) + "\">" + escapeHtml(driver.status_label) + "</span></td>" +
-          "<td><div class=\"drivers-actions\">" +
+          "<td class=\"drivers-cell-vehicle\" data-label=\"Vehicle\">" + escapeHtml(driver.vehicle_display) + "</td>" +
+          "<td class=\"drivers-cell-plate\" data-label=\"Plate\">" + escapeHtml(driver.license_plate) + "</td>" +
+          "<td class=\"drivers-cell-trips\" data-label=\"Trips\">" + escapeHtml(driver.trip_count) + "</td>" +
+          "<td class=\"drivers-cell-earnings\" data-label=\"Earnings\">" + escapeHtml(driver.earnings_display) + "</td>" +
+          "<td class=\"drivers-cell-rating\" data-label=\"Rating\">" + starSvg + escapeHtml(driver.rating_display) + "</td>" +
+          "<td data-label=\"Status\"><span class=\"" + statusClass(driver.status) + "\">" + escapeHtml(driver.status_label) + "</span></td>" +
+          "<td class=\"drivers-table__actions\" data-label=\"Actions\"><div class=\"drivers-actions\">" +
           "<button type=\"button\" class=\"drivers-action-btn\" data-action=\"view\" data-id=\"" + escapeHtml(driver.id) + "\" aria-label=\"View driver\">" +
           "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></button>" +
           "<button type=\"button\" class=\"drivers-action-btn drivers-action-btn--approve\" data-action=\"approve\" data-id=\"" + escapeHtml(driver.id) + "\" aria-label=\"Approve driver\"" + (canApprove ? "" : " disabled") + ">" +
