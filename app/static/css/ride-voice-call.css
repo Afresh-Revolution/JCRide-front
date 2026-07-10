@@ -1,11 +1,40 @@
+/* Glassmorphism call UI — adapts to device light/dark theme */
 .ride-voice-call {
+  --rvc-glass-bg: rgba(255, 255, 255, 0.72);
+  --rvc-glass-border: rgba(255, 255, 255, 0.55);
+  --rvc-text: #0f172a;
+  --rvc-text-muted: rgba(15, 23, 42, 0.62);
+  --rvc-backdrop: rgba(15, 23, 42, 0.45);
+  --rvc-avatar-bg: linear-gradient(145deg, #6366f1, #8b5cf6);
+  --rvc-shadow: 0 24px 64px rgba(15, 23, 42, 0.28);
+  --rvc-mute-bg: rgba(15, 23, 42, 0.08);
+  --rvc-mute-text: #0f172a;
+
   position: fixed;
   inset: 0;
-  z-index: 12000;
+  z-index: 20000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 1.25rem;
+}
+
+body.ride-voice-call-open {
+  overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ride-voice-call {
+    --rvc-glass-bg: rgba(17, 24, 39, 0.78);
+    --rvc-glass-border: rgba(255, 255, 255, 0.12);
+    --rvc-text: #f8fafc;
+    --rvc-text-muted: rgba(248, 250, 252, 0.68);
+    --rvc-backdrop: rgba(2, 6, 23, 0.72);
+    --rvc-avatar-bg: linear-gradient(145deg, #4f46e5, #7c3aed);
+    --rvc-shadow: 0 28px 72px rgba(0, 0, 0, 0.55);
+    --rvc-mute-bg: rgba(255, 255, 255, 0.1);
+    --rvc-mute-text: #f8fafc;
+  }
 }
 
 .ride-voice-call[hidden] {
@@ -15,99 +44,191 @@
 .ride-voice-call__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(8, 12, 20, 0.72);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: var(--rvc-backdrop);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 .ride-voice-call__panel {
   position: relative;
-  width: min(100%, 22rem);
-  padding: 1.75rem 1.5rem 1.5rem;
-  border-radius: 1.25rem;
-  background: var(--surface-elevated, #fff);
-  color: var(--text-primary, #111827);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+  width: min(100%, 24rem);
+  min-height: 26rem;
+  padding: 2rem 1.5rem 1.75rem;
+  border-radius: 1.75rem;
+  border: 1px solid var(--rvc-glass-border);
+  background: var(--rvc-glass-bg);
+  color: var(--rvc-text);
+  box-shadow: var(--rvc-shadow);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   text-align: center;
 }
 
+.ride-voice-call__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+}
+
+.ride-voice-call__avatar-wrap {
+  position: relative;
+  width: 6.5rem;
+  height: 6.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ride-voice-call__avatar-ring {
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: 50%;
+  border: 2px solid rgba(99, 102, 241, 0.35);
+  opacity: 0;
+}
+
+.ride-voice-call.is-phase-incoming .ride-voice-call__avatar-ring,
+.ride-voice-call.is-phase-outgoing .ride-voice-call__avatar-ring,
+.ride-voice-call.is-phase-connecting .ride-voice-call__avatar-ring {
+  opacity: 1;
+  animation: ride-voice-call-ring 1.6s ease-out infinite;
+}
+
+.ride-voice-call__avatar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--rvc-avatar-bg);
+  color: #fff;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
 .ride-voice-call__eyebrow {
-  margin: 0 0 0.35rem;
-  font-size: 0.75rem;
+  margin: 0;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted, #6b7280);
+  color: var(--rvc-text-muted);
 }
 
 .ride-voice-call__title {
-  margin: 0 0 0.5rem;
-  font-size: 1.35rem;
-  line-height: 1.25;
+  margin: 0;
+  font-size: 1.55rem;
+  line-height: 1.2;
+  font-weight: 700;
 }
 
 .ride-voice-call__status {
-  margin: 0 0 1.25rem;
-  font-size: 0.95rem;
-  color: var(--text-muted, #6b7280);
+  margin: 0.15rem 0 0;
+  font-size: 0.98rem;
+  color: var(--rvc-text-muted);
 }
 
 .ride-voice-call__timer {
-  margin: -0.75rem 0 1.25rem;
-  font-size: 1.5rem;
+  margin: 0.35rem 0 0;
+  font-size: 1.35rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  color: var(--rvc-text);
+}
+
+.ride-voice-call__timer[hidden],
+.ride-voice-call__actions[hidden] {
+  display: none !important;
+}
+
+.ride-voice-call__controls {
+  margin-top: 1.5rem;
 }
 
 .ride-voice-call__actions {
-  display: flex;
-  gap: 0.75rem;
+  display: none;
+  align-items: flex-end;
   justify-content: center;
-  flex-wrap: wrap;
+  gap: 2.5rem;
 }
 
-.ride-voice-call__actions--active {
+.ride-voice-call.is-phase-incoming .ride-voice-call__actions--incoming,
+.ride-voice-call.is-phase-outgoing .ride-voice-call__actions--outgoing,
+.ride-voice-call.is-phase-connecting .ride-voice-call__actions--outgoing,
+.ride-voice-call.is-phase-active .ride-voice-call__actions--active {
+  display: flex;
+}
+
+.ride-voice-call__action {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-}
-
-.ride-voice-call__btn {
-  min-width: 7rem;
-  padding: 0.75rem 1rem;
+  gap: 0.55rem;
+  min-width: 4.75rem;
+  padding: 0;
   border: 0;
-  border-radius: 999px;
+  background: transparent;
+  color: var(--rvc-text-muted);
   font: inherit;
-  font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
-.ride-voice-call__btn:disabled {
-  opacity: 0.55;
+.ride-voice-call__action:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.ride-voice-call__btn:not(:disabled):active {
-  transform: scale(0.98);
-}
-
-.ride-voice-call__btn--accept {
-  background: #16a34a;
+.ride-voice-call__action-icon {
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
   color: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.ride-voice-call__btn--reject,
-.ride-voice-call__btn--end {
-  background: #dc2626;
-  color: #fff;
+.ride-voice-call__action-icon svg {
+  width: 1.45rem;
+  height: 1.45rem;
 }
 
-.ride-voice-call__btn--mute {
-  background: var(--surface-muted, #f3f4f6);
-  color: var(--text-primary, #111827);
+.ride-voice-call__action:not(:disabled):active .ride-voice-call__action-icon {
+  transform: scale(0.95);
 }
 
-.ride-voice-call__btn--mute[aria-pressed="true"] {
-  background: #f59e0b;
+.ride-voice-call__action-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--rvc-text-muted);
+}
+
+.ride-voice-call__action--accept .ride-voice-call__action-icon {
+  background: linear-gradient(145deg, #22c55e, #16a34a);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.35);
+}
+
+.ride-voice-call__action--reject .ride-voice-call__action-icon,
+.ride-voice-call__action--end .ride-voice-call__action-icon {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  box-shadow: 0 10px 24px rgba(220, 38, 38, 0.35);
+}
+
+.ride-voice-call__action--mute .ride-voice-call__action-icon {
+  background: var(--rvc-mute-bg);
+  color: var(--rvc-mute-text);
+  box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.18);
+}
+
+.ride-voice-call__action--mute[aria-pressed="true"] .ride-voice-call__action-icon {
+  background: linear-gradient(145deg, #f59e0b, #d97706);
   color: #111827;
 }
 
@@ -119,29 +240,35 @@
   pointer-events: none;
 }
 
-.ride-voice-call--incoming .ride-voice-call__panel {
-  animation: ride-voice-call-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes ride-voice-call-pulse {
-  0%,
-  100% {
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+@keyframes ride-voice-call-ring {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.85;
   }
-  50% {
-    box-shadow: 0 24px 48px rgba(22, 163, 74, 0.35);
+  70% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
   }
 }
 
 @media (max-width: 480px) {
-  .ride-voice-call__panel {
-    width: 100%;
-    border-radius: 1rem 1rem 0 0;
-    align-self: flex-end;
-  }
-
   .ride-voice-call {
     align-items: flex-end;
     padding: 0;
+  }
+
+  .ride-voice-call__panel {
+    width: 100%;
+    min-height: auto;
+    border-radius: 1.5rem 1.5rem 0 0;
+    padding: 1.75rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .ride-voice-call__actions {
+    gap: 2rem;
   }
 }

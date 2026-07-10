@@ -146,14 +146,31 @@
   }
 
   function notifyNewRideRequest(payload) {
-    if (window.location.pathname.indexOf("/ride-requests") < 0) return;
+    if (typeof window.fetchRideRequests === "function") {
+      window.fetchRideRequests(payload);
+      return;
+    }
+    if (!isRideRequestsPage()) return;
     var countEl = document.querySelector(".ride-requests-count");
     if (countEl && payload && payload.booking_id) {
       countEl.textContent = "New request: " + payload.booking_id;
     }
-    if (typeof window.fetchRideRequests === "function") {
-      window.fetchRideRequests();
-    }
+  }
+
+  function isActiveTripPage() {
+    return window.location.pathname.indexOf("/active-trip") >= 0;
+  }
+
+  function isRideRequestsPage() {
+    return window.location.pathname.indexOf("/ride-requests") >= 0;
+  }
+
+  function shouldShowCancelOverlay(payload) {
+    if (!isActiveTripPage()) return false;
+    if (!config.activeTripId) return false;
+    var cancelledId = payload.ride_id || (payload.ride && payload.ride.id);
+    if (!cancelledId) return true;
+    return String(config.activeTripId) === String(cancelledId);
   }
 
   function handleMessage(event) {
@@ -173,6 +190,12 @@
             )
           );
         }
+        if (window.RideVoiceCall && typeof window.RideVoiceCall.syncActiveCall === "function") {
+          window.RideVoiceCall.syncActiveCall();
+        }
+        if (typeof window.fetchRideRequests === "function" && !config.activeTripId) {
+          window.fetchRideRequests();
+        }
         return;
       }
 
@@ -180,13 +203,21 @@
         type === "ride.cancelled" &&
         (payload.actor_type === "customer" || payload.actor_type === "admin")
       ) {
-        showCancelOverlay(payload);
-        dispatchTripEvent(type, payload);
+        if (shouldShowCancelOverlay(payload)) {
+          showCancelOverlay(payload);
+          dispatchTripEvent(type, payload);
+        } else if (typeof window.fetchRideRequests === "function") {
+          window.fetchRideRequests(payload);
+        }
+        setDriverOpenUi();
         return;
       }
 
       if (type === "driver.availability.open") {
         setDriverOpenUi();
+        if (typeof window.fetchRideRequests === "function") {
+          window.fetchRideRequests(payload);
+        }
         if (window.location.pathname.indexOf("/active-trip") >= 0) {
           window.location.href = rideRequestsUrl();
         }

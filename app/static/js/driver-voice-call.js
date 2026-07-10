@@ -35,9 +35,11 @@
       rideStatus: config.rideStatus || "",
       userId: config.userId || "",
       authToken: config.token || "",
+      role: "driver",
       peerLabel: peerLabel,
       apiBase: DriverApi.base + "/rides",
       apiPost: DriverApi.post,
+      apiGet: DriverApi.request,
       callButton: callButton,
       onError: function (message) {
         if (window.DriverConfirm) {

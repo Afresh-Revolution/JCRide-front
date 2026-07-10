@@ -1,44 +1,81 @@
-<div id="ride-voice-call-root" class="ride-voice-call" hidden aria-live="polite">
+<div id="ride-voice-call-root" class="ride-voice-call is-phase-idle" hidden aria-live="polite">
   <div class="ride-voice-call__backdrop" aria-hidden="true"></div>
+
   <div
     class="ride-voice-call__panel"
     role="dialog"
     aria-modal="true"
     aria-labelledby="ride-voice-call-title"
   >
-    <p class="ride-voice-call__eyebrow" id="ride-voice-call-eyebrow">Voice call</p>
-    <h2 class="ride-voice-call__title" id="ride-voice-call-title">Connecting…</h2>
-    <p class="ride-voice-call__status" id="ride-voice-call-status"></p>
-    <p class="ride-voice-call__timer" id="ride-voice-call-timer" hidden></p>
-
-    <div class="ride-voice-call__actions" id="ride-voice-call-actions-incoming" hidden>
-      <button type="button" class="ride-voice-call__btn ride-voice-call__btn--reject" id="ride-voice-call-reject">
-        Decline
-      </button>
-      <button type="button" class="ride-voice-call__btn ride-voice-call__btn--accept" id="ride-voice-call-accept">
-        Accept
-      </button>
+    <div class="ride-voice-call__hero">
+      <div class="ride-voice-call__avatar-wrap" aria-hidden="true">
+        <span class="ride-voice-call__avatar-ring"></span>
+        <span class="ride-voice-call__avatar" id="ride-voice-call-avatar">JC</span>
+      </div>
+      <p class="ride-voice-call__eyebrow" id="ride-voice-call-eyebrow">Voice call</p>
+      <h2 class="ride-voice-call__title" id="ride-voice-call-title">Connecting…</h2>
+      <p class="ride-voice-call__status" id="ride-voice-call-status"></p>
+      <p class="ride-voice-call__timer" id="ride-voice-call-timer" hidden></p>
     </div>
 
-    <div class="ride-voice-call__actions" id="ride-voice-call-actions-outgoing" hidden>
-      <button type="button" class="ride-voice-call__btn ride-voice-call__btn--end" id="ride-voice-call-cancel">
-        Cancel call
-      </button>
-    </div>
-
-    <div class="ride-voice-call__actions ride-voice-call__actions--active" id="ride-voice-call-actions-active" hidden>
-      <button
-        type="button"
-        class="ride-voice-call__btn ride-voice-call__btn--mute"
-        id="ride-voice-call-mute"
-        aria-pressed="false"
+    <div class="ride-voice-call__controls">
+      <div
+        class="ride-voice-call__actions ride-voice-call__actions--incoming"
+        id="ride-voice-call-actions-incoming"
+        hidden
       >
-        Mute
-      </button>
-      <button type="button" class="ride-voice-call__btn ride-voice-call__btn--end" id="ride-voice-call-end">
-        End call
-      </button>
+        <button type="button" class="ride-voice-call__action ride-voice-call__action--reject" id="ride-voice-call-reject">
+          <span class="ride-voice-call__action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </span>
+          <span class="ride-voice-call__action-label">Decline</span>
+        </button>
+        <button type="button" class="ride-voice-call__action ride-voice-call__action--accept" id="ride-voice-call-accept">
+          <span class="ride-voice-call__action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </span>
+          <span class="ride-voice-call__action-label">Accept</span>
+        </button>
+      </div>
+
+      <div
+        class="ride-voice-call__actions ride-voice-call__actions--outgoing"
+        id="ride-voice-call-actions-outgoing"
+        hidden
+      >
+        <button type="button" class="ride-voice-call__action ride-voice-call__action--end" id="ride-voice-call-cancel">
+          <span class="ride-voice-call__action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </span>
+          <span class="ride-voice-call__action-label">End call</span>
+        </button>
+      </div>
+
+      <div
+        class="ride-voice-call__actions ride-voice-call__actions--active"
+        id="ride-voice-call-actions-active"
+        hidden
+      >
+        <button
+          type="button"
+          class="ride-voice-call__action ride-voice-call__action--mute"
+          id="ride-voice-call-mute"
+          aria-pressed="false"
+        >
+          <span class="ride-voice-call__action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </span>
+          <span class="ride-voice-call__action-label">Mute</span>
+        </button>
+        <button type="button" class="ride-voice-call__action ride-voice-call__action--end" id="ride-voice-call-end">
+          <span class="ride-voice-call__action-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </span>
+          <span class="ride-voice-call__action-label">End call</span>
+        </button>
+      </div>
     </div>
   </div>
+
   <div id="ride-voice-call-audio" class="ride-voice-call__audio" aria-hidden="true"></div>
 </div>

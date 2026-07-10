@@ -233,6 +233,9 @@
 
     var driver = ride.driver || {};
     updateDriverPanel(driver, status);
+    if (window.RideVoiceCall && (driver.full_name || driver.name)) {
+      window.RideVoiceCall.setPeerLabel(driver.full_name || driver.name);
+    }
     if (ride.driver_location) {
       updateDriverOnMap(ride.driver_location);
     }
@@ -294,6 +297,9 @@
 
     if (type === "connection.ready" && config.rideId && socket && socket.readyState === 1) {
       socket.send(JSON.stringify(window.RideRealtimeEvents.subscribeMessage(config.rideId)));
+      if (window.RideVoiceCall && typeof window.RideVoiceCall.syncActiveCall === "function") {
+        window.RideVoiceCall.syncActiveCall();
+      }
       return;
     }
 
@@ -667,9 +673,11 @@
       rideStatus: currentRideStatus,
       userId: config.userId || "",
       authToken: config.token || "",
+      role: "customer",
       peerLabel: driverNameEl ? driverNameEl.textContent.trim() : "Driver",
       apiBase: "/user/api/rides",
       apiPost: UserApi.post,
+      apiGet: UserApi.request,
       callButton: document.getElementById("tracking-call-driver"),
       onError: function (message) {
         window.alert(message || "Call failed.");

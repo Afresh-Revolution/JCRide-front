@@ -6,7 +6,7 @@ import json
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
 from app.config import get_ws_url
-from app.driver_api_transforms import support_faq_for_driver
+from app.driver_api_transforms import ride_requests_from_api, support_faq_for_driver
 from app.driver_portal.dashboard_service import resolve_dashboard
 from app.driver_portal.data import DRIVER_SUPPORT_CATEGORIES, HERO_STATS
 from app.driver_portal.earnings_service import resolve_earnings_page, resolve_earnings_transactions
@@ -1390,7 +1390,7 @@ def driver_api_ride_requests():
     try:
         data = get_driver_ride_requests(_driver_token())
         items = data if isinstance(data, list) else data.get("requests") or data.get("rides") or []
-        return jsonify({"requests": items})
+        return jsonify({"requests": items, "ui": ride_requests_from_api(items)})
     except ApiError as exc:
         return _driver_api_error(exc)
 
