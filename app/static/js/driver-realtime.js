@@ -210,6 +210,10 @@
         return;
       }
 
+      if (window.RideVoiceCall && window.RideVoiceCall.handleEvent(type, message)) {
+        return;
+      }
+
       if (
         type === "ride.started" ||
         type === "ride.completed" ||

@@ -1,5 +1,7 @@
 from flask import Blueprint, flash, get_flashed_messages, jsonify, redirect, render_template, request, session, url_for
 from datetime import datetime
+import base64
+import json
 import re
 import uuid
 
@@ -64,6 +66,12 @@ from app.services.api_client import (
     request_ride_coords,
     resend_otp,
     ride_call_intent,
+    ride_call_accept,
+    ride_call_end,
+    ride_call_reject,
+    ride_call_start,
+    ride_call_token,
+    ride_calls,
     set_availability,
     start_ride,
     trigger_ride_sos,
@@ -234,6 +242,25 @@ def _rider_token() -> str | None:
     return session.get("token")
 
 
+def _jwt_user_id(token: str | None) -> str | None:
+    if not token:
+        return None
+    try:
+        parts = token.split(".")
+        if len(parts) < 2:
+            return None
+        payload = parts[1]
+        payload += "=" * (-len(payload) % 4)
+        data = json.loads(base64.urlsafe_b64decode(payload))
+        return data.get("sub") or data.get("user_id")
+    except (ValueError, json.JSONDecodeError, TypeError):
+        return None
+
+
+def _resolved_rider_user_id() -> str | None:
+    return session.get("user_id") or _jwt_user_id(_rider_token())
+
+
 def _safe_rider_api(callable_fn, default=None):
     token = _rider_token()
     if not token:
@@ -392,6 +419,7 @@ def _tracking_page_context() -> dict:
         "show_finding": not (ok and ride and driver_ready),
         "ride_id": active.get("ride_id") or ((ride or {}).get("id") if ok else None),
         "ride_status": status,
+        "rider_user_id": _resolved_rider_user_id(),
         "ws_url": get_ws_url(),
     }
 
@@ -2089,6 +2117,72 @@ def user_api_ride_call(ride_id):
         return jsonify(
             ride_call_intent(_rider_token(), ride_id, payload.get("target", "driver"))
         )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/call/token", methods=["POST"])
+def user_api_ride_call_token(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_token(_rider_token(), ride_id))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/call/start", methods=["POST"])
+def user_api_ride_call_start(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_start(_rider_token(), ride_id)), 201
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/call/accept", methods=["POST"])
+def user_api_ride_call_accept(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_accept(_rider_token(), ride_id))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/call/reject", methods=["POST"])
+def user_api_ride_call_reject(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_reject(_rider_token(), ride_id))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/call/end", methods=["POST"])
+def user_api_ride_call_end(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_end(_rider_token(), ride_id))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/calls", methods=["GET"])
+def user_api_ride_calls(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_calls(_rider_token(), ride_id))
     except ApiError as exc:
         return _user_api_error(exc)
 

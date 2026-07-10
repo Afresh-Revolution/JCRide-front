@@ -36,6 +36,7 @@
 <script type="application/json" id="driver-realtime-config">{{ {
   "wsUrl": ws_url,
   "token": driver_token,
+  "userId": session.get('user_id') or portal_user_id,
   "activeTripId": active_trip_id,
   "rideRequestsUrl": url_for('driver_portal.ride_requests'),
   "dashboardUrl": url_for('driver_portal.dashboard')

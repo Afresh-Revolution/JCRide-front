@@ -1,0 +1,44 @@
+<div id="ride-voice-call-root" class="ride-voice-call" hidden aria-live="polite">
+  <div class="ride-voice-call__backdrop" aria-hidden="true"></div>
+  <div
+    class="ride-voice-call__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="ride-voice-call-title"
+  >
+    <p class="ride-voice-call__eyebrow" id="ride-voice-call-eyebrow">Voice call</p>
+    <h2 class="ride-voice-call__title" id="ride-voice-call-title">Connecting…</h2>
+    <p class="ride-voice-call__status" id="ride-voice-call-status"></p>
+    <p class="ride-voice-call__timer" id="ride-voice-call-timer" hidden></p>
+
+    <div class="ride-voice-call__actions" id="ride-voice-call-actions-incoming" hidden>
+      <button type="button" class="ride-voice-call__btn ride-voice-call__btn--reject" id="ride-voice-call-reject">
+        Decline
+      </button>
+      <button type="button" class="ride-voice-call__btn ride-voice-call__btn--accept" id="ride-voice-call-accept">
+        Accept
+      </button>
+    </div>
+
+    <div class="ride-voice-call__actions" id="ride-voice-call-actions-outgoing" hidden>
+      <button type="button" class="ride-voice-call__btn ride-voice-call__btn--end" id="ride-voice-call-cancel">
+        Cancel call
+      </button>
+    </div>
+
+    <div class="ride-voice-call__actions ride-voice-call__actions--active" id="ride-voice-call-actions-active" hidden>
+      <button
+        type="button"
+        class="ride-voice-call__btn ride-voice-call__btn--mute"
+        id="ride-voice-call-mute"
+        aria-pressed="false"
+      >
+        Mute
+      </button>
+      <button type="button" class="ride-voice-call__btn ride-voice-call__btn--end" id="ride-voice-call-end">
+        End call
+      </button>
+    </div>
+  </div>
+  <div id="ride-voice-call-audio" class="ride-voice-call__audio" aria-hidden="true"></div>
+</div>

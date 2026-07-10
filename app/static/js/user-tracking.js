@@ -237,6 +237,10 @@
       updateDriverOnMap(ride.driver_location);
     }
     updateCancelButtonVisibility();
+    if (window.RideVoiceCall) {
+      if (ride.id) window.RideVoiceCall.setRideId(ride.id);
+      window.RideVoiceCall.setRideStatus(status);
+    }
   }
 
   function isAuthError(err) {
@@ -296,6 +300,10 @@
     if (type === "chat.message.new") {
       var chatPayload = message.payload || message.data || {};
       if (appendChatMessage) appendChatMessage(chatPayload);
+      return;
+    }
+
+    if (window.RideVoiceCall && window.RideVoiceCall.handleEvent(type, message)) {
       return;
     }
 
@@ -651,6 +659,24 @@
     updateCancelButtonVisibility();
   }
 
+  function initVoiceCall() {
+    if (!window.RideVoiceCall || !config.rideId || !window.UserApi) return;
+    var driverNameEl = document.querySelector(".tracking-driver__profile strong");
+    window.RideVoiceCall.init({
+      rideId: config.rideId,
+      rideStatus: currentRideStatus,
+      userId: config.userId || "",
+      authToken: config.token || "",
+      peerLabel: driverNameEl ? driverNameEl.textContent.trim() : "Driver",
+      apiBase: "/user/api/rides",
+      apiPost: UserApi.post,
+      callButton: document.getElementById("tracking-call-driver"),
+      onError: function (message) {
+        window.alert(message || "Call failed.");
+      },
+    });
+  }
+
   function initTrackingActions() {
     var rideId = config.rideId;
     if (!rideId) return;
@@ -674,25 +700,7 @@
       });
     }
 
-    var callBtn = document.getElementById("tracking-call-driver");
-    if (callBtn) {
-      callBtn.addEventListener("click", function () {
-        if (window.ButtonLoading) window.ButtonLoading.start(callBtn);
-        UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/call", { target: "driver" })
-          .then(function (data) {
-            if (window.ButtonLoading) window.ButtonLoading.stop(callBtn);
-            if (data.masked_phone) {
-              window.location.href = "tel:" + data.masked_phone;
-              return;
-            }
-            alert("Call request sent. Your phone will ring shortly.");
-          })
-          .catch(function (err) {
-            if (window.ButtonLoading) window.ButtonLoading.stop(callBtn);
-            alert(err.message || "Call request failed.");
-          });
-      });
-    }
+    initVoiceCall();
 
     var sosBtn = document.getElementById("tracking-sos-btn");
     if (sosBtn) {
@@ -852,14 +860,14 @@
   }
 
   function boot() {
-    if (!window.UserApi) return;
+    if (!window.UserApi || !window.RideVoiceCall) return;
     initFindingDriver();
     initTrackingActions();
     initShareRide();
   }
 
   function waitForUserApi(attempt) {
-    if (window.UserApi) {
+    if (window.UserApi && window.RideVoiceCall) {
       boot();
       return;
     }
