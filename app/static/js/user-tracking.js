@@ -79,12 +79,20 @@
     }
   }
 
+  function startStatusPoll(intervalMs) {
+    stopFindingPoll();
+    pollCurrentRide();
+    pollTimer = window.setInterval(pollCurrentRide, intervalMs || 4000);
+  }
+
   function showActiveTracking() {
     var finding = document.getElementById("tracking-finding");
     var active = document.getElementById("tracking-active");
     if (!finding || !active) return;
 
-    stopFindingPoll();
+    // Keep a light poll after match so admin/driver cancels still end the trip
+    // even if the websocket drops or the token cannot reconnect.
+    startStatusPoll(5000);
 
     finding.classList.add("is-hidden");
     finding.setAttribute("hidden", "");
@@ -231,19 +239,49 @@
     updateCancelButtonVisibility();
   }
 
+  function isAuthError(err) {
+    var message = String((err && err.message) || "").toLowerCase();
+    return (
+      message.indexOf("expired token") >= 0 ||
+      message.indexOf("invalid or expired") >= 0 ||
+      message.indexOf("unauthorized") >= 0 ||
+      message.indexOf("401") >= 0
+    );
+  }
+
   function pollCurrentRide() {
     if (!window.UserApi) return;
     UserApi.request("/user/api/rides/current")
       .then(function (data) {
-        if (data && data.ride) updateRideUi(data.ride);
+        if (data && data.ride) {
+          updateRideUi(data.ride);
+          return;
+        }
+        // Only leave tracking once we already had a live ride identity.
+        // Avoid bouncing off the finding screen on a transient empty response.
+        var hadTrip =
+          !!config.rideId ||
+          sessionStorage.getItem(STORAGE_KEY) === "1" ||
+          isDriverMatched(currentRideStatus);
+        if (hadTrip) {
+          redirectAfterCancel("Your trip has ended.");
+        }
       })
-      .catch(function () {});
+      .catch(function (err) {
+        if (isAuthError(err)) {
+          stopFindingPoll();
+          sessionStorage.removeItem(STORAGE_KEY);
+          window.location.href =
+            "/auth/rider-login?next=" +
+            encodeURIComponent("/user/book-ride") +
+            "&message=" +
+            encodeURIComponent("Your session expired. Please sign in again to continue.");
+        }
+      });
   }
 
   function startFindingPoll() {
-    stopFindingPoll();
-    pollCurrentRide();
-    pollTimer = window.setInterval(pollCurrentRide, 2000);
+    startStatusPoll(2000);
   }
 
   function handleSocketMessage(message) {
@@ -335,8 +373,18 @@
   function redirectAfterCancel(message) {
     stopFindingPoll();
     sessionStorage.removeItem(STORAGE_KEY);
-    window.location.href =
-      "/user/dashboard?cancelled=1&message=" + encodeURIComponent(message || "Ride cancelled.");
+    var target =
+      "/user/book-ride?cancelled=1&message=" +
+      encodeURIComponent(message || "Ride cancelled.");
+    if (window.UserApi && typeof UserApi.post === "function") {
+      UserApi.post("/user/api/rides/clear-active", {})
+        .catch(function () {})
+        .finally(function () {
+          window.location.href = target;
+        });
+      return;
+    }
+    window.location.href = target;
   }
 
   function performCancelRequest(confirmBtn) {

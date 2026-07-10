@@ -154,25 +154,69 @@ def get_vehicle_change_status(token):
     return _request("GET", f"{API_PREFIX}/drivers/me/vehicle-change", token=token)
 
 
+def _multipart_file_tuple(upload):
+    """Build a stable (filename, bytes, content_type) tuple for multipart uploads."""
+    from io import BytesIO
+    import mimetypes
+
+    if isinstance(upload, (tuple, list)) and len(upload) >= 2:
+        filename = upload[0]
+        payload = upload[1]
+        content_type = upload[2] if len(upload) > 2 else None
+        if hasattr(payload, "seek"):
+            try:
+                payload.seek(0)
+            except Exception:
+                pass
+        if hasattr(payload, "read"):
+            data = payload.read()
+        else:
+            data = payload
+    else:
+        filename = getattr(upload, "filename", None) or "upload.bin"
+        stream = getattr(upload, "stream", upload)
+        if hasattr(stream, "seek"):
+            try:
+                stream.seek(0)
+            except Exception:
+                pass
+        data = stream.read() if hasattr(stream, "read") else stream
+        content_type = getattr(upload, "content_type", None)
+
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    guessed, _ = mimetypes.guess_type(filename or "")
+    mime = (content_type or guessed or "application/octet-stream").split(";")[0].strip().lower()
+    if mime in ("", "application/octet-stream"):
+        mime = guessed or "image/jpeg"
+    if mime == "image/jpg":
+        mime = "image/jpeg"
+    return (filename or "upload.bin", BytesIO(data), mime)
+
+
 def submit_vehicle_change_request(token, form_data, files):
+    from io import BytesIO
+
     headers = {"Authorization": f"Bearer {token}"}
     timeout = get_api_timeout()
     max_attempts = 2
     api_urls = get_api_urls()
     last_exc: RequestException | None = None
     response = None
+    prepared_files = {key: _multipart_file_tuple(value) for key, value in files.items()}
 
     for api_url in api_urls:
         for attempt in range(max_attempts):
             try:
-                for upload in files.values():
-                    if hasattr(upload, "stream"):
-                        upload.stream.seek(0)
+                retry_files = {
+                    key: (name, BytesIO(buf.getvalue()), mime)
+                    for key, (name, buf, mime) in prepared_files.items()
+                }
                 response = requests.post(
                     f"{api_url}{API_PREFIX}/drivers/me/vehicle-change",
                     headers=headers,
                     data=form_data,
-                    files=files,
+                    files=retry_files,
                     timeout=timeout,
                 )
                 break
@@ -785,6 +829,27 @@ def mark_notification_read(token, notification_id):
 
 def mark_all_notifications_read(token):
     return _request("POST", f"{API_PREFIX}/notifications/read-all", token=token)
+
+
+def delete_notification(token, notification_id):
+    return _request(
+        "DELETE",
+        f"{API_PREFIX}/notifications/{notification_id}",
+        token=token,
+    )
+
+
+def delete_notifications(token, notification_ids):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/notifications/delete",
+        token=token,
+        json={"ids": list(notification_ids)},
+    )
+
+
+def clear_all_notifications(token):
+    return _request("POST", f"{API_PREFIX}/notifications/clear-all", token=token)
 
 
 def get_notification_preferences(token):

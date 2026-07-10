@@ -254,9 +254,15 @@ PROFILE_DETAIL = {
     "on_time": "94%",
     "vehicle": {
         "make_model": "Toyota Corolla 2019",
+        "make": "Toyota",
+        "model": "Corolla 2019",
         "color": "Silver",
         "plate": "ABC-123-XY",
-        "category": "Economy",
+        "category": "Car",
+        "tier_label": "Economy",
+        "vehicle_category": "car",
+        "service_tier": "economy",
+        "is_complete": True,
     },
     "documents": [
         {

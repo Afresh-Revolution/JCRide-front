@@ -1,4 +1,4 @@
-<section class="driver-vehicle-card{% if not driver or not driver.get('service_tier') %} driver-vehicle-card--incomplete{% endif %}">
+<section class="driver-vehicle-card{% if not driver or not driver.get('service_tier') or not driver.get('vehicle_category') or not driver.get('plate_number') %} driver-vehicle-card--incomplete{% endif %}">
   <div class="driver-vehicle-card__header">
     <div>
       <h2 class="driver-vehicle-card__title">Vehicle &amp; service tier</h2>
@@ -6,7 +6,7 @@
         Set your service tier and vehicle details. Required before you can go online.
       </p>
     </div>
-    {% if driver and driver.get('service_tier') %}
+    {% if driver and driver.get('service_tier') and driver.get('vehicle_category') and driver.get('plate_number') and driver.get('vehicle_make') %}
     <span class="driver-vehicle-card__badge">Configured</span>
     {% else %}
     <span class="driver-vehicle-card__badge driver-vehicle-card__badge--warn">Incomplete</span>
@@ -27,8 +27,8 @@
 
       <label class="driver-vehicle-card__field">
         <span>Vehicle type</span>
-        <select name="vehicle_category" class="driver-vehicle-card__select">
-          <option value="">Choose type</option>
+        <select name="vehicle_category" class="driver-vehicle-card__select" required>
+          <option value="" disabled{% if not driver or not driver.get('vehicle_category') %} selected{% endif %}>Choose type</option>
           {% for category in vehicle_categories %}
           <option value="{{ category }}"{% if driver and driver.get('vehicle_category') == category %} selected{% endif %}>{{ category|capitalize }}</option>
           {% endfor %}
@@ -36,18 +36,23 @@
       </label>
 
       <label class="driver-vehicle-card__field">
-        <span>Vehicle make / model</span>
-        <input type="text" name="vehicle_make" placeholder="Toyota Corolla" value="{{ (driver.get('vehicle_make') or '') if driver else '' }}">
+        <span>Vehicle make</span>
+        <input type="text" name="vehicle_make" placeholder="Toyota" value="{{ (driver.get('vehicle_make') or '') if driver else '' }}" required>
+      </label>
+
+      <label class="driver-vehicle-card__field">
+        <span>Vehicle model</span>
+        <input type="text" name="vehicle_model" placeholder="Corolla" value="{{ (driver.get('vehicle_model') or '') if driver else '' }}" required>
       </label>
 
       <label class="driver-vehicle-card__field">
         <span>Vehicle colour</span>
-        <input type="text" name="vehicle_color" placeholder="Blue" value="{{ (driver.get('vehicle_color') or '') if driver else '' }}">
+        <input type="text" name="vehicle_color" placeholder="Blue" value="{{ (driver.get('vehicle_color') or '') if driver else '' }}" required>
       </label>
 
-      <label class="driver-vehicle-card__field driver-vehicle-card__field--full">
+      <label class="driver-vehicle-card__field">
         <span>Plate number</span>
-        <input type="text" name="plate_number" placeholder="ABC-123-XY" value="{{ (driver.get('plate_number') or '') if driver else '' }}">
+        <input type="text" name="plate_number" placeholder="ABC-123-XY" value="{{ (driver.get('plate_number') or '') if driver else '' }}" required>
       </label>
     </div>
 

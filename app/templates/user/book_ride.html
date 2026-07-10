@@ -3,6 +3,14 @@
 {% set user_leaflet = true %}
 
 {% block user_content %}
+{% if request.args.get('message') %}
+<div class="flash-dismissible" role="status">
+  <p class="flash-dismissible__text">{{ request.args.get('message') }}</p>
+  <button type="button" class="flash-dismissible__close" aria-label="Dismiss message">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+</div>
+{% endif %}
 <div class="book-ride-layout">
   <section class="rider-panel rider-panel--map book-ride-map">
     {% include "user/includes/route_map.html" %}

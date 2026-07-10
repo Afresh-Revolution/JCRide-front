@@ -11,29 +11,53 @@
     return parts.filter(Boolean).join(", ") || feature.display_name || "Selected location";
   }
 
+  // Restrict search to Nigeria. Photon's bbox biases/limits results to the box,
+  // and the location bias (lat/lon) centres relevance on the country.
+  var NIGERIA_BBOX = "2.6,4.0,14.7,14.0"; // minLon,minLat,maxLon,maxLat
+  var NIGERIA_BIAS = { lat: 9.082, lng: 8.675 };
+
+  function isInNigeria(feature) {
+    var p = (feature && feature.properties) || {};
+    if (p.countrycode) return String(p.countrycode).toUpperCase() === "NG";
+    if (p.country) return String(p.country).toLowerCase() === "nigeria";
+    // No country info: fall back to a coordinate check within the bounding box.
+    var coords = feature && feature.geometry && feature.geometry.coordinates;
+    if (!coords) return false;
+    var lng = coords[0];
+    var lat = coords[1];
+    return lng >= 2.6 && lng <= 14.7 && lat >= 4.0 && lat <= 14.0;
+  }
+
   function searchPlaces(query) {
     var q = (query || "").trim();
     if (q.length < 2) return Promise.resolve([]);
     var url =
       "https://photon.komoot.io/api/?q=" +
       encodeURIComponent(q) +
-      "&limit=8&lang=en";
+      "&limit=10&lang=en" +
+      "&bbox=" + NIGERIA_BBOX +
+      "&lat=" + NIGERIA_BIAS.lat +
+      "&lon=" + NIGERIA_BIAS.lng;
     return fetch(url)
       .then(function (res) {
         return res.json();
       })
       .then(function (data) {
-        return (data.features || []).map(function (feature) {
-          var coords = feature.geometry && feature.geometry.coordinates;
-          return {
-            label: formatPlace(feature),
-            lat: coords ? coords[1] : null,
-            lng: coords ? coords[0] : null,
-            feature: feature,
-          };
-        }).filter(function (item) {
-          return item.lat != null && item.lng != null;
-        });
+        return (data.features || [])
+          .filter(isInNigeria)
+          .map(function (feature) {
+            var coords = feature.geometry && feature.geometry.coordinates;
+            return {
+              label: formatPlace(feature),
+              lat: coords ? coords[1] : null,
+              lng: coords ? coords[0] : null,
+              feature: feature,
+            };
+          })
+          .filter(function (item) {
+            return item.lat != null && item.lng != null;
+          })
+          .slice(0, 8);
       })
       .catch(function () {
         return [];

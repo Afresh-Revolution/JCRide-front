@@ -796,10 +796,28 @@
       credentials: "same-origin",
     })
       .then(function (res) {
-        if (!res.ok) throw new Error("map fetch failed");
-        return res.json();
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            var message = (data && (data.error || data.message || data.detail)) || "map fetch failed";
+            var err = new Error(typeof message === "string" ? message : "map fetch failed");
+            err.status = res.status;
+            throw err;
+          }
+          return data;
+        });
       })
       .then(function (data) {
+        if (!data.trip) {
+          // Admin/customer cancel (or completed trip) — leave active trip without re-login.
+          if (pollTimer) {
+            window.clearInterval(pollTimer);
+            pollTimer = null;
+          }
+          stopGeoWatch();
+          window.location.href = "/driver-portal/ride-requests";
+          return;
+        }
+
         if (data.map && data.trip) {
           data.map.status = data.trip.status;
           data.map.picked_up = data.trip.picked_up;
@@ -834,14 +852,28 @@
           refreshNavigation(data.map, true);
         }
       })
-      .catch(function () {
-        /* keep embedded map data on failure */
+      .catch(function (err) {
+        var message = String((err && err.message) || "").toLowerCase();
+        var status = err && err.status;
+        if (
+          status === 401 ||
+          status === 403 ||
+          message.indexOf("expired token") >= 0 ||
+          message.indexOf("unauthorized") >= 0
+        ) {
+          window.location.href =
+            "/driver-portal/login?message=" +
+            encodeURIComponent("Your session expired. Please sign in again.");
+          return;
+        }
+        /* keep embedded map data on other failures */
       });
   }
 
   function startPolling(trip) {
     if (pollTimer) return;
-    var interval = trip && !trip.picked_up ? 30000 : 45000;
+    // Poll often enough that an admin cancel is noticed without websocket.
+    var interval = trip && !trip.picked_up ? 8000 : 10000;
     pollTimer = window.setInterval(fetchLiveTrip, interval);
   }
 
@@ -902,6 +934,22 @@
     var detail = (event && event.detail) || {};
     var type = detail.type || "";
     var payload = detail.payload || {};
+
+    if (type === "ride.cancelled") {
+      if (pollTimer) {
+        window.clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      stopGeoWatch();
+      // driver-realtime shows overlay + redirects; this is a safety net.
+      window.setTimeout(function () {
+        if (window.location.pathname.indexOf("/active-trip") >= 0) {
+          window.location.href = "/driver-portal/ride-requests";
+        }
+      }, 2000);
+      return;
+    }
+
     if (!currentTripData) return;
 
     if (type === "ride.driver.arrived") {

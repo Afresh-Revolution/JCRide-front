@@ -824,10 +824,16 @@ html {
   }
 
   body.admin-body .notifications-severity select,
-  body.admin-body .notifications-mark-read {
+  body.admin-body .notifications-mark-read,
+  body.admin-body .notifications-action-btn {
     background: var(--dash-card);
     border-color: var(--dash-border);
     color: var(--dash-text);
+  }
+
+  body.admin-body .notifications-action-btn--danger {
+    color: #fca5a5;
+    border-color: rgba(127, 29, 29, 0.45);
   }
 
   body.admin-body .settings-input-prefix,
@@ -1089,7 +1095,7 @@ html {
   }
 
   /* Admin — settings & forms */
-  body.admin-body .admin-content input,
+  body.admin-body .admin-content input:not([type="checkbox"]):not([type="radio"]),
   body.admin-body .admin-content select,
   body.admin-body .admin-content textarea,
   .settings-field input,
@@ -1181,7 +1187,7 @@ html {
 
   .driver-vehicle-card__field input,
   .driver-vehicle-card__select,
-  body.admin-body .admin-content input,
+  body.admin-body .admin-content input:not([type="checkbox"]):not([type="radio"]),
   body.admin-body .admin-content select,
   body.admin-body .admin-content textarea {
     background: var(--dash-input-bg);

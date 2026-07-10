@@ -31,6 +31,7 @@
 </div>
 
 {% include "components/cancel_overlay.html" %}
+{% include "components/confirm_dialog.html" %}
 {% include "components/active_trip/cancel_trip_modal.html" %}
 <script type="application/json" id="driver-realtime-config">{{ {
   "wsUrl": ws_url,
@@ -43,6 +44,7 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/driver-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/driver-confirm.js') }}"></script>
 <script src="{{ url_for('static', filename='js/loading.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}"></script>
 <script src="{{ url_for('static', filename='js/driver-geolocation.js') }}" defer></script>

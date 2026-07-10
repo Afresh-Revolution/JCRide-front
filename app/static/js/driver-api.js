@@ -75,6 +75,34 @@
     markAllNotificationsRead: function () {
       return apiPost(base + "/notifications/read-all");
     },
+    clearAllNotifications: function () {
+      return apiPost(base + "/notifications/clear-all");
+    },
+    deleteNotifications: function (ids) {
+      var list = ids || [];
+      return apiPost(base + "/notifications/delete", { ids: list }).catch(function () {
+        // Fallback if bulk endpoint is unavailable: delete one-by-one.
+        return Promise.all(
+          list.map(function (id) {
+            return apiRequest(base + "/notifications/" + encodeURIComponent(id), {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+            });
+          })
+        ).then(function (results) {
+          return {
+            deleted: results.length,
+            ids: list,
+          };
+        });
+      });
+    },
+    deleteNotification: function (id) {
+      return apiRequest(base + "/notifications/" + encodeURIComponent(id), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+    },
     withdraw: function (payload) {
       return apiPost(base + "/wallet/withdraw", payload);
     },
