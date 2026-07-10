@@ -661,6 +661,9 @@
       var cancellable = ["accepted", "driver_assigned", "driver_arrived"].indexOf(trip.status || "") >= 0;
       cancelForm.hidden = !cancellable;
     }
+    if (window.RideVoiceCall && trip.status) {
+      window.RideVoiceCall.setRideStatus(trip.status);
+    }
   }
 
   function readTripConfig() {

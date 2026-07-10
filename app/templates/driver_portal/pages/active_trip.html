@@ -5,6 +5,7 @@
 
 {% block page_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ride-voice-call.css') }}">
 {% endblock %}
 
 {% block portal_content %}
@@ -12,6 +13,7 @@
 <script type="application/json" id="driver-active-trip-config">{{ {
   "rideId": trip.id,
   "rideStatus": trip.status,
+  "userId": session.get('user_id') or portal_user_id,
   "pickup": trip.pickup,
   "destination": trip.destination,
   "token": driver_token,
@@ -88,6 +90,7 @@
   </div>
 
   {% include "components/active_trip/chat_sheet.html" %}
+  {% include "components/ride_voice_call_overlay.html" %}
 </section>
 {% else %}
 <section class="active-trip-empty">
@@ -104,9 +107,12 @@
 {% block page_scripts %}
 {% if trip %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.9.9/dist/livekit-client.umd.min.js" defer></script>
 <script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/ride-chat.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/ride-voice-call.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/driver-trip-chat.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/driver-voice-call.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/driver-active-trip.js') }}" defer></script>
 {% endif %}
 {% endblock %}

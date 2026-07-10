@@ -2,10 +2,15 @@
 {% set active_page = 'live_tracking' %}
 {% set user_leaflet = true %}
 
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ride-voice-call.css') }}">
+{% endblock %}
+
 {% block user_content %}
 <script type="application/json" id="tracking-api-config">{{ {
   "rideId": ride_id or session.get('active_trip', {}).get('ride_id'),
   "rideStatus": ride_status,
+  "userId": session.get('user_id') or rider_user_id,
   "token": session.get("token"),
   "wsUrl": ws_url,
   "showFinding": show_finding,
@@ -172,12 +177,16 @@
     <p class="cancel-ride-modal__error is-hidden" id="cancel-ride-error" hidden></p>
   </form>
 </dialog>
+
+{% include "components/ride_voice_call_overlay.html" %}
 {% endblock %}
 
 {% block page_scripts %}
 <script type="application/json" id="rider-route-map-data">{{ route_map | tojson }}</script>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.9.9/dist/livekit-client.umd.min.js" defer></script>
 <script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/ride-chat.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/ride-voice-call.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/user-route-map.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/user-tracking.js') }}" defer></script>
 {% endblock %}

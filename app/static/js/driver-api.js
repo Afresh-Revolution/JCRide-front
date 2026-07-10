@@ -61,6 +61,24 @@
     getMessages: function (rideId) {
       return apiRequest(base + "/rides/" + encodeURIComponent(rideId) + "/messages");
     },
+    callStart: function (rideId) {
+      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/call/start");
+    },
+    callToken: function (rideId) {
+      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/call/token");
+    },
+    callAccept: function (rideId) {
+      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/call/accept");
+    },
+    callReject: function (rideId) {
+      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/call/reject");
+    },
+    callEnd: function (rideId) {
+      return apiPost(base + "/rides/" + encodeURIComponent(rideId) + "/call/end");
+    },
+    callHistory: function (rideId) {
+      return apiRequest(base + "/rides/" + encodeURIComponent(rideId) + "/calls");
+    },
     setAvailability: function (online, lat, lng) {
       var payload = { is_online: !!online };
       if (online) {

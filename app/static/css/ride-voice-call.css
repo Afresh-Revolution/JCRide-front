@@ -1,0 +1,147 @@
+.ride-voice-call {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.ride-voice-call[hidden] {
+  display: none !important;
+}
+
+.ride-voice-call__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 12, 20, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.ride-voice-call__panel {
+  position: relative;
+  width: min(100%, 22rem);
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-radius: 1.25rem;
+  background: var(--surface-elevated, #fff);
+  color: var(--text-primary, #111827);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+
+.ride-voice-call__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b7280);
+}
+
+.ride-voice-call__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+
+.ride-voice-call__status {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.ride-voice-call__timer {
+  margin: -0.75rem 0 1.25rem;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.ride-voice-call__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ride-voice-call__actions--active {
+  align-items: center;
+}
+
+.ride-voice-call__btn {
+  min-width: 7rem;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.ride-voice-call__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ride-voice-call__btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.ride-voice-call__btn--accept {
+  background: #16a34a;
+  color: #fff;
+}
+
+.ride-voice-call__btn--reject,
+.ride-voice-call__btn--end {
+  background: #dc2626;
+  color: #fff;
+}
+
+.ride-voice-call__btn--mute {
+  background: var(--surface-muted, #f3f4f6);
+  color: var(--text-primary, #111827);
+}
+
+.ride-voice-call__btn--mute[aria-pressed="true"] {
+  background: #f59e0b;
+  color: #111827;
+}
+
+.ride-voice-call__audio {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ride-voice-call--incoming .ride-voice-call__panel {
+  animation: ride-voice-call-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes ride-voice-call-pulse {
+  0%,
+  100% {
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+  }
+  50% {
+    box-shadow: 0 24px 48px rgba(22, 163, 74, 0.35);
+  }
+}
+
+@media (max-width: 480px) {
+  .ride-voice-call__panel {
+    width: 100%;
+    border-radius: 1rem 1rem 0 0;
+    align-self: flex-end;
+  }
+
+  .ride-voice-call {
+    align-items: flex-end;
+    padding: 0;
+  }
+}

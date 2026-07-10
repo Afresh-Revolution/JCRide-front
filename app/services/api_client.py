@@ -924,6 +924,59 @@ def ride_call_intent(token, ride_id, target="driver"):
     )
 
 
+def ride_call_token(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/call/token",
+        token=token,
+        json={},
+    )
+
+
+def ride_call_start(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/call/start",
+        token=token,
+        json={},
+    )
+
+
+def ride_call_accept(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/call/accept",
+        token=token,
+        json={},
+    )
+
+
+def ride_call_reject(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/call/reject",
+        token=token,
+        json={},
+    )
+
+
+def ride_call_end(token, ride_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/call/end",
+        token=token,
+        json={},
+    )
+
+
+def ride_calls(token, ride_id):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/rides/{ride_id}/calls",
+        token=token,
+    )
+
+
 def get_ride_messages(token, ride_id, page=1, limit=50):
     return _request(
         "GET",

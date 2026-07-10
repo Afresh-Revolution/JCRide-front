@@ -1,5 +1,8 @@
 """Driver portal routes."""
 
+import base64
+import json
+
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
 from app.config import get_ws_url
@@ -57,6 +60,12 @@ from app.services.api_client import (
     register,
     register_device,
     reject_driver_ride,
+    ride_call_accept,
+    ride_call_end,
+    ride_call_reject,
+    ride_call_start,
+    ride_call_token,
+    ride_calls,
     send_ride_message,
     set_availability,
     start_ride,
@@ -93,6 +102,25 @@ def _driver_token():
     if token and token != "demo-token":
         return token
     return None
+
+
+def _jwt_user_id(token: str | None) -> str | None:
+    if not token:
+        return None
+    try:
+        parts = token.split(".")
+        if len(parts) < 2:
+            return None
+        payload = parts[1]
+        payload += "=" * (-len(payload) % 4)
+        data = json.loads(base64.urlsafe_b64decode(payload))
+        return data.get("sub") or data.get("user_id")
+    except (ValueError, json.JSONDecodeError, TypeError):
+        return None
+
+
+def _resolved_driver_user_id() -> str | None:
+    return session.get("user_id") or _jwt_user_id(_driver_token())
 
 
 def _require_driver_api():
@@ -167,6 +195,7 @@ def _portal_context(active_nav: str, **extra):
         "active_nav": active_nav,
         "ws_url": get_ws_url(),
         "driver_token": token,
+        "portal_user_id": _resolved_driver_user_id(),
         "on_active_trip": on_active_trip,
         "active_trip_id": active_trip_id,
         "driver_open": online and not on_active_trip,
@@ -1455,6 +1484,72 @@ def driver_api_ride_messages(ride_id):
                 return jsonify({"error": "message is required"}), 422
             return jsonify(send_ride_message(_driver_token(), ride_id, message)), 201
         return jsonify(get_ride_messages(_driver_token(), ride_id))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/call/token", methods=["POST"])
+def driver_api_ride_call_token(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_token(_driver_token(), ride_id))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/call/start", methods=["POST"])
+def driver_api_ride_call_start(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_start(_driver_token(), ride_id)), 201
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/call/accept", methods=["POST"])
+def driver_api_ride_call_accept(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_accept(_driver_token(), ride_id))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/call/reject", methods=["POST"])
+def driver_api_ride_call_reject(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_reject(_driver_token(), ride_id))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/call/end", methods=["POST"])
+def driver_api_ride_call_end(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_call_end(_driver_token(), ride_id))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/calls", methods=["GET"])
+def driver_api_ride_calls(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_calls(_driver_token(), ride_id))
     except ApiError as exc:
         return _driver_api_error(exc)
 
