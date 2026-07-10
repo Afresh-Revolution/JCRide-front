@@ -31,6 +31,10 @@
     } else {
       modal.setAttribute("open", "open");
     }
+    var firstInput = modal.querySelector("input, select, textarea, button");
+    if (firstInput && typeof firstInput.focus === "function") {
+      firstInput.focus();
+    }
   }
 
   function closeModal() {
@@ -54,11 +58,26 @@
   });
 
   modal.querySelectorAll("[data-vehicle-photo]").forEach(function (input) {
-    var nameEl = input.parentElement.querySelector("[data-vehicle-photo-name]");
+    var nameEl = input.closest(".driver-vehicle-photo");
+    nameEl = nameEl ? nameEl.querySelector("[data-vehicle-photo-name]") : null;
     if (!nameEl) return;
     input.addEventListener("change", function () {
       var file = input.files && input.files[0];
       nameEl.textContent = file ? file.name : "No file chosen";
+      nameEl.classList.toggle("is-selected", Boolean(file));
     });
   });
+
+  var form = modal.querySelector("[data-vehicle-form]");
+  if (form) {
+    form.addEventListener("submit", function () {
+      var submitBtn = form.querySelector("[data-vehicle-submit]");
+      if (!submitBtn || submitBtn.disabled) return;
+      submitBtn.disabled = true;
+      submitBtn.classList.add("is-loading");
+      var original = submitBtn.getAttribute("data-original-label") || submitBtn.textContent;
+      submitBtn.setAttribute("data-original-label", original);
+      submitBtn.textContent = "Saving…";
+    });
+  }
 })();

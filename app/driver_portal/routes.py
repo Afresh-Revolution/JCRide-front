@@ -36,8 +36,11 @@ from app.services.api_client import (
     ApiError,
     accept_driver_ride,
     cancel_driver_ride,
+    clear_all_notifications,
     complete_driver_ride,
     create_support_ticket,
+    delete_notification,
+    delete_notifications,
     driver_ride_arrived,
     driver_settings_deactivate_request,
     driver_settings_go_offline,
@@ -224,6 +227,10 @@ def login():
             flash(exc.message or "Sign in failed. Check your credentials.", "error")
             return redirect(url_for("driver_portal.login"))
 
+    message = (request.args.get("message") or "").strip()
+    if message:
+        flash(message, "error")
+
     return render_template(
         "pages/login.html",
         hero_stats=HERO_STATS,
@@ -303,8 +310,15 @@ def update_vehicle_profile():
     service_tier = request.form.get("service_tier", "").strip().lower()
     vehicle_category = request.form.get("vehicle_category", "").strip().lower()
     vehicle_make = request.form.get("vehicle_make", "").strip()
+    vehicle_model = request.form.get("vehicle_model", "").strip()
     vehicle_color = request.form.get("vehicle_color", "").strip()
     plate_number = request.form.get("plate_number", "").strip()
+
+    # Support legacy combined "make / model" field from older forms.
+    if vehicle_make and not vehicle_model and " " in vehicle_make:
+        parts = vehicle_make.split(None, 1)
+        vehicle_make = parts[0]
+        vehicle_model = parts[1]
 
     payload = {}
     if service_tier in SERVICE_TIERS:
@@ -313,6 +327,8 @@ def update_vehicle_profile():
         payload["vehicle_category"] = vehicle_category
     if vehicle_make:
         payload["vehicle_make"] = vehicle_make
+    if vehicle_model:
+        payload["vehicle_model"] = vehicle_model
     if vehicle_color:
         payload["vehicle_color"] = vehicle_color
     if plate_number:
@@ -329,6 +345,61 @@ def update_vehicle_profile():
         flash(exc.message, "error")
 
     return redirect(url_for("driver_portal.dashboard"))
+
+
+@driver_portal_bp.route("/profile/vehicle", methods=["POST"])
+def update_profile_vehicle():
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    token = _driver_token()
+    if not token:
+        flash("Please sign in again.", "error")
+        return redirect(url_for("driver_portal.profile"))
+
+    vehicle_make = request.form.get("vehicle_make", "").strip()
+    vehicle_model = request.form.get("vehicle_model", "").strip()
+    vehicle_color = request.form.get("vehicle_color", "").strip()
+    plate_number = request.form.get("plate_number", "").strip()
+    vehicle_category = request.form.get("vehicle_category", "").strip().lower()
+    service_tier = request.form.get("service_tier", "").strip().lower()
+
+    missing = []
+    if not vehicle_make:
+        missing.append("make")
+    if not vehicle_model:
+        missing.append("model")
+    if not vehicle_color:
+        missing.append("color")
+    if not plate_number:
+        missing.append("plate number")
+    if vehicle_category not in VEHICLE_CATEGORIES:
+        missing.append("vehicle type")
+    if service_tier not in SERVICE_TIERS:
+        missing.append("service tier")
+
+    if missing:
+        flash("Complete all vehicle fields: " + ", ".join(missing) + ".", "error")
+        return redirect(url_for("driver_portal.profile"))
+
+    try:
+        update_driver_profile(
+            token,
+            {
+                "vehicle_make": vehicle_make,
+                "vehicle_model": vehicle_model,
+                "vehicle_color": vehicle_color,
+                "plate_number": plate_number,
+                "vehicle_category": vehicle_category,
+                "service_tier": service_tier,
+            },
+        )
+        flash("Vehicle profile saved. You can go online and start receiving trips.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+
+    return redirect(url_for("driver_portal.profile"))
 
 
 @driver_portal_bp.route("/ride-requests")
@@ -392,14 +463,25 @@ def active_trip():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token(), session)
+    try:
+        trip = resolve_active_trip(_driver_token(), session)
+    except ApiError as exc:
+        if exc.status_code in (401, 403):
+            session.pop("driver_token", None)
+            session.pop("token", None)
+            session.pop("active_trip_id", None)
+            flash("Your session expired. Please sign in again.", "error")
+            return redirect(url_for("driver_portal.login"))
+        flash(exc.message, "error")
+        return redirect(url_for("driver_portal.ride_requests"))
+
+    if not trip:
+        flash("No active trip. You are open for new requests.", "info")
+        return redirect(url_for("driver_portal.ride_requests"))
+
     context = _portal_context("active_trip", api_connected=bool(_driver_token()))
-    if trip:
-        context["trip"] = trip
-        context["map_data"] = trip_map_payload(trip)
-    else:
-        context["trip"] = None
-        context["map_data"] = None
+    context["trip"] = trip
+    context["map_data"] = trip_map_payload(trip)
 
     return render_template("pages/active_trip.html", **context)
 
@@ -410,8 +492,13 @@ def api_active_trip_map():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token(), session)
+    try:
+        trip = resolve_active_trip(_driver_token(), session)
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
     if not trip:
+        session.pop("active_trip_id", None)
         return jsonify({"trip": None, "map": None})
 
     return jsonify(
@@ -849,6 +936,24 @@ def mark_notifications_read():
     return redirect(url_for("driver_portal.notifications"))
 
 
+@driver_portal_bp.route("/notifications/clear-all", methods=["POST"])
+def clear_notifications():
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    token = _driver_token()
+    if token:
+        try:
+            clear_all_notifications(token)
+        except ApiError as exc:
+            flash(exc.message, "error")
+            return redirect(url_for("driver_portal.notifications"))
+
+    flash("All notifications cleared.", "success")
+    return redirect(url_for("driver_portal.notifications"))
+
+
 @driver_portal_bp.route("/notifications/settings", methods=["POST"])
 def update_notification_setting():
     guard = _require_driver()
@@ -859,22 +964,36 @@ def update_notification_setting():
     group = request.form.get("group", "alerts")
     enabled = request.form.get("enabled") == "1"
     token = _driver_token()
+    wants_json = (
+        request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or request.accept_mimetypes.best == "application/json"
+    )
 
-    if token:
-        try:
-            if group == "alerts":
-                driver_payload, prefs_payload = notification_alert_to_api(setting_id, enabled)
-                if driver_payload:
-                    update_driver_settings(token, driver_payload)
-                if prefs_payload:
-                    update_notification_preferences(token, prefs_payload)
-            else:
-                channel_payload = notification_channel_to_api(setting_id, enabled)
-                if channel_payload:
-                    update_notification_preferences(token, channel_payload)
-        except ApiError:
-            pass
+    if not token:
+        if wants_json:
+            return jsonify({"ok": False, "error": "Not authenticated"}), 401
+        flash("Unable to update notification setting.", "error")
+        return redirect(url_for("driver_portal.notifications"))
 
+    try:
+        if group == "alerts":
+            driver_payload, prefs_payload = notification_alert_to_api(setting_id, enabled)
+            if driver_payload:
+                update_driver_settings(token, driver_payload)
+            if prefs_payload:
+                update_notification_preferences(token, prefs_payload)
+        else:
+            channel_payload = notification_channel_to_api(setting_id, enabled)
+            if channel_payload:
+                update_notification_preferences(token, channel_payload)
+    except ApiError as exc:
+        if wants_json:
+            return jsonify({"ok": False, "error": exc.message}), getattr(exc, "status_code", 400) or 400
+        flash(exc.message, "error")
+        return redirect(url_for("driver_portal.notifications"))
+
+    if wants_json:
+        return jsonify({"ok": True, "setting_id": setting_id, "group": group, "enabled": enabled})
     return redirect(url_for("driver_portal.notifications"))
 
 
@@ -960,21 +1079,9 @@ def submit_vehicle_change():
                 "service_tier": service_tier,
             },
             {
-                "photo_plate_distance": (
-                    photo_plate_distance.filename,
-                    photo_plate_distance.stream,
-                    photo_plate_distance.content_type or "image/jpeg",
-                ),
-                "photo_interior": (
-                    photo_interior.filename,
-                    photo_interior.stream,
-                    photo_interior.content_type or "image/jpeg",
-                ),
-                "photo_driver_with_car": (
-                    photo_driver_with_car.filename,
-                    photo_driver_with_car.stream,
-                    photo_driver_with_car.content_type or "image/jpeg",
-                ),
+                "photo_plate_distance": photo_plate_distance,
+                "photo_interior": photo_interior,
+                "photo_driver_with_car": photo_driver_with_car,
             },
         )
         flash(
@@ -1370,6 +1477,43 @@ def driver_api_notifications_read_all():
         return guard
     try:
         return jsonify(mark_all_notifications_read(_driver_token()))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/notifications/clear-all", methods=["POST"])
+def driver_api_notifications_clear_all():
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(clear_all_notifications(_driver_token()))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/notifications/delete", methods=["POST"])
+def driver_api_notifications_delete():
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    ids = payload.get("ids") or []
+    if not isinstance(ids, list) or not ids:
+        return jsonify({"error": "ids is required"}), 422
+    try:
+        return jsonify(delete_notifications(_driver_token(), ids))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/notifications/<notification_id>", methods=["DELETE"])
+def driver_api_notification_delete(notification_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(delete_notification(_driver_token(), notification_id))
     except ApiError as exc:
         return _driver_api_error(exc)
 

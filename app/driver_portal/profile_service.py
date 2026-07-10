@@ -24,8 +24,10 @@ def empty_profile() -> dict:
             "color": "-",
             "plate": "-",
             "category": "-",
+            "tier_label": "-",
             "vehicle_category": "car",
             "service_tier": "economy",
+            "is_complete": False,
         },
         "documents": merge_profile_documents([]),
     }

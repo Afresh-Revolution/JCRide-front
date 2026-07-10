@@ -346,6 +346,10 @@ def _tracking_page_context() -> dict:
     if ok and ride:
         active = ride_to_active_trip(ride)
         session["active_trip"] = active
+    elif ok:
+        # API succeeded and there is no live ride — drop stale session trip state.
+        session.pop("active_trip", None)
+        active = {}
 
     tracking, finding = ride_to_tracking(ride if ok else None)
     vehicle_type = active.get("vehicle_type") or "car"
@@ -505,6 +509,11 @@ def _handle_login(portal: str):
     email = request.form.get("email", "").strip() if request.method == "POST" else ""
     email_or_phone = request.form.get("email_or_phone", "").strip() if request.method == "POST" else ""
     remember = request.form.get("remember") == "1" if request.method == "POST" else False
+
+    if request.method == "GET":
+        message = (request.args.get("message") or "").strip()
+        if message:
+            flash(message, "error")
 
     if request.method == "POST":
         get_flashed_messages()
@@ -1623,10 +1632,15 @@ def user_live_tracking():
     guard = _require_rider()
     if guard:
         return guard
+    context = _tracking_page_context()
+    # Confirmed no live ride (API ok, empty) — leave tracking immediately.
+    if not context.get("tracking_live") and not context.get("ride_id"):
+        flash("No active trip. Book a new ride when you are ready.", "info")
+        return redirect(url_for("main.user_book_ride"))
     return render_template(
         "user/live_tracking.html",
         active_page="live_tracking",
-        **_tracking_page_context(),
+        **context,
         **_rider_context(),
     )
 
@@ -2001,9 +2015,22 @@ def user_api_current_ride():
             if isinstance(payload, dict) and payload.get("id"):
                 session["active_trip"] = ride_to_active_trip(payload)
             return jsonify({"ride": payload})
+        session.pop("active_trip", None)
         return jsonify({"ride": None})
     except ApiError as exc:
+        if exc.status_code in (401, 403):
+            session.pop("active_trip", None)
         return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/clear-active", methods=["POST"])
+def user_api_clear_active_ride():
+    """Clear stale Flask trip session after remote cancel (admin/driver/customer)."""
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    session.pop("active_trip", None)
+    return jsonify({"ok": True})
 
 
 @main_bp.route("/user/api/rides/<ride_id>/start", methods=["POST"])

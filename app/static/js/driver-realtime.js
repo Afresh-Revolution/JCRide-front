@@ -15,12 +15,20 @@
 
   var socket = null;
   var reconnectTimer = null;
+  var redirectTimer = null;
   var overlay = document.getElementById("driver-cancel-overlay");
+  var titleEl = document.getElementById("driver-cancel-title");
   var reasonWrap = document.getElementById("driver-cancel-reason-wrap");
+  var reasonLabelEl = document.getElementById("driver-cancel-reason-label");
   var reasonEl = document.getElementById("driver-cancel-reason");
   var leadEl = document.getElementById("driver-cancel-lead");
   var statusEl = document.getElementById("driver-cancel-status");
   var dismissBtn = document.getElementById("driver-cancel-dismiss");
+  var authFailCount = 0;
+
+  function rideRequestsUrl() {
+    return config.rideRequestsUrl || config.dashboardUrl || "/driver-portal/ride-requests";
+  }
 
   function setDriverOpenUi() {
     document.querySelectorAll(".status-banner").forEach(function (banner) {
@@ -35,13 +43,26 @@
     });
     document.body.classList.remove("driver-on-active-trip");
     document.body.classList.add("driver-open");
+    config.activeTripId = null;
+  }
+
+  function leaveActiveTrip() {
+    if (window.location.pathname.indexOf("/active-trip") >= 0) {
+      window.location.href = rideRequestsUrl();
+    }
   }
 
   function showCancelOverlay(payload) {
-    if (!overlay) return;
+    if (!overlay) {
+      leaveActiveTrip();
+      return;
+    }
     var booking = payload.booking_id || "this trip";
     var reason = (payload.reason || payload.cancellation_reason || "").trim();
     var byAdmin = payload.actor_type === "admin";
+    if (titleEl) {
+      titleEl.textContent = byAdmin ? "Ride cancelled by support" : "Ride cancelled by rider";
+    }
     if (leadEl) {
       leadEl.textContent =
         payload.driver_message ||
@@ -52,6 +73,9 @@
     if (reasonWrap && reasonEl) {
       if (reason) {
         reasonEl.textContent = reason;
+        if (reasonLabelEl) {
+          reasonLabelEl.textContent = byAdmin ? "Reason from support" : "Reason from rider";
+        }
         reasonWrap.hidden = false;
       } else {
         reasonWrap.hidden = true;
@@ -65,21 +89,32 @@
     overlay.classList.remove("is-hidden");
     document.body.classList.add("driver-cancel-overlay-open");
     setDriverOpenUi();
+
+    if (redirectTimer) window.clearTimeout(redirectTimer);
+    redirectTimer = window.setTimeout(function () {
+      hideCancelOverlay(true);
+    }, 1800);
   }
 
-  function hideCancelOverlay() {
-    if (!overlay) return;
-    overlay.hidden = true;
-    overlay.classList.add("is-hidden");
+  function hideCancelOverlay(forceRedirect) {
+    if (redirectTimer) {
+      window.clearTimeout(redirectTimer);
+      redirectTimer = null;
+    }
+    if (overlay) {
+      overlay.hidden = true;
+      overlay.classList.add("is-hidden");
+    }
     document.body.classList.remove("driver-cancel-overlay-open");
-    if (window.location.pathname.indexOf("/active-trip") >= 0) {
-      window.location.href = config.rideRequestsUrl || config.dashboardUrl || "/driver-portal/ride-requests";
-      return;
+    if (forceRedirect || window.location.pathname.indexOf("/active-trip") >= 0) {
+      window.location.href = rideRequestsUrl();
     }
   }
 
   if (dismissBtn) {
-    dismissBtn.addEventListener("click", hideCancelOverlay);
+    dismissBtn.addEventListener("click", function () {
+      hideCancelOverlay(true);
+    });
   }
 
   function sendLocationUpdate(pos) {
@@ -128,6 +163,7 @@
       var payload = message.payload || message.data || {};
 
       if (type === "connection.ready") {
+        authFailCount = 0;
         if (config.activeTripId && socket && socket.readyState === 1) {
           socket.send(
             JSON.stringify(
@@ -145,11 +181,15 @@
         (payload.actor_type === "customer" || payload.actor_type === "admin")
       ) {
         showCancelOverlay(payload);
+        dispatchTripEvent(type, payload);
         return;
       }
 
       if (type === "driver.availability.open") {
         setDriverOpenUi();
+        if (window.location.pathname.indexOf("/active-trip") >= 0) {
+          window.location.href = rideRequestsUrl();
+        }
         return;
       }
 
@@ -187,12 +227,12 @@
     }
   }
 
-  function scheduleReconnect() {
+  function scheduleReconnect(delayMs) {
     if (reconnectTimer) return;
     reconnectTimer = window.setTimeout(function () {
       reconnectTimer = null;
       connect();
-    }, 3000);
+    }, delayMs || 3000);
   }
 
   function connect() {
@@ -200,10 +240,12 @@
     try {
       socket = new WebSocket(config.wsUrl + "?token=" + encodeURIComponent(config.token));
     } catch (err) {
+      scheduleReconnect(5000);
       return;
     }
 
     socket.addEventListener("open", function () {
+      authFailCount = 0;
       if (config.activeTripId) {
         socket.send(
           JSON.stringify(
@@ -216,7 +258,19 @@
     });
 
     socket.addEventListener("message", handleMessage);
-    socket.addEventListener("close", scheduleReconnect);
+    socket.addEventListener("close", function (event) {
+      // 1008 = policy violation / auth failure from backend WS
+      if (event && event.code === 1008) {
+        authFailCount += 1;
+        if (authFailCount >= 3 && window.location.pathname.indexOf("/active-trip") >= 0) {
+          // Keep the page usable via HTTP polling; avoid looping forever on a dead token.
+          return;
+        }
+        scheduleReconnect(authFailCount >= 2 ? 8000 : 3000);
+        return;
+      }
+      scheduleReconnect(3000);
+    });
     socket.addEventListener("error", function () {
       if (socket) socket.close();
     });

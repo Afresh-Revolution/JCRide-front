@@ -293,6 +293,8 @@ def resolve_active_trip(token: str | None, session: dict | None = None) -> dict 
                 trip = _enrich_distance_left(trip)
                 return enrich_trip_actions(trip)
     except ApiError as exc:
+        if exc.status_code in (401, 403):
+            raise
         if exc.status_code not in (404, 204):
             return None
     return None
