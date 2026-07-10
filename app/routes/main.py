@@ -357,6 +357,22 @@ def _profile_context() -> dict:
     )
 
 
+def _clear_stale_requested_ride(token: str | None) -> None:
+    """Cancel a leftover `requested` ride so a new booking is not blocked server-side."""
+    if not token:
+        return
+    try:
+        current = get_current_ride(token)
+        ride = (current or {}).get("ride") or (current or {}).get("data") or current
+        if not ride or ride.get("status") != "requested":
+            return
+        ride_id = ride.get("id") or ride.get("ride_id")
+        if ride_id:
+            cancel_ride(token, ride_id, reason="Replaced by a new ride request")
+    except ApiError:
+        pass
+
+
 def _tracking_page_context() -> dict:
     active = session.get("active_trip") or {}
 
@@ -1404,6 +1420,7 @@ def user_book_ride():
             return redirect(url_for("main.user_book_ride"))
 
         try:
+            _clear_stale_requested_ride(token)
             if stops:
                 result = request_ride_coords(
                     token,

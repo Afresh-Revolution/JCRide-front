@@ -4776,3 +4776,45 @@ html[data-user-theme="dark"] .driver-vehicle-field select {
     color: #fca5a5;
   }
 }
+
+.driver-new-request-toast {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 15000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 14rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(17, 24, 39, 0.92);
+  color: #f8fafc;
+  text-decoration: none;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: driver-new-request-toast-in 0.25s ease;
+}
+
+.driver-new-request-toast strong {
+  font-size: 0.95rem;
+}
+
+.driver-new-request-toast span {
+  font-size: 0.82rem;
+  color: rgba(248, 250, 252, 0.75);
+}
+
+@keyframes driver-new-request-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

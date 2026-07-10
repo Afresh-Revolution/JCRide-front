@@ -7,15 +7,11 @@
     <p class="driver-page-header__sub ride-requests-count">{{ ride_requests|length }} nearby requests waiting for you</p>
   </header>
 
-  <section class="ride-requests-list">
+  <section class="ride-requests-list" id="driver-ride-requests-list">
     {% for request in ride_requests %}
       {% include "components/requests/ride_request_card.html" %}
     {% else %}
-      <div class="driver-empty">No ride requests right now. Go online to receive trips.</div>
+      <div class="driver-empty" id="driver-ride-requests-empty">No ride requests right now. Go online to receive trips.</div>
     {% endfor %}
   </section>
-{% endblock %}
-
-{% block page_scripts %}
-<script src="{{ url_for('static', filename='js/driver-ride-requests.js') }}" defer></script>
 {% endblock %}

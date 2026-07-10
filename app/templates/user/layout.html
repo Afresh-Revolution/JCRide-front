@@ -26,6 +26,9 @@
     </div>
   </div>
 </div>
+{% if active_page == 'live_tracking' %}
+{% include "components/ride_voice_call_overlay.html" %}
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

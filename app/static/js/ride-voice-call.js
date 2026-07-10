@@ -9,6 +9,7 @@
     "call_cancelled",
     "call_ended",
   ];
+  var PHASE_CLASSES = ["is-phase-idle", "is-phase-incoming", "is-phase-outgoing", "is-phase-connecting", "is-phase-active"];
 
   var options = null;
   var rideId = "";
@@ -16,10 +17,14 @@
   var userId = "";
   var peerLabel = "";
   var apiPost = null;
+  var apiGet = null;
   var callButton = null;
   var domBound = false;
+  var syncTimer = null;
+  var audioUnlocked = false;
 
   var root = null;
+  var avatarEl = null;
   var titleEl = null;
   var statusEl = null;
   var timerEl = null;
@@ -41,6 +46,8 @@
   var connectedAt = null;
   var busy = false;
   var ending = false;
+  var ringtoneTimer = null;
+  var ringAudioCtx = null;
 
   function decodeJwtSub(token) {
     if (!token || typeof token !== "string") return "";
@@ -54,6 +61,16 @@
       return normalizeId(payload.sub || payload.user_id || payload.id);
     } catch (err) {
       return "";
+    }
+  }
+
+  function readJsonConfig(id) {
+    var el = document.getElementById(id);
+    if (!el) return {};
+    try {
+      return JSON.parse(el.textContent || "{}");
+    } catch (err) {
+      return {};
     }
   }
 
@@ -82,6 +99,10 @@
     return options.apiBase + "/" + encodeURIComponent(rideId) + suffix;
   }
 
+  function callsUrl() {
+    return options.apiBase + "/" + encodeURIComponent(rideId) + "/calls";
+  }
+
   function unwrapPayload(message) {
     if (!message || typeof message !== "object") return {};
     return message.payload || message.data || message;
@@ -90,6 +111,20 @@
   function unwrapCall(payload) {
     if (!payload || typeof payload !== "object") return null;
     return payload.call || payload;
+  }
+
+  function initialsFromName(name) {
+    var parts = String(name || "")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!parts.length) return "JC";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function updateAvatar() {
+    if (avatarEl) avatarEl.textContent = initialsFromName(peerLabel);
   }
 
   function isAudioTrack(track) {
@@ -105,6 +140,8 @@
   function isReceiver(call) {
     if (!call) return false;
     if (userId) return normalizeId(call.receiver_id) === userId;
+    if (options.role === "customer") return normalizeId(call.caller_id) !== userId;
+    if (options.role === "driver") return normalizeId(call.caller_id) !== userId;
     if (phase === "outgoing" || phase === "connecting" || phase === "active") return false;
     return phase === "idle" || phase === "incoming";
   }
@@ -117,6 +154,72 @@
 
   function canPlaceCall(status) {
     return CALL_ALLOWED_STATUSES.indexOf(status || rideStatus) >= 0;
+  }
+
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    try {
+      var Ctx = global.AudioContext || global.webkitAudioContext;
+      if (!Ctx) return;
+      ringAudioCtx = new Ctx();
+      if (ringAudioCtx.state === "suspended" && ringAudioCtx.resume) {
+        ringAudioCtx.resume().catch(function () {});
+      }
+    } catch (err) {
+      /* ignore */
+    }
+  }
+
+  function stopRingtone() {
+    if (ringtoneTimer) {
+      global.clearInterval(ringtoneTimer);
+      ringtoneTimer = null;
+    }
+    if (navigator.vibrate) {
+      try {
+        navigator.vibrate(0);
+      } catch (err) {
+        /* ignore */
+      }
+    }
+  }
+
+  function playRingPulse() {
+    unlockAudio();
+    if (!ringAudioCtx) return;
+    try {
+      if (ringAudioCtx.state === "suspended" && ringAudioCtx.resume) {
+        ringAudioCtx.resume().catch(function () {});
+      }
+      var osc = ringAudioCtx.createOscillator();
+      var gain = ringAudioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 520;
+      gain.gain.value = 0.0001;
+      osc.connect(gain);
+      gain.connect(ringAudioCtx.destination);
+      var now = ringAudioCtx.currentTime;
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+      osc.start(now);
+      osc.stop(now + 0.46);
+    } catch (err) {
+      /* ignore */
+    }
+  }
+
+  function startRingtone() {
+    stopRingtone();
+    playRingPulse();
+    ringtoneTimer = global.setInterval(playRingPulse, 1400);
+    if (navigator.vibrate) {
+      try {
+        navigator.vibrate([180, 120, 180, 400]);
+      } catch (err) {
+        /* ignore */
+      }
+    }
   }
 
   function updateCallButton() {
@@ -162,6 +265,10 @@
   function setPhase(nextPhase) {
     phase = nextPhase;
     if (root) {
+      PHASE_CLASSES.forEach(function (cls) {
+        root.classList.remove(cls);
+      });
+      root.classList.add("is-phase-" + nextPhase);
       root.classList.toggle("ride-voice-call--incoming", nextPhase === "incoming");
     }
     if (incomingActions) incomingActions.hidden = nextPhase !== "incoming";
@@ -187,6 +294,7 @@
 
   function setTitle(text) {
     if (titleEl) titleEl.textContent = text || "";
+    updateAvatar();
   }
 
   function resetActionButtons() {
@@ -198,6 +306,8 @@
       muteBtn.disabled = false;
       muteBtn.textContent = "Mute";
       muteBtn.setAttribute("aria-pressed", "false");
+      var muteLabel = muteBtn.querySelector(".ride-voice-call__action-label");
+      if (muteLabel) muteLabel.textContent = "Mute";
     }
   }
 
@@ -221,6 +331,7 @@
   }
 
   function resetUi(message) {
+    stopRingtone();
     stopTimer();
     disconnectRoom();
     activeCall = null;
@@ -243,6 +354,7 @@
   }
 
   function ensureMicPermission() {
+    unlockAudio();
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return Promise.reject(new Error("Microphone is not available in this browser."));
     }
@@ -329,7 +441,53 @@
     return apiPost(callUrl("/call/token"), {});
   }
 
+  function fetchCallHistory() {
+    if (typeof apiGet !== "function") return Promise.resolve([]);
+    return apiGet(callsUrl())
+      .then(function (data) {
+        return (data && data.calls) || [];
+      })
+      .catch(function () {
+        return [];
+      });
+  }
+
+  function findOpenCall(calls) {
+    if (!calls || !calls.length) return null;
+    for (var i = calls.length - 1; i >= 0; i -= 1) {
+      var call = calls[i];
+      var status = String(call.status || "").toLowerCase();
+      if (status === "ringing" || status === "answered") {
+        return call;
+      }
+    }
+    return null;
+  }
+
+  function presentIncomingCall(call) {
+    activeCall = call;
+    setPhase("incoming");
+    setTitle(peerLabel || "Incoming call");
+    setStatus("Incoming voice call");
+    showOverlay(true);
+    startRingtone();
+  }
+
+  function presentOutgoingCall(call, connectRoom) {
+    activeCall = call;
+    setPhase(connectRoom ? "connecting" : "outgoing");
+    setTitle(peerLabel || "Calling…");
+    setStatus(connectRoom ? "Connecting…" : "Ringing…");
+    showOverlay(true);
+    startRingtone();
+    if (!connectRoom) return Promise.resolve();
+    return fetchToken().then(function (tokenPayload) {
+      return connectLiveKit(tokenPayload);
+    });
+  }
+
   function markConnected() {
+    stopRingtone();
     setPhase("active");
     setTitle(peerLabel || "In call");
     setStatus("Connected");
@@ -340,6 +498,7 @@
     var call = unwrapCall(payload);
     activeCall = call || activeCall;
     if (phase === "active") return;
+    stopRingtone();
     if (isCaller(activeCall)) {
       markConnected();
       return;
@@ -361,12 +520,7 @@
     }
     if (!isReceiver(call)) return;
     if (phase !== "idle" && phase !== "incoming") return;
-
-    activeCall = call;
-    setPhase("incoming");
-    setTitle(peerLabel || "Incoming call");
-    setStatus("JC-Ride voice call");
-    showOverlay(true);
+    presentIncomingCall(call);
   }
 
   function handleRealtimeEvent(type, message) {
@@ -401,6 +555,70 @@
     return message.indexOf("already active") >= 0 || message.indexOf("409") >= 0;
   }
 
+  function syncActiveCallFromServer() {
+    if (!rideId || typeof apiGet !== "function") return Promise.resolve(false);
+    return fetchCallHistory().then(function (calls) {
+      var openCall = findOpenCall(calls);
+      if (!openCall) return false;
+
+      if (openCall.status === "ringing") {
+        if (isReceiver(openCall)) {
+          if (phase === "idle" || phase === "incoming") {
+            presentIncomingCall(openCall);
+          }
+          return true;
+        }
+        if (isCaller(openCall)) {
+          if (phase === "idle" || phase === "outgoing" || phase === "connecting") {
+            busy = true;
+            return presentOutgoingCall(openCall, !room)
+              .then(function () {
+                busy = false;
+                updateCallButton();
+              })
+              .catch(function () {
+                busy = false;
+                updateCallButton();
+              })
+              .then(function () {
+                return true;
+              });
+          }
+          return true;
+        }
+      }
+
+      if (openCall.status === "answered" && phase !== "active") {
+        activeCall = openCall;
+        if (!room) {
+          return fetchToken()
+            .then(function (tokenPayload) {
+              return connectLiveKit(tokenPayload);
+            })
+            .then(function () {
+              markConnected();
+              return true;
+            })
+            .catch(function () {
+              return false;
+            });
+        }
+        markConnected();
+        return true;
+      }
+
+      return false;
+    });
+  }
+
+  function startSyncPolling() {
+    if (syncTimer) return;
+    syncTimer = global.setInterval(function () {
+      if (phase !== "idle" || !canPlaceCall(rideStatus) || busy || ending) return;
+      syncActiveCallFromServer();
+    }, 4000);
+  }
+
   function startOutgoingCall() {
     if (!rideId || !canPlaceCall(rideStatus) || busy || ending || phase !== "idle") return;
     busy = true;
@@ -412,10 +630,13 @@
         setTitle(peerLabel || "Calling…");
         setStatus("Ringing…");
         showOverlay(true);
+        startRingtone();
         return apiPost(callUrl("/call/start"), {});
       })
       .then(function (call) {
         activeCall = call;
+        setPhase("connecting");
+        setStatus("Connecting…");
         return fetchToken();
       })
       .then(function (tokenPayload) {
@@ -428,9 +649,12 @@
       .catch(function (err) {
         busy = false;
         if (isConflictError(err)) {
-          setStatus("A call is already in progress.");
-          notifyError(err, "A call is already in progress for this ride.");
-          return;
+          return syncActiveCallFromServer().then(function (recovered) {
+            if (!recovered) {
+              resetUi();
+              notifyError(err, "A call is already in progress for this ride.");
+            }
+          });
         }
         resetUi();
         notifyError(err, "Could not start call.");
@@ -440,11 +664,13 @@
   function acceptIncomingCall() {
     if (phase !== "incoming" || busy || ending) return;
     busy = true;
+    stopRingtone();
     if (acceptBtn) acceptBtn.disabled = true;
     if (rejectBtn) rejectBtn.disabled = true;
 
     ensureMicPermission()
       .then(function () {
+        setPhase("connecting");
         setStatus("Connecting…");
         return apiPost(callUrl("/call/accept"), {});
       })
@@ -470,6 +696,7 @@
     if (phase !== "incoming" || ending) return;
     ending = true;
     busy = true;
+    stopRingtone();
     apiPost(callUrl("/call/reject"), {})
       .catch(function () {})
       .finally(function () {
@@ -481,6 +708,7 @@
     if (phase === "idle" || ending) return;
     ending = true;
     busy = true;
+    stopRingtone();
     if (endBtn) endBtn.disabled = true;
     if (cancelBtn) cancelBtn.disabled = true;
 
@@ -500,7 +728,8 @@
       .then(function () {
         if (muteBtn) {
           muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
-          muteBtn.textContent = muted ? "Unmute" : "Mute";
+          var muteLabel = muteBtn.querySelector(".ride-voice-call__action-label");
+          if (muteLabel) muteLabel.textContent = muted ? "Unmute" : "Mute";
         }
       })
       .catch(function (err) {
@@ -512,8 +741,12 @@
   function bindDom() {
     root = document.getElementById("ride-voice-call-root");
     if (!root) return false;
+    if (root.parentNode !== document.body) {
+      document.body.appendChild(root);
+    }
     if (domBound) return true;
 
+    avatarEl = document.getElementById("ride-voice-call-avatar");
     titleEl = document.getElementById("ride-voice-call-title");
     statusEl = document.getElementById("ride-voice-call-status");
     timerEl = document.getElementById("ride-voice-call-timer");
@@ -536,9 +769,13 @@
     if (callButton) {
       callButton.addEventListener("click", function (event) {
         event.preventDefault();
+        unlockAudio();
         startOutgoingCall();
       });
     }
+
+    document.addEventListener("click", unlockAudio, { once: true, capture: true });
+    document.addEventListener("touchstart", unlockAudio, { once: true, capture: true });
 
     domBound = true;
     return true;
@@ -550,19 +787,16 @@
     resolved = decodeJwtSub(nextOptions.authToken);
     if (resolved) return resolved;
 
-    var realtimeEl = document.getElementById("driver-realtime-config");
-    if (realtimeEl) {
-      try {
-        var realtime = JSON.parse(realtimeEl.textContent || "{}");
-        resolved = normalizeId(realtime.userId);
-        if (resolved) return resolved;
-        resolved = decodeJwtSub(realtime.token);
-        if (resolved) return resolved;
-      } catch (err) {
-        /* ignore */
-      }
-    }
-    return "";
+    var tracking = readJsonConfig("tracking-api-config");
+    resolved = normalizeId(tracking.userId);
+    if (resolved) return resolved;
+    resolved = decodeJwtSub(tracking.token);
+    if (resolved) return resolved;
+
+    var realtime = readJsonConfig("driver-realtime-config");
+    resolved = normalizeId(realtime.userId);
+    if (resolved) return resolved;
+    return decodeJwtSub(realtime.token);
   }
 
   function init(nextOptions) {
@@ -572,6 +806,7 @@
     userId = resolveUserId(options);
     peerLabel = options.peerLabel || "";
     apiPost = options.apiPost;
+    apiGet = options.apiGet;
     callButton =
       typeof options.callButton === "string"
         ? document.querySelector(options.callButton)
@@ -580,7 +815,10 @@
     if (!rideId || typeof apiPost !== "function") return false;
     if (!bindDom()) return false;
 
+    updateAvatar();
     updateCallButton();
+    startSyncPolling();
+    syncActiveCallFromServer();
     return true;
   }
 
@@ -597,7 +835,19 @@
     userId = normalizeId(nextUserId);
   }
 
+  function setPeerLabel(name) {
+    peerLabel = name || "";
+    updateAvatar();
+    if (phase === "incoming" || phase === "outgoing" || phase === "active") {
+      setTitle(peerLabel || titleEl.textContent);
+    }
+  }
+
   function destroy() {
+    if (syncTimer) {
+      global.clearInterval(syncTimer);
+      syncTimer = null;
+    }
     resetUi();
     options = null;
     callButton = null;
@@ -609,8 +859,10 @@
     setRideStatus: setRideStatus,
     setRideId: setRideId,
     setUserId: setUserId,
+    setPeerLabel: setPeerLabel,
     handleEvent: handleRealtimeEvent,
     startOutgoingCall: startOutgoingCall,
+    syncActiveCall: syncActiveCallFromServer,
     canPlaceCall: canPlaceCall,
     waitForLiveKit: waitForLiveKit,
     CALL_ALLOWED_STATUSES: CALL_ALLOWED_STATUSES.slice(),
