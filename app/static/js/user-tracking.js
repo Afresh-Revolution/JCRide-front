@@ -36,6 +36,10 @@
     "completed",
   ];
 
+  var START_TRIP_LABEL = "Start trip";
+  var STARTABLE_STATUSES = ["accepted", "driver_arrived"];
+  var startTripInFlight = false;
+
   function isDriverMatched(status) {
     if (window.RideRealtimeEvents) {
       return window.RideRealtimeEvents.isDriverMatched(status);
@@ -142,6 +146,56 @@
     if (findingCancel) findingCancel.hidden = !show;
   }
 
+  function normalizeRideResponse(data) {
+    if (!data || typeof data !== "object") return null;
+    if (data.ride && typeof data.ride === "object") return data.ride;
+    if (data.id || data.ride_id) return data;
+    return null;
+  }
+
+  function canRiderStartTrip(status) {
+    return STARTABLE_STATUSES.indexOf(status || "") >= 0;
+  }
+
+  function forceResetStartTripButton(btn) {
+    if (!btn) return;
+    if (window.ButtonLoading) window.ButtonLoading.stop(btn);
+    if (btn.dataset.loadingHtml) {
+      btn.innerHTML = btn.dataset.loadingHtml;
+      delete btn.dataset.loadingHtml;
+      btn.classList.remove("is-loading");
+      btn.removeAttribute("aria-busy");
+      delete btn.dataset.loadingReenable;
+    }
+  }
+
+  function updateStartTripButton(status) {
+    var btn = document.getElementById("tracking-start-trip");
+    if (!btn) return;
+
+    if (!isDriverMatched(status) || status === "in_progress" || status === "completed") {
+      forceResetStartTripButton(btn);
+      btn.hidden = true;
+      btn.setAttribute("hidden", "");
+      return;
+    }
+
+    if (startTripInFlight) return;
+
+    forceResetStartTripButton(btn);
+    btn.hidden = false;
+    btn.removeAttribute("hidden");
+
+    if (canRiderStartTrip(status)) {
+      btn.disabled = false;
+      btn.textContent = START_TRIP_LABEL;
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = status === "driver_assigned" ? "Waiting for driver…" : "Waiting to start…";
+  }
+
   function updateDriverPanel(driver, status) {
     var driverName = driver.full_name || driver.name || "";
     if (driverName) {
@@ -240,6 +294,7 @@
       updateDriverOnMap(ride.driver_location);
     }
     updateCancelButtonVisibility();
+    updateStartTripButton(status);
     if (window.RideVoiceCall) {
       if (ride.id) window.RideVoiceCall.setRideId(ride.id);
       window.RideVoiceCall.setRideStatus(status);
@@ -663,6 +718,7 @@
 
     connectWebSocket();
     updateCancelButtonVisibility();
+    updateStartTripButton(currentRideStatus);
   }
 
   function initVoiceCall() {
@@ -692,18 +748,39 @@
     var startBtn = document.getElementById("tracking-start-trip");
     if (startBtn) {
       startBtn.addEventListener("click", function () {
+        if (!canRiderStartTrip(currentRideStatus) || startTripInFlight) return;
+        if (window.ButtonLoading && window.ButtonLoading.isLoading(startBtn)) return;
+
+        startTripInFlight = true;
         if (window.ButtonLoading) window.ButtonLoading.start(startBtn, { text: "Starting…" });
         else startBtn.disabled = true;
+
         UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/start", {})
-          .then(function (ride) {
-            if (window.ButtonLoading) window.ButtonLoading.stop(startBtn);
-            updateRideUi(ride);
-            startBtn.textContent = "Trip started";
+          .then(function (data) {
+            var ride = normalizeRideResponse(data);
+            if (ride) updateRideUi(ride);
+            else pollCurrentRide();
           })
           .catch(function (err) {
-            if (window.ButtonLoading) window.ButtonLoading.stop(startBtn);
-            alert(err.message || "Could not start trip.");
-            startBtn.disabled = false;
+            var message = String((err && err.message) || "").toLowerCase();
+            if (message.indexOf("cannot be started") >= 0) {
+              return UserApi.request("/user/api/rides/current").then(function (current) {
+                if (current && current.ride) {
+                  updateRideUi(current.ride);
+                  if (current.ride.status === "in_progress") return;
+                }
+                throw err;
+              });
+            }
+            throw err;
+          })
+          .catch(function (err) {
+            window.alert(err.message || "Could not start trip.");
+          })
+          .finally(function () {
+            startTripInFlight = false;
+            forceResetStartTripButton(startBtn);
+            updateStartTripButton(currentRideStatus);
           });
       });
     }
