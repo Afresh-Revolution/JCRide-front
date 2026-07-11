@@ -107,15 +107,22 @@
       type === "ride.completed" ||
       type === "ride.driver.arrived"
     ) {
+      var statusFromEvent = {
+        "ride.cancelled": "cancelled",
+        "ride.started": "in_progress",
+        "ride.completed": "completed",
+        "ride.driver.arrived": "driver_arrived",
+      };
+      var nextStatus = payload.status || statusFromEvent[type] || (state && state.status);
       if (!state) {
         return normalizeRide({
           id: payload.ride_id,
-          status: payload.status,
+          status: nextStatus,
         });
       }
       return normalizeRide({
         ...state,
-        status: payload.status || state.status,
+        status: nextStatus,
       });
     }
 

@@ -36,11 +36,14 @@
   }
 
   function stop(el) {
-    if (!el || !isLoading(el)) return el;
+    if (!el) return el;
 
-    el.classList.remove("is-loading");
-    el.removeAttribute("aria-busy");
+    if (isLoading(el)) {
+      el.classList.remove("is-loading");
+      el.removeAttribute("aria-busy");
+    }
 
+    // Restore saved markup even if the loading class was cleared elsewhere.
     if (typeof el.dataset.loadingHtml === "string") {
       el.innerHTML = el.dataset.loadingHtml;
       delete el.dataset.loadingHtml;
@@ -52,7 +55,7 @@
         el.disabled = false;
       }
       delete el.dataset.loadingReenable;
-    } else {
+    } else if (isLoading(el) === false) {
       el.removeAttribute("aria-disabled");
     }
     return el;
