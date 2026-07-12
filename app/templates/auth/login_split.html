@@ -78,6 +78,26 @@
         <p class="auth-login__subtitle">Sign in to book your next ride.</p>
         {% endif %}
 
+        {% if portal != 'driver' %}
+        <div class="auth-login__joscity-info" role="note" aria-label="JosCity sign-in">
+          <img
+            src="{{ static_url('images/joscity.png') }}"
+            alt=""
+            class="auth-login__joscity-logo"
+            width="44"
+            height="44"
+            decoding="async"
+          >
+          <div class="auth-login__joscity-copy">
+            <p class="auth-login__joscity-title">Have a JosCity account?</p>
+            <p class="auth-login__joscity-text">
+              Use your JosCity email and password in the form below to sign in.
+              
+            </p>
+          </div>
+        </div>
+        {% endif %}
+
         <form method="post" class="auth-login__form" novalidate>
           <input type="hidden" name="portal" value="{{ portal }}">
 

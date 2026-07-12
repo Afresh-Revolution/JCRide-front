@@ -196,6 +196,87 @@
     btn.textContent = status === "driver_assigned" ? "Waiting for driver…" : "Waiting to start…";
   }
 
+  function escapeHtml(text) {
+    return String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function normalizeTripStops(stops) {
+    if (!Array.isArray(stops)) return [];
+    return stops
+      .map(function (stop) {
+        if (!stop || typeof stop !== "object") return null;
+        var address = stop.address || stop.label || "";
+        if (!address) return null;
+        return {
+          address: address,
+          stop_order: stop.stop_order,
+        };
+      })
+      .filter(Boolean)
+      .sort(function (a, b) {
+        return (a.stop_order || 0) - (b.stop_order || 0);
+      });
+  }
+
+  function updateTripRoute(ride) {
+    var routeEl = document.getElementById("tracking-route");
+    if (!routeEl || !ride) return;
+
+    var pickup =
+      ride.pickup_address ||
+      (ride.pickup && ride.pickup.address) ||
+      "";
+    var destination =
+      ride.destination_address ||
+      (ride.destination && ride.destination.address) ||
+      "";
+    var stops = normalizeTripStops(ride.stops);
+
+    if (!pickup) {
+      var pickupEl = routeEl.querySelector('[data-route-part="pickup"] span:last-child');
+      if (pickupEl) pickup = pickupEl.textContent.trim();
+    }
+    if (!destination) {
+      var destEl = routeEl.querySelector('[data-route-part="destination"] span:last-child');
+      if (destEl) destination = destEl.textContent.trim();
+    }
+
+    var html =
+      '<div class="tracking-route__row" data-route-part="pickup">' +
+      '<span class="route-input__dot route-input__dot--pickup"></span>' +
+      "<div><span class=\"tracking-route__label\">PICKUP</span>" +
+      "<span>" +
+      escapeHtml(pickup) +
+      "</span></div></div>";
+
+    stops.forEach(function (stop, index) {
+      html +=
+        '<div class="tracking-route__line" aria-hidden="true"></div>' +
+        '<div class="tracking-route__row" data-route-part="stop">' +
+        '<span class="route-input__dot route-input__dot--stop"></span>' +
+        "<div><span class=\"tracking-route__label\">" +
+        (stops.length > 1 ? "STOP " + (index + 1) : "STOP") +
+        "</span><span>" +
+        escapeHtml(stop.address) +
+        "</span></div></div>";
+    });
+
+    html +=
+      '<div class="tracking-route__line" aria-hidden="true"></div>' +
+      '<div class="tracking-route__row" data-route-part="destination">' +
+      '<span class="route-input__dot route-input__dot--dropoff"></span>' +
+      "<div><span class=\"tracking-route__label\">DESTINATION</span>" +
+      "<span>" +
+      escapeHtml(destination) +
+      "</span></div></div>";
+
+    routeEl.innerHTML = html;
+  }
+
   function updateDriverPanel(driver, status) {
     var driverName = driver.full_name || driver.name || "";
     if (driverName) {
@@ -293,6 +374,7 @@
     if (ride.driver_location) {
       updateDriverOnMap(ride.driver_location);
     }
+    updateTripRoute(ride);
     updateCancelButtonVisibility();
     updateStartTripButton(status);
     if (window.RideVoiceCall) {

@@ -2100,6 +2100,23 @@ html {
     color: var(--auth-muted, var(--muted));
   }
 
+  .auth-login__joscity-info {
+    border-color: rgba(16, 185, 129, 0.28);
+    background: linear-gradient(180deg, rgba(6, 95, 70, 0.22) 0%, rgba(6, 95, 70, 0.1) 100%);
+  }
+
+  .auth-login__joscity-logo {
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .auth-login__joscity-title {
+    color: #ecfdf5;
+  }
+
+  .auth-login__joscity-text {
+    color: #94a3b8;
+  }
+
   .auth-login__form-wrap h2,
   .auth-signup__vehicle-label {
     color: var(--auth-ink, var(--text));

@@ -52,6 +52,24 @@
     raw.id = raw.id || raw.ride_id;
     raw.status = raw.status || (raw.ride && raw.ride.status);
     raw.driver_id = raw.driver_id || (driver && driver.id);
+    if (Array.isArray(raw.stops)) {
+      raw.stops = raw.stops
+        .map(function (stop) {
+          if (!stop || typeof stop !== "object") return null;
+          var address = stop.address || stop.label || "";
+          if (!address) return null;
+          return {
+            address: address,
+            lat: stop.lat,
+            lng: stop.lng,
+            stop_order: stop.stop_order,
+          };
+        })
+        .filter(Boolean)
+        .sort(function (a, b) {
+          return (a.stop_order || 0) - (b.stop_order || 0);
+        });
+    }
     if (driver) raw.driver = normalizeDriver(driver);
     if (driverLocation) raw.driver_location = driverLocation;
 
@@ -75,6 +93,7 @@
         driver_location: payload.driver_location,
         estimated_fare_ngn: payload.estimated_fare_ngn,
         final_fare_ngn: payload.final_fare_ngn,
+        stops: payload.stops,
       });
     }
 

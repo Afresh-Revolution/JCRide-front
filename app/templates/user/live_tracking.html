@@ -100,16 +100,26 @@
 
     <article class="rider-panel tracking-details">
       <h2 class="rider-panel__title">Trip details</h2>
-      <div class="tracking-route">
-        <div class="tracking-route__row">
+      <div class="tracking-route" id="tracking-route">
+        <div class="tracking-route__row" data-route-part="pickup">
           <span class="route-input__dot route-input__dot--pickup"></span>
           <div>
             <span class="tracking-route__label">PICKUP</span>
             <span>{{ tracking.pickup }}</span>
           </div>
         </div>
-        <div class="tracking-route__line"></div>
-        <div class="tracking-route__row">
+        {% for stop in tracking.stops %}
+        <div class="tracking-route__line" aria-hidden="true"></div>
+        <div class="tracking-route__row" data-route-part="stop">
+          <span class="route-input__dot route-input__dot--stop"></span>
+          <div>
+            <span class="tracking-route__label">{% if tracking.stops|length > 1 %}STOP {{ loop.index }}{% else %}STOP{% endif %}</span>
+            <span>{{ stop.address }}</span>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="tracking-route__line" aria-hidden="true"></div>
+        <div class="tracking-route__row" data-route-part="destination">
           <span class="route-input__dot route-input__dot--dropoff"></span>
           <div>
             <span class="tracking-route__label">DESTINATION</span>
