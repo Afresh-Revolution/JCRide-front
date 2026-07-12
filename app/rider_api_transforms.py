@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 from app.rider_defaults import (
     LIVE_AREA,
@@ -27,6 +28,39 @@ CATEGORY_LABELS = {
     "account": "Account access",
     "other": "Other",
 }
+
+
+def rewrite_referral_invite_url(referral: dict | None, *, base_url: str) -> dict | None:
+    """Replace API-default invite host with the site the user is actually on."""
+    if not referral or not isinstance(referral, dict):
+        return referral
+
+    referral = dict(referral)
+    code = referral.get("code")
+    if not code:
+        parsed = urlparse(referral.get("invite_url") or "")
+        code = (parse_qs(parsed.query).get("ref") or [None])[0]
+    if not code:
+        return referral
+
+    old_url = (referral.get("invite_url") or "").strip()
+    base = (base_url or "").rstrip("/")
+    new_url = f"{base}/register?ref={code}"
+    referral["invite_url"] = new_url
+
+    share = referral.get("share_message") or ""
+    if old_url and old_url in share:
+        referral["share_message"] = share.replace(old_url, new_url)
+    else:
+        try:
+            credit_val = float(referral.get("credit_ngn", 500))
+            referral["share_message"] = (
+                f"Join JosRide with my invite link and we both earn ₦{credit_val:,.0f} wallet credit: {new_url}"
+            )
+        except (TypeError, ValueError):
+            referral["share_message"] = f"Join JosRide with my invite link and earn wallet credit: {new_url}"
+
+    return referral
 
 
 def format_ngn(amount: float | int | None, *, decimals: bool = False) -> str:

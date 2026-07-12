@@ -6,6 +6,9 @@ venv/
 .venv/
 .env
 
+# Local backend copy (deploy JCRide-back separately)
+JCRide-back/
+
 # Vercel build output (generated from app/static)
 public/static/
 
