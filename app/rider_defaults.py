@@ -104,6 +104,31 @@ def resolve_location_coords(label: str) -> dict:
     return dict(RIDER_LOCATION_COORDS["lekki, lagos"])
 
 
+def normalize_ride_stops(ride: dict | None) -> list[dict]:
+    if not ride:
+        return []
+    raw = ride.get("stops")
+    if not isinstance(raw, list):
+        return []
+    stops: list[dict] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        address = (item.get("address") or item.get("label") or "").strip()
+        if not address:
+            continue
+        stop: dict = {"address": address}
+        if item.get("lat") is not None:
+            stop["lat"] = float(item["lat"])
+        if item.get("lng") is not None:
+            stop["lng"] = float(item["lng"])
+        if item.get("stop_order") is not None:
+            stop["stop_order"] = int(item["stop_order"])
+        stops.append(stop)
+    stops.sort(key=lambda row: row.get("stop_order") or 0)
+    return stops
+
+
 def build_route_map(
     pickup_label: str,
     dropoff_label: str,
@@ -168,7 +193,23 @@ def build_route_map_from_ride(
         badge_label=badge_label,
         vehicle_type=resolved_vehicle_type,
         vehicle_override=vehicle_override,
+        stops=_map_stops_for_route(ride),
     )
+
+
+def _map_stops_for_route(ride: dict) -> list[dict]:
+    stops = []
+    for stop in normalize_ride_stops(ride):
+        if stop.get("lat") is None or stop.get("lng") is None:
+            continue
+        stops.append(
+            {
+                "label": stop["address"],
+                "lat": float(stop["lat"]),
+                "lng": float(stop["lng"]),
+            }
+        )
+    return stops
 
 
 def _build_route_map_coords(
@@ -180,6 +221,7 @@ def _build_route_map_coords(
     badge_label: str | None = None,
     vehicle_type: str = "car",
     vehicle_override: dict | None = None,
+    stops: list[dict] | None = None,
 ) -> dict:
     vehicle = vehicle_override or {
         "lat": round((pickup["lat"] + dropoff["lat"]) / 2 + 0.002, 6),
@@ -193,9 +235,10 @@ def _build_route_map_coords(
     return {
         "pickup_label": pickup_label,
         "dropoff_label": dropoff_label,
-        "badge_label": badge_label or "Pickup - Drop-off",
+        "badge_label": badge_label or ("Route with stops" if stops else "Pickup - Drop-off"),
         "pickup": pickup,
         "dropoff": dropoff,
+        "stops": stops or [],
         "vehicle_position": vehicle,
         "vehicle_type": vehicle_type,
         "map_zoom": 13,

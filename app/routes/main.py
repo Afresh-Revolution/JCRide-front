@@ -412,6 +412,8 @@ def _tracking_page_context() -> dict:
         finding["fare_estimate"] = active["fare"]
     if active.get("booking_id"):
         tracking["booking_id"] = active["booking_id"]
+    if active.get("stops") and not tracking.get("stops"):
+        tracking["stops"] = active["stops"]
 
     route_map = (
         build_route_map_from_ride(

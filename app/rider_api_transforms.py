@@ -18,6 +18,7 @@ from app.rider_defaults import (
     WALLET_SUMMARY,
     WALLET_TRANSACTIONS,
     build_live_area_map,
+    normalize_ride_stops,
 )
 
 CATEGORY_LABELS = {
@@ -499,6 +500,7 @@ def ride_to_active_trip(ride: dict) -> dict:
         "vehicle_type": "bike" if ride.get("vehicle_category") == "bike" else "car",
         "request_type": ride.get("request_type") or "ride",
         "status": ride.get("status"),
+        "stops": normalize_ride_stops(ride),
     }
 
 
@@ -507,6 +509,7 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
         "status_label": "No active trip",
         "pickup": "",
         "destination": "",
+        "stops": [],
         "booking_id": "",
         "tier": "-",
         "fare_estimate": "-",
@@ -549,6 +552,7 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
             "status_label": status_labels.get(status, status.replace("_", " ").title()),
             "pickup": ride.get("pickup_address") or tracking["pickup"],
             "destination": ride.get("destination_address") or tracking["destination"],
+            "stops": normalize_ride_stops(ride),
             "booking_id": ride.get("booking_id") or tracking["booking_id"],
             "tier": (ride.get("service_tier") or "economy").capitalize(),
             "fare_estimate": format_ngn(fare),
