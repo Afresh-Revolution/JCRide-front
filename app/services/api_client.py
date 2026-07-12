@@ -51,8 +51,25 @@ def _connection_error_message(api_urls: list[str], exc: RequestException | None)
     return f"Could not reach API ({tried}). Details: {detail}"
 
 
+def _frontend_origin_header() -> dict[str, str]:
+    """Tell the API which public site origin generated this server-side request."""
+    try:
+        from flask import has_request_context, request
+
+        if not has_request_context():
+            return {}
+        from app.config import get_public_app_url
+
+        origin = get_public_app_url()
+        if origin:
+            return {"X-Frontend-Origin": origin}
+    except Exception:
+        return {}
+    return {}
+
+
 def _request(method, endpoint, token=None, **kwargs):
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json", **_frontend_origin_header()}
     if token:
         headers["Authorization"] = f"Bearer {token}"
 

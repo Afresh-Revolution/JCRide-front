@@ -41,14 +41,32 @@
     return "Join JosRide with my invite link and earn wallet credit: " + url;
   }
 
+  function normalizeInviteUrl(url) {
+    if (!url) return url;
+    try {
+      var parsed = new URL(url, window.location.origin);
+      var ref = parsed.searchParams.get("ref");
+      if (!ref) return url;
+      return window.location.origin + "/register?ref=" + encodeURIComponent(ref);
+    } catch (err) {
+      return url;
+    }
+  }
+
   function applyReferralData(data) {
     if (!data || !data.invite_url) {
       showError("Could not load your invite link. Try again.");
       return;
     }
 
-    state.inviteUrl = data.invite_url;
-    state.shareMessage = data.share_message || defaultShareMessage(state.inviteUrl);
+    var normalizedUrl = normalizeInviteUrl(data.invite_url);
+    state.inviteUrl = normalizedUrl;
+    var share = data.share_message || "";
+    if (share && data.invite_url && share.indexOf(data.invite_url) >= 0) {
+      state.shareMessage = share.replace(data.invite_url, normalizedUrl);
+    } else {
+      state.shareMessage = share || defaultShareMessage(normalizedUrl);
+    }
 
     if (urlInput) urlInput.value = state.inviteUrl;
     if (titleEl && data.credit_ngn) {

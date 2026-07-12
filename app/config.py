@@ -86,6 +86,21 @@ def get_api_timeout() -> int:
         return 30
 
 
+def get_public_app_url() -> str:
+    """Origin for user-facing share links (invite URLs, etc.)."""
+    from flask import request
+
+    configured = _FILE_ENV.get("PUBLIC_APP_URL") or os.getenv("PUBLIC_APP_URL")
+    if not configured:
+        configured = _FILE_ENV.get("FRONTEND_BASE_URL") or os.getenv("FRONTEND_BASE_URL")
+    if configured:
+        return _normalize_url(configured)
+
+    proto = request.headers.get("X-Forwarded-Proto", request.scheme)
+    host = request.headers.get("X-Forwarded-Host") or request.host
+    return f"{proto}://{host}".rstrip("/")
+
+
 def reload_env() -> None:
     """Reload .env from disk (useful after editing the file)."""
     global _FILE_ENV, API_URL, SECRET_KEY, HOST, PORT

@@ -84,7 +84,7 @@ from app.services.api_client import (
     verify_paystack,
     withdraw_wallet,
 )
-from app.config import get_ws_url
+from app.config import get_public_app_url, get_ws_url
 from app.rider_api_transforms import (
     contacts_to_share_ui,
     dashboard_stats_from_api,
@@ -102,6 +102,7 @@ from app.rider_api_transforms import (
     notification_topics_from_api,
     prefs_update_from_ui,
     profile_from_api,
+    rewrite_referral_invite_url,
     ride_to_active_trip,
     ride_to_history_trip,
     ride_to_recent_trip,
@@ -240,6 +241,10 @@ def _rider_initials(name: str) -> str:
 
 def _rider_token() -> str | None:
     return session.get("token")
+
+
+def _referral_for_ui(referral: dict | None) -> dict | None:
+    return rewrite_referral_invite_url(referral, base_url=get_public_app_url())
 
 
 def _jwt_user_id(token: str | None) -> str | None:
@@ -1342,7 +1347,7 @@ def user_dashboard():
     stats = dashboard_stats_from_api((summary or {}).get("stats"))
     stats["location"] = {"value": display_location}
     account_policy = (summary or {}).get("account_policy") or {} if summary_ok else {}
-    referral = (summary or {}).get("referral") if summary_ok else None
+    referral = _referral_for_ui((summary or {}).get("referral") if summary_ok else None)
     recent_rides = (summary or {}).get("recent_rides") or [] if summary_ok else []
     recent_trips = [ride_to_recent_trip(item) for item in recent_rides[:3]]
     live_area = live_area_from_location(display_location)
@@ -2487,7 +2492,7 @@ def user_api_referral():
     if guard:
         return guard
     try:
-        return jsonify(get_referral_info(_rider_token()))
+        return jsonify(_referral_for_ui(get_referral_info(_rider_token())))
     except ApiError as exc:
         return _user_api_error(exc)
 
@@ -2504,7 +2509,7 @@ def user_api_dashboard_summary():
         if location_label:
             stats["location"] = {"value": location_label}
         account_policy = (summary or {}).get("account_policy") or {}
-        referral = (summary or {}).get("referral")
+        referral = _referral_for_ui((summary or {}).get("referral"))
         recent_rides = (summary or {}).get("recent_rides") or []
         recent_trips = [ride_to_recent_trip(item) for item in recent_rides[:3]]
         return jsonify(
