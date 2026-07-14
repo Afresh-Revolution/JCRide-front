@@ -50,6 +50,15 @@ body.user-nav-open .scroll-to-top {
   pointer-events: none;
 }
 
+@media (max-width: 900px) {
+  body.driver-trip-chat-open .scroll-to-top,
+  body.rider-trip-chat-open .scroll-to-top {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none;
+  }
+}
+
 /* Sit above PWA reload FAB when both are shown */
 html.is-pwa .scroll-to-top {
   bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));

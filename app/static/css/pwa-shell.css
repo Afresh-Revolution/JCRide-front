@@ -358,6 +358,14 @@ html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]) {
   animation: pwaReloadEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+@media (max-width: 900px) {
+  html.is-pwa body.driver-trip-chat-open .pwa-reload-btn,
+  html.is-pwa body.rider-trip-chat-open .pwa-reload-btn {
+    display: none !important;
+    pointer-events: none;
+  }
+}
+
 .pwa-reload-btn__glow {
   position: absolute;
   inset: -4px;
