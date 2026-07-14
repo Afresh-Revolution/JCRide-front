@@ -84,12 +84,35 @@
       }
     }
 
+    function chatNames() {
+      var selfEl = document.querySelector(".admin-profile__name, .driver-profile__name");
+      var riderEl = document.querySelector(".active-trip-rider__name");
+      var selfName = selfEl ? selfEl.textContent.trim() : "";
+      var riderName =
+        (chatBtn && chatBtn.getAttribute("data-chat-rider")) ||
+        (riderEl && riderEl.textContent.trim()) ||
+        config.riderName ||
+        "";
+      return {
+        self: selfName || "You",
+        driver: selfName || "You",
+        rider: riderName || "Rider",
+        customer: riderName || "Rider",
+        peer: riderName || "Rider",
+      };
+    }
+
     function loadMessages() {
       if (!chatList || !rideId || !window.DriverApi) return;
       DriverApi.request(DriverApi.base + "/rides/" + encodeURIComponent(rideId) + "/messages")
         .then(function (data) {
           if (window.RideChat) {
-            window.RideChat.renderMessages(chatList, (data && data.messages) || [], "driver");
+            window.RideChat.renderMessages(
+              chatList,
+              (data && data.messages) || [],
+              "driver",
+              chatNames()
+            );
           }
         })
         .catch(function () {});
@@ -97,8 +120,9 @@
 
     function appendMessage(msg) {
       if (window.RideChat && chatList) {
-        window.RideChat.appendMessage(chatList, msg, "driver");
+        return window.RideChat.appendMessage(chatList, msg, "driver", chatNames());
       }
+      return false;
     }
 
     chatBtn.addEventListener("click", function (event) {
@@ -123,21 +147,29 @@
       closeChat();
     });
 
+    var sending = false;
+
     function sendMessage() {
       var text = chatInput ? chatInput.value.trim() : "";
-      if (!text || !rideId || !window.DriverApi) return;
+      if (!text || !rideId || !window.DriverApi || sending) return;
+      sending = true;
       if (chatSendBtn) chatSendBtn.disabled = true;
       DriverApi.post(DriverApi.base + "/rides/" + encodeURIComponent(rideId) + "/messages", {
         message: text,
       })
         .then(function (msg) {
           if (chatInput) chatInput.value = "";
+          if (msg && typeof msg === "object") {
+            msg.sender_role = msg.sender_role || "driver";
+            msg.sender_name = msg.sender_name || chatNames().self;
+          }
           appendMessage(msg);
         })
         .catch(function (err) {
           window.alert(err.message || "Could not send message.");
         })
         .finally(function () {
+          sending = false;
           if (chatSendBtn) chatSendBtn.disabled = false;
         });
     }

@@ -2422,23 +2422,34 @@ body.driver-trip-chat-open {
   padding: 0.5rem 0.75rem;
   border-radius: 12px;
   background: var(--dash-bg, #f3f4f6);
+  color: var(--dash-text, #111827);
 }
 
 .ride-chat-item--mine {
   align-self: flex-end;
-  background: #e8f5ef;
+  background: #065f46;
+  color: #ecfdf5;
+}
+
+.ride-chat-item--mine .ride-chat-item__meta {
+  color: rgba(236, 253, 245, 0.75);
 }
 
 .ride-chat-item--theirs {
   align-self: flex-start;
+  background: var(--dash-card, #fff);
+  border: 1px solid var(--dash-border, #e2e8f0);
+  color: var(--dash-text, #111827);
+}
+
+.ride-chat-item--theirs .ride-chat-item__meta {
+  color: var(--dash-muted, #6b7280);
 }
 
 .ride-chat-item__meta {
   display: block;
   font-size: 0.6875rem;
   font-weight: 600;
-  text-transform: capitalize;
-  color: var(--dash-muted, #6b7280);
   margin-bottom: 0.2rem;
 }
 
@@ -2447,6 +2458,7 @@ body.driver-trip-chat-open {
   font-size: 0.875rem;
   line-height: 1.4;
   word-break: break-word;
+  color: inherit;
 }
 
 .active-trip-empty {

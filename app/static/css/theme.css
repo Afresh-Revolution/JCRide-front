@@ -2100,6 +2100,35 @@ html {
     color: var(--auth-muted, var(--muted));
   }
 
+  .ride-chat-input {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .ride-chat-input::placeholder {
+    color: #9ca3af;
+  }
+
+  .ride-chat-item--mine {
+    background: #047857;
+    color: #ecfdf5;
+  }
+
+  .ride-chat-item--mine .ride-chat-item__meta {
+    color: rgba(236, 253, 245, 0.78);
+  }
+
+  .ride-chat-item--theirs {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .ride-chat-item--theirs .ride-chat-item__meta {
+    color: #9ca3af;
+  }
+
   .auth-login__joscity-info {
     border-color: rgba(16, 185, 129, 0.28);
     background: linear-gradient(180deg, rgba(6, 95, 70, 0.22) 0%, rgba(6, 95, 70, 0.1) 100%);

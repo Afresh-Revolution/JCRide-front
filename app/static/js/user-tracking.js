@@ -37,8 +37,14 @@
   ];
 
   var START_TRIP_LABEL = "Start trip";
+  var TRIP_STARTED_LABEL = "Trip started";
   var STARTABLE_STATUSES = ["accepted", "driver_arrived"];
+  var TRIP_LIVE_STATUSES = ["in_progress", "started", "on_trip"];
   var startTripInFlight = false;
+  var tripHasStarted = TRIP_LIVE_STATUSES.indexOf(currentRideStatus) >= 0;
+  var chatUnreadCount = 0;
+  var openChatPanel = null;
+  var chatToastTimer = null;
 
   function isDriverMatched(status) {
     if (window.RideRealtimeEvents) {
@@ -153,36 +159,92 @@
     return null;
   }
 
+  function isTripLiveStatus(status) {
+    return TRIP_LIVE_STATUSES.indexOf(status || "") >= 0;
+  }
+
   function canRiderStartTrip(status) {
+    if (tripHasStarted || isTripLiveStatus(status) || status === "completed") return false;
     return STARTABLE_STATUSES.indexOf(status || "") >= 0;
   }
 
-  function forceResetStartTripButton(btn) {
+  function setStartTripLoading(btn, loading) {
     if (!btn) return;
+    if (loading) {
+      if (window.ButtonLoading) {
+        window.ButtonLoading.start(btn, { text: "Starting…" });
+      } else {
+        btn.dataset.loadingHtml = btn.innerHTML;
+        btn.classList.add("is-loading");
+        btn.setAttribute("aria-busy", "true");
+        btn.disabled = true;
+        btn.innerHTML =
+          '<span class="btn-loading-content"><span class="btn-spinner" aria-hidden="true"></span>' +
+          '<span class="btn-loading-label">Starting…</span></span>';
+      }
+      return;
+    }
+
     if (window.ButtonLoading) window.ButtonLoading.stop(btn);
     if (btn.dataset.loadingHtml) {
       btn.innerHTML = btn.dataset.loadingHtml;
       delete btn.dataset.loadingHtml;
-      btn.classList.remove("is-loading");
-      btn.removeAttribute("aria-busy");
-      delete btn.dataset.loadingReenable;
     }
+    btn.classList.remove("is-loading");
+    btn.removeAttribute("aria-busy");
+    delete btn.dataset.loadingReenable;
+  }
+
+  function markTripStartedUi(btn) {
+    tripHasStarted = true;
+    startTripInFlight = false;
+    if (!btn) btn = document.getElementById("tracking-start-trip");
+    if (!btn) return;
+    setStartTripLoading(btn, false);
+    btn.classList.add("is-started");
+    btn.classList.remove("is-hidden");
+    btn.hidden = false;
+    btn.removeAttribute("hidden");
+    btn.disabled = true;
+    btn.textContent = TRIP_STARTED_LABEL;
+    window.setTimeout(function () {
+      hideStartTripButton(btn);
+    }, 1200);
+  }
+
+  function hideStartTripButton(btn) {
+    if (!btn) btn = document.getElementById("tracking-start-trip");
+    if (!btn) return;
+    setStartTripLoading(btn, false);
+    btn.classList.add("is-hidden");
+    btn.hidden = true;
+    btn.setAttribute("hidden", "");
+    btn.disabled = true;
   }
 
   function updateStartTripButton(status) {
     var btn = document.getElementById("tracking-start-trip");
     if (!btn) return;
 
-    if (!isDriverMatched(status) || status === "in_progress" || status === "completed") {
-      forceResetStartTripButton(btn);
-      btn.hidden = true;
-      btn.setAttribute("hidden", "");
+    if (isTripLiveStatus(status) || status === "completed" || tripHasStarted) {
+      tripHasStarted = true;
+      if (startTripInFlight || btn.classList.contains("is-loading")) {
+        markTripStartedUi(btn);
+      } else {
+        hideStartTripButton(btn);
+      }
       return;
     }
 
-    if (startTripInFlight) return;
+    if (startTripInFlight || btn.classList.contains("is-loading")) return;
 
-    forceResetStartTripButton(btn);
+    if (!isDriverMatched(status)) {
+      hideStartTripButton(btn);
+      return;
+    }
+
+    setStartTripLoading(btn, false);
+    btn.classList.remove("is-hidden", "is-started");
     btn.hidden = false;
     btn.removeAttribute("hidden");
 
@@ -297,9 +359,11 @@
     }
 
     var ratingEl = document.querySelector(".tracking-driver__rating");
-    if (ratingEl && (driver.rating_avg != null || driver.rating != null || driver.trips != null)) {
+    if (ratingEl && (driver.rating_avg != null || driver.rating != null || driver.trips != null || driver.completed_trips != null)) {
       var rating = driver.rating_avg != null ? driver.rating_avg : driver.rating;
       var trips = driver.completed_trips != null ? driver.completed_trips : driver.trips;
+      if (rating == null || rating === "") rating = "—";
+      if (trips == null || trips === "") trips = 0;
       ratingEl.innerHTML =
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ' +
         rating +
@@ -338,6 +402,7 @@
     ride = mergeRideState(ride);
     var status = ride.status || "";
     currentRideStatus = status;
+    if (isTripLiveStatus(status)) tripHasStarted = true;
 
     if (ride.id) config.rideId = ride.id;
 
@@ -443,6 +508,7 @@
     if (type === "chat.message.new") {
       var chatPayload = message.payload || message.data || {};
       if (appendChatMessage) appendChatMessage(chatPayload);
+      handleIncomingChatNotification(chatPayload);
       return;
     }
 
@@ -823,33 +889,136 @@
     });
   }
 
-  function initTrackingActions() {
-    var rideId = config.rideId;
-    if (!rideId) return;
+  function activeRideId() {
+    return config.rideId || (activeRideState && (activeRideState.id || activeRideState.ride_id)) || "";
+  }
 
+  function isChatPanelOpen() {
+    var chatPanel = document.getElementById("tracking-chat-panel");
+    return !!(chatPanel && !chatPanel.hidden);
+  }
+
+  function updateChatBadge() {
+    var badge = document.getElementById("tracking-chat-badge");
+    if (!badge) return;
+    if (chatUnreadCount > 0) {
+      badge.hidden = false;
+      badge.textContent = chatUnreadCount > 9 ? "9+" : String(chatUnreadCount);
+      badge.setAttribute("aria-hidden", "false");
+    } else {
+      badge.hidden = true;
+      badge.textContent = "0";
+      badge.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function hideChatToast() {
+    var toast = document.getElementById("tracking-chat-toast");
+    if (toast) toast.hidden = true;
+    if (chatToastTimer) {
+      window.clearTimeout(chatToastTimer);
+      chatToastTimer = null;
+    }
+  }
+
+  function showChatToast(text) {
+    var toast = document.getElementById("tracking-chat-toast");
+    var textEl = document.getElementById("tracking-chat-toast-text");
+    if (!toast || !textEl) return;
+    textEl.textContent = text || "Open chat to reply";
+    toast.hidden = false;
+    if (chatToastTimer) window.clearTimeout(chatToastTimer);
+    chatToastTimer = window.setTimeout(hideChatToast, 8000);
+  }
+
+  function bumpHeaderNotificationBadge() {
+    var btn = document.querySelector(".admin-icon-btn--notifications");
+    if (!btn) return;
+    var badge = btn.querySelector(".notification-badge, .admin-icon-btn__badge");
+    var current = badge ? parseInt(badge.textContent, 10) || 0 : 0;
+    var next = current + 1;
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "notification-badge admin-icon-btn__badge";
+      btn.appendChild(badge);
+    }
+    badge.hidden = false;
+    badge.textContent = next > 99 ? "99+" : String(next);
+    badge.classList.toggle("notification-badge--wide", String(badge.textContent).length > 1);
+    btn.classList.add("has-unread");
+  }
+
+  function handleIncomingChatNotification(msg) {
+    if (!msg) return;
+    var role = String(msg.sender_role || msg.role || "").toLowerCase();
+    if (role && role !== "driver") return;
+
+    if (isChatPanelOpen()) {
+      hideChatToast();
+      chatUnreadCount = 0;
+      updateChatBadge();
+      return;
+    }
+
+    chatUnreadCount += 1;
+    updateChatBadge();
+    bumpHeaderNotificationBadge();
+    showChatToast(msg.message || msg.text || "New message");
+
+    try {
+      if (navigator.vibrate) navigator.vibrate(40);
+    } catch (err) {
+      /* ignore */
+    }
+  }
+
+  function initTrackingActions() {
     var startBtn = document.getElementById("tracking-start-trip");
     if (startBtn) {
+      updateStartTripButton(currentRideStatus);
       startBtn.addEventListener("click", function () {
-        if (!canRiderStartTrip(currentRideStatus) || startTripInFlight) return;
-        if (window.ButtonLoading && window.ButtonLoading.isLoading(startBtn)) return;
+        var rideId = activeRideId();
+        if (!rideId) {
+          window.alert("Trip is still loading. Try again in a moment.");
+          return;
+        }
+        if (tripHasStarted || isTripLiveStatus(currentRideStatus)) {
+          markTripStartedUi(startBtn);
+          return;
+        }
+        if (!canRiderStartTrip(currentRideStatus)) {
+          window.alert("Trip can start once your driver has accepted or arrived.");
+          return;
+        }
+        if (startTripInFlight || startBtn.classList.contains("is-loading")) return;
 
         startTripInFlight = true;
-        if (window.ButtonLoading) window.ButtonLoading.start(startBtn, { text: "Starting…" });
-        else startBtn.disabled = true;
+        setStartTripLoading(startBtn, true);
 
         UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/start", {})
           .then(function (data) {
             var ride = normalizeRideResponse(data);
-            if (ride) updateRideUi(ride);
-            else pollCurrentRide();
+            if (ride) {
+              if (isTripLiveStatus(ride.status) || !ride.status) {
+                tripHasStarted = true;
+                ride.status = ride.status || "in_progress";
+              }
+              updateRideUi(ride);
+              if (tripHasStarted) markTripStartedUi(startBtn);
+              return;
+            }
+            return pollCurrentRide();
           })
           .catch(function (err) {
             var message = String((err && err.message) || "").toLowerCase();
-            if (message.indexOf("cannot be started") >= 0) {
+            if (message.indexOf("cannot be started") >= 0 || message.indexOf("already") >= 0) {
               return UserApi.request("/user/api/rides/current").then(function (current) {
                 if (current && current.ride) {
                   updateRideUi(current.ride);
-                  if (current.ride.status === "in_progress") return;
+                  if (isTripLiveStatus(current.ride.status)) {
+                    markTripStartedUi(startBtn);
+                    return;
+                  }
                 }
                 throw err;
               });
@@ -857,12 +1026,21 @@
             throw err;
           })
           .catch(function (err) {
+            startTripInFlight = false;
+            setStartTripLoading(startBtn, false);
+            updateStartTripButton(currentRideStatus);
             window.alert(err.message || "Could not start trip.");
           })
           .finally(function () {
-            startTripInFlight = false;
-            forceResetStartTripButton(startBtn);
-            updateStartTripButton(currentRideStatus);
+            if (tripHasStarted || isTripLiveStatus(currentRideStatus)) {
+              markTripStartedUi(startBtn);
+              return;
+            }
+            if (startTripInFlight) {
+              startTripInFlight = false;
+              setStartTripLoading(startBtn, false);
+              updateStartTripButton(currentRideStatus);
+            }
           });
       });
     }
@@ -872,6 +1050,8 @@
     var sosBtn = document.getElementById("tracking-sos-btn");
     if (sosBtn) {
       sosBtn.addEventListener("click", function () {
+        var rideId = activeRideId();
+        if (!rideId) return;
         if (!window.confirm("Send SOS alert to JosRide safety team?")) return;
         if (window.ButtonLoading) window.ButtonLoading.start(sosBtn, { text: "Sending…" });
         var payload = {};
@@ -890,6 +1070,8 @@
     }
 
     function sendSos(payload) {
+      var rideId = activeRideId();
+      if (!rideId) return;
       UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/sos", payload)
         .then(function () {
           if (window.ButtonLoading) window.ButtonLoading.stop(sosBtn);
@@ -907,13 +1089,38 @@
     var chatForm = document.getElementById("tracking-chat-form");
     var chatInput = document.getElementById("tracking-chat-input");
     var chatSendBtn = document.getElementById("tracking-chat-send");
+    var toastOpen = document.getElementById("tracking-chat-toast-open");
+    var toastClose = document.getElementById("tracking-chat-toast-close");
+
+    function chatNames() {
+      var selfEl = document.querySelector(".admin-profile__name");
+      var driverEl = document.querySelector(".tracking-driver__profile strong");
+      var selfName = selfEl ? selfEl.textContent.trim() : "";
+      var driverName = driverEl ? driverEl.textContent.trim() : "";
+      if (window.RideVoiceCall && typeof window.RideVoiceCall.getPeerLabel === "function") {
+        driverName = driverName || window.RideVoiceCall.getPeerLabel() || "";
+      }
+      return {
+        self: selfName || "You",
+        rider: selfName || "You",
+        customer: selfName || "You",
+        driver: driverName || "Driver",
+        peer: driverName || "Driver",
+      };
+    }
 
     loadChatMessages = function () {
-      if (!chatList) return;
+      var rideId = activeRideId();
+      if (!chatList || !rideId) return;
       UserApi.request("/user/api/rides/" + encodeURIComponent(rideId) + "/messages")
         .then(function (data) {
           if (window.RideChat) {
-            window.RideChat.renderMessages(chatList, (data && data.messages) || [], "customer");
+            window.RideChat.renderMessages(
+              chatList,
+              (data && data.messages) || [],
+              "customer",
+              chatNames()
+            );
           }
         })
         .catch(function () {});
@@ -921,44 +1128,81 @@
 
     appendChatMessage = function (msg) {
       if (window.RideChat && chatList) {
-        window.RideChat.appendMessage(chatList, msg, "customer");
+        return window.RideChat.appendMessage(chatList, msg, "customer", chatNames());
       }
+      return false;
     };
+
+    openChatPanel = function () {
+      if (!chatPanel) return;
+      chatPanel.hidden = false;
+      chatPanel.removeAttribute("hidden");
+      if (chatBtn) chatBtn.setAttribute("aria-expanded", "true");
+      chatUnreadCount = 0;
+      updateChatBadge();
+      hideChatToast();
+      loadChatMessages();
+      window.setTimeout(function () {
+        if (chatInput) chatInput.focus();
+      }, 80);
+    };
+
+    function closeChatPanel() {
+      if (!chatPanel) return;
+      chatPanel.hidden = true;
+      chatPanel.setAttribute("hidden", "");
+      if (chatBtn) chatBtn.setAttribute("aria-expanded", "false");
+    }
 
     if (chatBtn && chatPanel) {
       chatBtn.addEventListener("click", function () {
-        chatPanel.hidden = !chatPanel.hidden;
-        if (!chatPanel.hidden) loadChatMessages();
+        if (chatPanel.hidden) openChatPanel();
+        else closeChatPanel();
       });
     }
 
+    if (toastOpen) {
+      toastOpen.addEventListener("click", function () {
+        openChatPanel();
+      });
+    }
+    if (toastClose) {
+      toastClose.addEventListener("click", function () {
+        hideChatToast();
+      });
+    }
+
+    var chatSending = false;
+
     function sendChatMessage() {
+      var rideId = activeRideId();
       var text = chatInput ? chatInput.value.trim() : "";
-      if (!text) return;
+      if (!text || !rideId || chatSending) return;
+      chatSending = true;
       if (chatSendBtn) chatSendBtn.disabled = true;
       UserApi.post("/user/api/rides/" + encodeURIComponent(rideId) + "/messages", {
         message: text,
       })
         .then(function (msg) {
           if (chatInput) chatInput.value = "";
+          // Optimistic append; WebSocket echo is ignored via message-id dedupe.
+          if (msg && typeof msg === "object") {
+            msg.sender_role = msg.sender_role || "customer";
+            msg.sender_name = msg.sender_name || chatNames().self;
+          }
           appendChatMessage(msg);
         })
         .catch(function (err) {
           alert(err.message || "Could not send message.");
         })
         .finally(function () {
+          chatSending = false;
           if (chatSendBtn) chatSendBtn.disabled = false;
         });
     }
 
     if (chatForm) {
       chatForm.addEventListener("submit", function (event) {
-        event.preventDefault();
-        sendChatMessage();
-      });
-    }
-    if (chatSendBtn) {
-      chatSendBtn.addEventListener("click", function (event) {
         event.preventDefault();
         sendChatMessage();
       });
