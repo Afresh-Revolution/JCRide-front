@@ -84,10 +84,22 @@
       };
     }
 
+    function setReloadBtnHiddenForChat(hidden) {
+      var reloadBtn = document.getElementById("pwa-reload-btn");
+      if (!reloadBtn) return;
+      var isSmall = window.matchMedia("(max-width: 900px)").matches;
+      if (hidden && isSmall) {
+        reloadBtn.classList.add("is-chat-hidden");
+      } else {
+        reloadBtn.classList.remove("is-chat-hidden");
+      }
+    }
+
     function openChat() {
       chatPanel.classList.add("is-open");
       document.body.classList.add("driver-trip-chat-open");
       chatBtn.setAttribute("aria-expanded", "true");
+      setReloadBtnHiddenForChat(true);
 
       /* Non-modal open keeps the top navbar above/outside the sheet (no top-layer / backdrop). */
       try {
@@ -112,6 +124,7 @@
       chatPanel.classList.remove("is-open");
       document.body.classList.remove("driver-trip-chat-open");
       chatBtn.setAttribute("aria-expanded", "false");
+      setReloadBtnHiddenForChat(false);
 
       try {
         if (typeof chatPanel.close === "function" && chatPanel.open) {
