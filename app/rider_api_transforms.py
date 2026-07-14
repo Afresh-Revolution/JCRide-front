@@ -556,6 +556,7 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
             "plate": "-",
             "vehicle": "-",
             "status": "-",
+            "phone": "",
         },
     }
     finding = {
@@ -598,6 +599,7 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
                 "plate": driver.get("vehicle_plate") or "-",
                 "vehicle": driver.get("vehicle_model") or "-",
                 "status": status_labels.get(status, status).upper(),
+                "phone": driver.get("phone") or "",
             },
         }
     )

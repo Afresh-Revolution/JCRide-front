@@ -37,6 +37,7 @@
       authToken: config.token || "",
       role: "driver",
       peerLabel: peerLabel,
+      peerPhone: config.riderPhone || "",
       apiBase: DriverApi.base + "/rides",
       apiPost: DriverApi.post,
       apiGet: DriverApi.request,

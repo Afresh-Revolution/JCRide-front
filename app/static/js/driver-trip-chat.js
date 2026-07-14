@@ -87,11 +87,24 @@
     function setReloadBtnHiddenForChat(hidden) {
       var reloadBtn = document.getElementById("pwa-reload-btn");
       if (!reloadBtn) return;
-      var isSmall = window.matchMedia("(max-width: 900px)").matches;
-      if (hidden && isSmall) {
+      if (hidden) {
         reloadBtn.classList.add("is-chat-hidden");
+        reloadBtn.hidden = true;
+        reloadBtn.setAttribute("hidden", "");
+        reloadBtn.setAttribute("aria-hidden", "true");
+        return;
+      }
+      reloadBtn.classList.remove("is-chat-hidden");
+      reloadBtn.removeAttribute("aria-hidden");
+      if (
+        document.documentElement.classList.contains("is-pwa") &&
+        document.documentElement.classList.contains("pwa-ready")
+      ) {
+        reloadBtn.hidden = false;
+        reloadBtn.removeAttribute("hidden");
       } else {
-        reloadBtn.classList.remove("is-chat-hidden");
+        reloadBtn.hidden = true;
+        reloadBtn.setAttribute("hidden", "");
       }
     }
 

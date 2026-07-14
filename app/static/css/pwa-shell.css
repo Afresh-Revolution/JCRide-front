@@ -353,23 +353,23 @@ html.pwa-booting body {
   -webkit-tap-highlight-color: transparent;
 }
 
-html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]) {
+html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]):not(.is-chat-hidden) {
   display: flex;
   animation: pwaReloadEnter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Hide reload FAB while trip chat is open (mobile / small screens) */
-@media (max-width: 900px) {
-  html.is-pwa body.driver-trip-chat-open .pwa-reload-btn,
-  html.is-pwa body.rider-trip-chat-open .pwa-reload-btn,
-  html.is-pwa.pwa-ready body.driver-trip-chat-open .pwa-reload-btn:not([hidden]),
-  html.is-pwa.pwa-ready body.rider-trip-chat-open .pwa-reload-btn:not([hidden]),
-  .pwa-reload-btn.is-chat-hidden {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
+/* Always hide reload FAB while trip chat is open (stacks above chat otherwise). */
+html.is-pwa body.driver-trip-chat-open .pwa-reload-btn,
+html.is-pwa body.rider-trip-chat-open .pwa-reload-btn,
+html.is-pwa.pwa-ready body.driver-trip-chat-open .pwa-reload-btn,
+html.is-pwa.pwa-ready body.rider-trip-chat-open .pwa-reload-btn,
+html.is-pwa.pwa-ready .pwa-reload-btn.is-chat-hidden,
+.pwa-reload-btn.is-chat-hidden,
+.pwa-reload-btn[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .pwa-reload-btn__glow {
@@ -453,7 +453,7 @@ html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]) {
+  html.is-pwa.pwa-ready .pwa-reload-btn:not([hidden]):not(.is-chat-hidden) {
     animation: none;
   }
 
