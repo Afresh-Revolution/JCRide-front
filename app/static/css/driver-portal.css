@@ -2107,20 +2107,28 @@ body.driver-cancel-trip-modal-open {
   }
 }
 
-/* Driver trip chat — full-page sheet sliding up */
+/* Driver trip chat — full content sheet below the fixed top navbar */
 .driver-trip-chat-sheet {
   border: none;
   padding: 0;
   margin: 0;
   position: fixed;
-  inset: 0;
-  width: 100%;
+  /* Keep chat under the topbar; on desktop --dash-topbar-offset is 0 so fall back to topbar height */
+  top: max(
+    calc(4.25rem + env(safe-area-inset-top, 0px)),
+    var(--dash-topbar-offset, 4.25rem)
+  );
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
   max-width: none;
-  height: 100%;
+  height: auto;
   max-height: none;
   background: transparent;
   color: var(--dash-text, #0f172a);
   overflow: hidden;
+  z-index: 150;
 }
 
 .driver-trip-chat-sheet:not([open]):not(.is-open) {
@@ -2131,21 +2139,19 @@ body.driver-cancel-trip-modal-open {
 .driver-trip-chat-sheet.is-open {
   display: flex;
   flex-direction: column;
-  z-index: 10050;
+  z-index: 150;
 }
 
 .driver-trip-chat-sheet::backdrop {
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  animation: driver-chat-backdrop-in 0.32s ease forwards;
+  display: none;
 }
 
 .driver-trip-chat-sheet__panel {
-  margin-top: auto;
+  flex: 1;
+  min-height: 0;
   width: 100%;
   height: 100%;
-  max-height: 100%;
+  max-height: none;
   display: flex;
   flex-direction: column;
   background: var(--dash-card, #ffffff);
@@ -2163,20 +2169,11 @@ body.driver-cancel-trip-modal-open {
   }
 }
 
-@keyframes driver-chat-backdrop-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 .driver-trip-chat-sheet__header {
   display: flex;
   align-items: center;
   gap: 0.875rem;
-  padding: max(1.1rem, env(safe-area-inset-top)) 1.25rem 1.1rem;
+  padding: 1.1rem 1.25rem;
   border-bottom: 1px solid var(--dash-border, #e2e8f0);
   background: var(--dash-card, #ffffff);
   flex-shrink: 0;
@@ -2327,6 +2324,21 @@ body.driver-cancel-trip-modal-open {
 
 body.driver-trip-chat-open {
   overflow: hidden;
+}
+
+@media (min-width: 901px) {
+  .driver-trip-chat-sheet {
+    left: calc(var(--dash-sidebar-w, 248px) + var(--dash-layout-gap, 0px));
+  }
+}
+
+html.is-pwa .driver-trip-chat-sheet {
+  top: max(
+    calc(
+      var(--pwa-topbar-height, 4.25rem) + env(safe-area-inset-top, 0px) + var(--pwa-nav-offset, 0px)
+    ),
+    var(--dash-topbar-offset, 4.25rem)
+  );
 }
 
 @media (prefers-color-scheme: dark) {

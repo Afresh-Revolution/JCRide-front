@@ -2129,6 +2129,23 @@ html {
     color: #9ca3af;
   }
 
+  .rider-trip-chat-sheet__panel,
+  .rider-trip-chat-sheet__header,
+  .rider-trip-chat-sheet__compose {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  .rider-trip-chat-sheet__body {
+    background: #0b1220;
+  }
+
+  .rider-trip-chat-sheet__close {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+  }
+
   .auth-login__joscity-info {
     border-color: rgba(16, 185, 129, 0.28);
     background: linear-gradient(180deg, rgba(6, 95, 70, 0.22) 0%, rgba(6, 95, 70, 0.1) 100%);

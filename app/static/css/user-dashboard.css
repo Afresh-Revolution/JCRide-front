@@ -2033,6 +2033,157 @@ button.rider-link:hover {
   margin-top: 0;
 }
 
+/* Rider chat sheet — full viewport below the fixed top navbar */
+.rider-trip-chat-sheet {
+  position: fixed;
+  top: calc(var(--dash-topbar-offset, 4.25rem) + env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 150;
+  display: none;
+  flex-direction: column;
+  background: transparent;
+  color: var(--user-text);
+}
+
+.rider-trip-chat-sheet.is-open,
+.rider-trip-chat-sheet:not([hidden]) {
+  display: flex;
+}
+
+.rider-trip-chat-sheet[hidden] {
+  display: none !important;
+}
+
+.rider-trip-chat-sheet__panel {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--user-card, #111827);
+  border-top: 1px solid var(--user-border);
+  box-shadow: 0 -10px 32px rgba(0, 0, 0, 0.22);
+  animation: rider-chat-sheet-in 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+@keyframes rider-chat-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.rider-trip-chat-sheet__header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.95rem 1.1rem;
+  border-bottom: 1px solid var(--user-border);
+  background: var(--user-card, #111827);
+  flex-shrink: 0;
+}
+
+.rider-trip-chat-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--user-border);
+  border-radius: 999px;
+  background: var(--user-surface-subtle, #1f2937);
+  color: var(--user-text);
+  cursor: pointer;
+}
+
+.rider-trip-chat-sheet__close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.rider-trip-chat-sheet__heading {
+  min-width: 0;
+}
+
+.rider-trip-chat-sheet__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--user-text);
+}
+
+.rider-trip-chat-sheet__subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--user-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rider-trip-chat-sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--user-bg, #0b1220);
+}
+
+.rider-trip-chat-sheet__messages {
+  flex: 1;
+  max-height: none;
+  height: 100%;
+  margin: 0;
+  padding: 1rem 1.1rem 1.25rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rider-trip-chat-sheet__compose {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--user-border);
+  background: var(--user-card, #111827);
+}
+
+.rider-trip-chat-sheet__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.rider-trip-chat-sheet__send {
+  width: auto;
+  margin-top: 0;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rider-trip-chat-sheet__send svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+body.rider-trip-chat-open {
+  overflow: hidden;
+}
+
+@media (min-width: 961px) {
+  .rider-trip-chat-sheet {
+    left: calc(var(--dash-sidebar-w, 260px) + var(--dash-layout-gap, 0px));
+  }
+}
+
 .tracking-chat-btn {
   position: relative;
 }

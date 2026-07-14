@@ -356,6 +356,13 @@
           .join("")
           .toUpperCase();
       }
+      var chatPanelEl = document.getElementById("tracking-chat-panel");
+      var chatSubtitleEl = document.getElementById("tracking-chat-subtitle");
+      var chatInputEl = document.getElementById("tracking-chat-input");
+      if (chatPanelEl) chatPanelEl.setAttribute("data-peer-name", driverName);
+      if (chatSubtitleEl) chatSubtitleEl.textContent = driverName;
+      if (chatInputEl) chatInputEl.placeholder = "Message " + driverName;
+      config.driverName = driverName;
     }
 
     var ratingEl = document.querySelector(".tracking-driver__rating");
@@ -895,7 +902,7 @@
 
   function isChatPanelOpen() {
     var chatPanel = document.getElementById("tracking-chat-panel");
-    return !!(chatPanel && !chatPanel.hidden);
+    return !!(chatPanel && (!chatPanel.hidden || chatPanel.classList.contains("is-open")));
   }
 
   function updateChatBadge() {
@@ -1092,20 +1099,55 @@
     var toastOpen = document.getElementById("tracking-chat-toast-open");
     var toastClose = document.getElementById("tracking-chat-toast-close");
 
+    var chatCloseBtn = document.getElementById("tracking-chat-close");
+    var chatSubtitle = document.getElementById("tracking-chat-subtitle");
+
+    function cleanChatName(value) {
+      var name = String(value || "").trim();
+      if (!name) return "";
+      var lower = name.toLowerCase();
+      if (
+        lower === "driver" ||
+        lower === "customer" ||
+        lower === "rider" ||
+        lower === "user" ||
+        lower === "-" ||
+        lower === "your driver"
+      ) {
+        return "";
+      }
+      return name;
+    }
+
     function chatNames() {
       var selfEl = document.querySelector(".admin-profile__name");
       var driverEl = document.querySelector(".tracking-driver__profile strong");
-      var selfName = selfEl ? selfEl.textContent.trim() : "";
-      var driverName = driverEl ? driverEl.textContent.trim() : "";
+      var selfName =
+        cleanChatName(chatPanel && chatPanel.getAttribute("data-self-name")) ||
+        cleanChatName(config.riderName) ||
+        cleanChatName(selfEl && selfEl.textContent) ||
+        "You";
+      var driverName =
+        cleanChatName(chatPanel && chatPanel.getAttribute("data-peer-name")) ||
+        cleanChatName(driverEl && driverEl.textContent) ||
+        cleanChatName(config.driverName) ||
+        cleanChatName(chatSubtitle && chatSubtitle.textContent) ||
+        "Driver";
       if (window.RideVoiceCall && typeof window.RideVoiceCall.getPeerLabel === "function") {
-        driverName = driverName || window.RideVoiceCall.getPeerLabel() || "";
+        driverName = cleanChatName(window.RideVoiceCall.getPeerLabel()) || driverName;
+      }
+      if (chatSubtitle && driverName) chatSubtitle.textContent = driverName;
+      if (chatPanel) {
+        chatPanel.setAttribute("data-self-name", selfName);
+        chatPanel.setAttribute("data-peer-name", driverName);
       }
       return {
-        self: selfName || "You",
-        rider: selfName || "You",
-        customer: selfName || "You",
-        driver: driverName || "Driver",
-        peer: driverName || "Driver",
+        self: selfName,
+        me: selfName,
+        rider: selfName,
+        customer: selfName,
+        driver: driverName,
+        peer: driverName,
       };
     }
 
@@ -1127,16 +1169,24 @@
     };
 
     appendChatMessage = function (msg) {
-      if (window.RideChat && chatList) {
-        return window.RideChat.appendMessage(chatList, msg, "customer", chatNames());
+      if (!window.RideChat || !chatList || !msg) return false;
+      var names = chatNames();
+      if (typeof msg === "object") {
+        var role = String(msg.sender_role || "").toLowerCase();
+        if (!msg.sender_name) {
+          if (role === "customer" || role === "rider") msg.sender_name = names.self;
+          else if (role === "driver") msg.sender_name = names.driver;
+        }
       }
-      return false;
+      return window.RideChat.appendMessage(chatList, msg, "customer", names);
     };
 
     openChatPanel = function () {
       if (!chatPanel) return;
       chatPanel.hidden = false;
       chatPanel.removeAttribute("hidden");
+      chatPanel.classList.add("is-open");
+      document.body.classList.add("rider-trip-chat-open");
       if (chatBtn) chatBtn.setAttribute("aria-expanded", "true");
       chatUnreadCount = 0;
       updateChatBadge();
@@ -1144,13 +1194,15 @@
       loadChatMessages();
       window.setTimeout(function () {
         if (chatInput) chatInput.focus();
-      }, 80);
+      }, 180);
     };
 
     function closeChatPanel() {
       if (!chatPanel) return;
+      chatPanel.classList.remove("is-open");
       chatPanel.hidden = true;
       chatPanel.setAttribute("hidden", "");
+      document.body.classList.remove("rider-trip-chat-open");
       if (chatBtn) chatBtn.setAttribute("aria-expanded", "false");
     }
 
@@ -1158,6 +1210,12 @@
       chatBtn.addEventListener("click", function () {
         if (chatPanel.hidden) openChatPanel();
         else closeChatPanel();
+      });
+    }
+
+    if (chatCloseBtn) {
+      chatCloseBtn.addEventListener("click", function () {
+        closeChatPanel();
       });
     }
 
