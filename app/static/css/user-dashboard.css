@@ -634,6 +634,21 @@ button.rider-link:hover {
   box-shadow: 0 6px 18px rgba(6, 95, 70, 0.35);
 }
 
+/* display:inline-flex on .rider-btn can override the hidden attribute — force hide. */
+#tracking-start-trip[hidden],
+#tracking-start-trip.is-hidden {
+  display: none !important;
+}
+
+#tracking-start-trip.is-loading {
+  opacity: 0.92;
+}
+
+#tracking-start-trip.is-started {
+  background: #047857;
+  cursor: default;
+}
+
 /* Quick actions */
 .rider-quick-actions {
   display: grid;
@@ -1962,32 +1977,47 @@ button.rider-link:hover {
   border: 1px solid var(--user-border);
   border-radius: 999px;
   font-size: 0.875rem;
-  background: var(--user-card);
+  background: var(--user-field-bg, var(--user-card));
   color: var(--user-text);
+}
+
+.ride-chat-input::placeholder {
+  color: var(--user-muted);
 }
 
 .ride-chat-item {
   max-width: 88%;
   padding: 0.5rem 0.75rem;
   border-radius: 12px;
-  background: var(--user-bg, #f3f4f6);
+  background: var(--user-surface-subtle, #f3f4f6);
+  color: var(--user-text);
 }
 
 .ride-chat-item--mine {
   align-self: flex-end;
-  background: #e8f5ef;
+  background: #065f46;
+  color: #ecfdf5;
+}
+
+.ride-chat-item--mine .ride-chat-item__meta {
+  color: rgba(236, 253, 245, 0.75);
 }
 
 .ride-chat-item--theirs {
   align-self: flex-start;
+  background: var(--user-surface-subtle, #eef2f7);
+  color: var(--user-text);
+  border: 1px solid var(--user-border);
+}
+
+.ride-chat-item--theirs .ride-chat-item__meta {
+  color: var(--user-muted);
 }
 
 .ride-chat-item__meta {
   display: block;
   font-size: 0.6875rem;
   font-weight: 600;
-  text-transform: capitalize;
-  color: var(--user-muted);
   margin-bottom: 0.2rem;
 }
 
@@ -1996,10 +2026,114 @@ button.rider-link:hover {
   font-size: 0.875rem;
   line-height: 1.4;
   word-break: break-word;
+  color: inherit;
 }
 
 .tracking-chat-panel {
   margin-top: 0;
+}
+
+.tracking-chat-btn {
+  position: relative;
+}
+
+.tracking-chat-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.15rem;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--user-card, #111827);
+}
+
+.tracking-chat-badge[hidden] {
+  display: none !important;
+}
+
+.tracking-chat-toast {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  padding: 0;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(6, 95, 70, 0.95) 0%, rgba(4, 78, 60, 0.98) 100%);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  animation: tracking-chat-toast-in 0.28s ease;
+}
+
+.tracking-chat-toast[hidden] {
+  display: none !important;
+}
+
+@keyframes tracking-chat-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tracking-chat-toast__body {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: #ecfdf5;
+  text-align: left;
+  padding: 0.85rem 0.95rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.tracking-chat-toast__eyebrow {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #a7f3d0;
+  margin-bottom: 0.2rem;
+}
+
+.tracking-chat-toast__text {
+  display: block;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tracking-chat-toast__close {
+  border: none;
+  background: transparent;
+  color: #a7f3d0;
+  font-size: 1.35rem;
+  line-height: 1;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+}
+
+.tracking-chat-toast__close:hover {
+  color: #fff;
 }
 
 .tracking-stepper {

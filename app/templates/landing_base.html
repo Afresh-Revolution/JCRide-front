@@ -40,9 +40,7 @@
 
       <div class="landing-header__actions">
         <a href="{{ url_for('main.portals_page') }}" class="landing-link">Log in</a>
-        <form method="post" action="{{ url_for('main.enter_rider_register') }}" class="landing-entry-form">
-          <button type="submit" class="landing-btn landing-btn--primary landing-btn--sm">Get started</button>
-        </form>
+        <a href="{{ url_for('main.portals_page') }}" class="landing-btn landing-btn--primary landing-btn--sm">Get started</a>
         <button type="button" class="landing-menu-toggle" id="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="landing-nav">
           <span></span><span></span><span></span>
         </button>
