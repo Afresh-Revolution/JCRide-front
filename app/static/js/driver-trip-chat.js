@@ -28,6 +28,16 @@
     return "";
   }
 
+  function cleanName(value) {
+    var name = String(value || "").trim();
+    if (!name) return "";
+    var lower = name.toLowerCase();
+    if (lower === "driver" || lower === "customer" || lower === "rider" || lower === "user") {
+      return "";
+    }
+    return name;
+  }
+
   function initDriverTripChat() {
     var chatBtn = document.querySelector(".active-trip-comms__btn--chat");
     var chatPanel = document.getElementById("driver-trip-chat-panel");
@@ -44,16 +54,46 @@
     var chatForm = document.getElementById("driver-trip-chat-form");
     var chatInput = document.getElementById("driver-trip-chat-input");
     var chatSendBtn = document.getElementById("driver-trip-chat-send");
+    var subtitleEl = document.getElementById("driver-trip-chat-subtitle");
+
+    function chatNames() {
+      var profileEl = document.querySelector(".admin-profile__name");
+      var riderEl = document.querySelector(".active-trip-rider__name");
+      var selfName =
+        cleanName(chatPanel.getAttribute("data-self-name")) ||
+        cleanName(config.driverName) ||
+        cleanName(profileEl && profileEl.textContent) ||
+        "You";
+      var riderName =
+        cleanName(chatPanel.getAttribute("data-peer-name")) ||
+        cleanName(chatBtn.getAttribute("data-chat-rider")) ||
+        cleanName(subtitleEl && (subtitleEl.getAttribute("data-peer-name") || subtitleEl.textContent)) ||
+        cleanName(riderEl && riderEl.textContent) ||
+        cleanName(config.riderName) ||
+        "Rider";
+
+      if (subtitleEl && riderName) subtitleEl.textContent = riderName;
+
+      return {
+        self: selfName,
+        me: selfName,
+        driver: selfName,
+        rider: riderName,
+        customer: riderName,
+        peer: riderName,
+      };
+    }
 
     function openChat() {
       chatPanel.classList.add("is-open");
       document.body.classList.add("driver-trip-chat-open");
       chatBtn.setAttribute("aria-expanded", "true");
 
+      /* Non-modal open keeps the top navbar above/outside the sheet (no top-layer / backdrop). */
       try {
-        if (typeof chatPanel.showModal === "function") {
+        if (typeof chatPanel.show === "function") {
           if (!chatPanel.open) {
-            chatPanel.showModal();
+            chatPanel.show();
           }
         } else {
           chatPanel.setAttribute("open", "open");
@@ -84,24 +124,6 @@
       }
     }
 
-    function chatNames() {
-      var selfEl = document.querySelector(".admin-profile__name, .driver-profile__name");
-      var riderEl = document.querySelector(".active-trip-rider__name");
-      var selfName = selfEl ? selfEl.textContent.trim() : "";
-      var riderName =
-        (chatBtn && chatBtn.getAttribute("data-chat-rider")) ||
-        (riderEl && riderEl.textContent.trim()) ||
-        config.riderName ||
-        "";
-      return {
-        self: selfName || "You",
-        driver: selfName || "You",
-        rider: riderName || "Rider",
-        customer: riderName || "Rider",
-        peer: riderName || "Rider",
-      };
-    }
-
     function loadMessages() {
       if (!chatList || !rideId || !window.DriverApi) return;
       DriverApi.request(DriverApi.base + "/rides/" + encodeURIComponent(rideId) + "/messages")
@@ -119,10 +141,16 @@
     }
 
     function appendMessage(msg) {
-      if (window.RideChat && chatList) {
-        return window.RideChat.appendMessage(chatList, msg, "driver", chatNames());
+      if (!window.RideChat || !chatList || !msg) return false;
+      var names = chatNames();
+      if (typeof msg === "object") {
+        var role = String(msg.sender_role || "").toLowerCase();
+        if (!msg.sender_name) {
+          if (role === "driver") msg.sender_name = names.self;
+          else if (role === "customer" || role === "rider") msg.sender_name = names.rider;
+        }
       }
-      return false;
+      return window.RideChat.appendMessage(chatList, msg, "driver", names);
     }
 
     chatBtn.addEventListener("click", function (event) {

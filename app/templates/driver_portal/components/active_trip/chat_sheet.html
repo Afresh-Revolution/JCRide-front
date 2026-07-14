@@ -1,5 +1,11 @@
 {# Full-screen driver ↔ rider chat sheet #}
-<dialog class="driver-trip-chat-sheet" id="driver-trip-chat-panel" aria-labelledby="driver-trip-chat-title">
+<dialog
+  class="driver-trip-chat-sheet"
+  id="driver-trip-chat-panel"
+  aria-labelledby="driver-trip-chat-title"
+  data-self-name="{{ profile.name if profile else '' }}"
+  data-peer-name="{{ trip.rider_name }}"
+>
   <div class="driver-trip-chat-sheet__panel">
     <header class="driver-trip-chat-sheet__header">
       <button type="button" class="driver-trip-chat-sheet__close" id="driver-trip-chat-close" aria-label="Close chat">
@@ -9,7 +15,7 @@
       </button>
       <div class="driver-trip-chat-sheet__heading">
         <h2 class="driver-trip-chat-sheet__title" id="driver-trip-chat-title">Chat with rider</h2>
-        <p class="driver-trip-chat-sheet__subtitle" id="driver-trip-chat-subtitle">{{ trip.rider_name }}</p>
+        <p class="driver-trip-chat-sheet__subtitle" id="driver-trip-chat-subtitle" data-peer-name="{{ trip.rider_name }}">{{ trip.rider_name }}</p>
       </div>
     </header>
 

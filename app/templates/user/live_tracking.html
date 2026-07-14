@@ -15,7 +15,9 @@
   "wsUrl": ws_url,
   "showFinding": show_finding,
   "cancellationFeeNgn": 500,
-  "unlockFeeNgn": 2000
+  "unlockFeeNgn": 2000,
+  "riderName": rider_name or session.get('full_name') or '',
+  "driverName": tracking.driver.name if tracking and tracking.driver else ''
 } | tojson }}</script>
 
 <section class="tracking-finding{% if not show_finding %} is-hidden{% endif %}" id="tracking-finding" data-match-delay="{{ finding.match_delay_ms }}"{% if not show_finding %} hidden{% endif %}>
@@ -96,16 +98,6 @@
       </button>
       <button type="button" class="tracking-chat-toast__close" id="tracking-chat-toast-close" aria-label="Dismiss">&times;</button>
     </div>
-
-    <article class="rider-panel tracking-details tracking-chat-panel" id="tracking-chat-panel" hidden>
-      <h2 class="rider-panel__title">In-ride chat</h2>
-      <ul id="tracking-chat-list" class="ride-chat-list" aria-live="polite"></ul>
-      <form id="tracking-chat-form" class="ride-chat-compose">
-        <label class="sr-only" for="tracking-chat-input">Message driver</label>
-        <input type="text" id="tracking-chat-input" class="ride-chat-input" maxlength="500" placeholder="Message your driver" autocomplete="off">
-        <button type="submit" class="rider-btn rider-btn--outline-sm" id="tracking-chat-send">Send</button>
-      </form>
-    </article>
 
     <article class="rider-panel tracking-details">
       <h2 class="rider-panel__title">Trip details</h2>
@@ -196,6 +188,52 @@
     <p class="cancel-ride-modal__error is-hidden" id="cancel-ride-error" hidden></p>
   </form>
 </dialog>
+
+<section
+  class="rider-trip-chat-sheet"
+  id="tracking-chat-panel"
+  hidden
+  aria-labelledby="tracking-chat-title"
+  data-self-name="{{ rider_name or '' }}"
+  data-peer-name="{{ tracking.driver.name if tracking and tracking.driver else '' }}"
+>
+  <div class="rider-trip-chat-sheet__panel">
+    <header class="rider-trip-chat-sheet__header">
+      <button type="button" class="rider-trip-chat-sheet__close" id="tracking-chat-close" aria-label="Close chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="rider-trip-chat-sheet__heading">
+        <h2 class="rider-trip-chat-sheet__title" id="tracking-chat-title">Chat with driver</h2>
+        <p class="rider-trip-chat-sheet__subtitle" id="tracking-chat-subtitle">{{ tracking.driver.name if tracking and tracking.driver else 'Your driver' }}</p>
+      </div>
+    </header>
+
+    <div class="rider-trip-chat-sheet__body">
+      <ul id="tracking-chat-list" class="rider-trip-chat-sheet__messages ride-chat-list" aria-live="polite"></ul>
+    </div>
+
+    <form id="tracking-chat-form" class="rider-trip-chat-sheet__compose ride-chat-compose">
+      <label class="sr-only" for="tracking-chat-input">Message driver</label>
+      <input
+        type="text"
+        id="tracking-chat-input"
+        class="ride-chat-input rider-trip-chat-sheet__input"
+        maxlength="500"
+        placeholder="Message {{ tracking.driver.name if tracking and tracking.driver and tracking.driver.name != '-' else 'your driver' }}"
+        autocomplete="off"
+      >
+      <button type="submit" class="rider-btn rider-btn--request rider-trip-chat-sheet__send" id="tracking-chat-send" aria-label="Send message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        <span>Send</span>
+      </button>
+    </form>
+  </div>
+</section>
 {% endblock %}
 
 {% block page_scripts %}

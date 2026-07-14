@@ -17,7 +17,9 @@
   "pickup": trip.pickup,
   "destination": trip.destination,
   "token": driver_token,
-  "wsUrl": ws_url
+  "wsUrl": ws_url,
+  "riderName": trip.rider_name,
+  "driverName": (profile.name if profile else '') or session.get('driver_name') or session.get('full_name') or ''
 } | tojson }}</script>
 <section class="active-trip-page" aria-label="Active trip">
   <div class="active-trip-layout">
