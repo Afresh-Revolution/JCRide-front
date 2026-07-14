@@ -1181,12 +1181,24 @@
       return window.RideChat.appendMessage(chatList, msg, "customer", names);
     };
 
+    function setReloadBtnHiddenForChat(hidden) {
+      var reloadBtn = document.getElementById("pwa-reload-btn");
+      if (!reloadBtn) return;
+      var isSmall = window.matchMedia("(max-width: 900px)").matches;
+      if (hidden && isSmall) {
+        reloadBtn.classList.add("is-chat-hidden");
+      } else {
+        reloadBtn.classList.remove("is-chat-hidden");
+      }
+    }
+
     openChatPanel = function () {
       if (!chatPanel) return;
       chatPanel.hidden = false;
       chatPanel.removeAttribute("hidden");
       chatPanel.classList.add("is-open");
       document.body.classList.add("rider-trip-chat-open");
+      setReloadBtnHiddenForChat(true);
       if (chatBtn) chatBtn.setAttribute("aria-expanded", "true");
       chatUnreadCount = 0;
       updateChatBadge();
@@ -1203,6 +1215,7 @@
       chatPanel.hidden = true;
       chatPanel.setAttribute("hidden", "");
       document.body.classList.remove("rider-trip-chat-open");
+      setReloadBtnHiddenForChat(false);
       if (chatBtn) chatBtn.setAttribute("aria-expanded", "false");
     }
 
