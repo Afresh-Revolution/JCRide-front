@@ -658,11 +658,21 @@
     }
     if (hint) hint.hidden = !trip.picked_up || !!trip.can_complete;
     if (cancelBtn && cancelForm) {
-      var cancellable = ["accepted", "driver_assigned", "driver_arrived"].indexOf(trip.status || "") >= 0;
+      var status = String(trip.status || "").toLowerCase();
+      var cancellable = ["accepted", "driver_assigned", "driver_arrived"].indexOf(status) >= 0;
       cancelForm.hidden = !cancellable;
+      cancelForm.classList.toggle("is-hidden", !cancellable);
+      cancelBtn.disabled = !cancellable;
+      cancelBtn.setAttribute("aria-hidden", cancellable ? "false" : "true");
     }
     if (window.RideVoiceCall && trip.status) {
       window.RideVoiceCall.setRideStatus(trip.status);
+    }
+    if (window.RideVoiceCall && trip.rider_phone) {
+      window.RideVoiceCall.setPeerPhone(trip.rider_phone);
+    }
+    if (window.RideVoiceCall && trip.rider_name) {
+      window.RideVoiceCall.setPeerLabel(trip.rider_name);
     }
   }
 
@@ -695,6 +705,18 @@
     var otherInput = document.getElementById("driver-cancel-other");
     var errorEl = document.getElementById("driver-cancel-trip-error");
     var reasonList = document.getElementById("driver-cancel-reason-list");
+    var liveStatus = String(config.rideStatus || "").toLowerCase();
+
+    function currentStatus() {
+      if (currentTripData && currentTripData.status) {
+        return String(currentTripData.status).toLowerCase();
+      }
+      return liveStatus;
+    }
+
+    function isTripStartedStatus(status) {
+      return TRIP_STARTED_STATUSES.indexOf(status) >= 0 || status === "completed" || status === "cancelled";
+    }
 
     function closeModal() {
       if (typeof modal.close === "function") {
@@ -761,7 +783,13 @@
     }
 
     cancelBtn.addEventListener("click", function () {
-      var blocked = ["in_progress", "completed", "cancelled"].indexOf(config.rideStatus || "") >= 0;
+      var status = currentStatus();
+      liveStatus = status;
+      var blocked = isTripStartedStatus(status);
+      if (blocked) {
+        cancelForm.hidden = true;
+        cancelForm.classList.add("is-hidden");
+      }
       openModal(blocked);
     });
 
@@ -780,6 +808,11 @@
 
     if (confirmBtn) {
       confirmBtn.addEventListener("click", function () {
+        if (isTripStartedStatus(currentStatus())) {
+          showError("This trip has started and can no longer be cancelled. Only support can cancel it.");
+          setBlockedMode(true);
+          return;
+        }
         var reason = selectedReason();
         if (!reason) {
           showError("Please select a reason or tell us more.");

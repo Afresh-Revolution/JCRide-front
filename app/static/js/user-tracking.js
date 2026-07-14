@@ -12,14 +12,6 @@
     }
   }
 
-  var currentRideStatus = config.rideStatus || "requested";
-  var activeRideState = null;
-  var pollTimer = null;
-  var socket = null;
-  var reconnectTimer = null;
-  var loadChatMessages = null;
-  var appendChatMessage = null;
-
   var CANCEL_TIERS = {
     requested: "before_accept",
     searching: "before_accept",
@@ -27,6 +19,14 @@
     driver_assigned: "after_accept",
     driver_arrived: "on_arrival",
   };
+
+  var CANCELLABLE_STATUSES = [
+    "requested",
+    "searching",
+    "accepted",
+    "driver_assigned",
+    "driver_arrived",
+  ];
 
   var DRIVER_READY_STATUSES = [
     "accepted",
@@ -41,16 +41,31 @@
   var STARTABLE_STATUSES = ["accepted", "driver_arrived"];
   var TRIP_LIVE_STATUSES = ["in_progress", "started", "on_trip"];
   var startTripInFlight = false;
-  var tripHasStarted = TRIP_LIVE_STATUSES.indexOf(currentRideStatus) >= 0;
   var chatUnreadCount = 0;
   var openChatPanel = null;
   var chatToastTimer = null;
 
+  function normalizeRideStatus(status) {
+    return String(status || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+  }
+
+  var currentRideStatus = normalizeRideStatus(config.rideStatus) || "requested";
+  var activeRideState = null;
+  var pollTimer = null;
+  var socket = null;
+  var reconnectTimer = null;
+  var loadChatMessages = null;
+  var appendChatMessage = null;
+  var tripHasStarted = TRIP_LIVE_STATUSES.indexOf(currentRideStatus) >= 0;
+
   function isDriverMatched(status) {
     if (window.RideRealtimeEvents) {
-      return window.RideRealtimeEvents.isDriverMatched(status);
+      return window.RideRealtimeEvents.isDriverMatched(normalizeRideStatus(status));
     }
-    return DRIVER_READY_STATUSES.indexOf(status || "") >= 0;
+    return DRIVER_READY_STATUSES.indexOf(normalizeRideStatus(status)) >= 0;
   }
 
   function refreshTrackingMap() {
@@ -141,15 +156,26 @@
   }
 
   function canCancelStatus(status) {
-    return ["requested", "searching", "accepted", "driver_assigned", "driver_arrived"].indexOf(status) >= 0;
+    status = normalizeRideStatus(status);
+    if (tripHasStarted || isTripLiveStatus(status) || status === "completed" || status === "cancelled") {
+      return false;
+    }
+    return CANCELLABLE_STATUSES.indexOf(status) >= 0;
   }
 
   function updateCancelButtonVisibility() {
     var activeCancel = document.getElementById("tracking-cancel-ride");
     var findingCancel = document.getElementById("tracking-cancel-request");
     var show = canCancelStatus(currentRideStatus);
-    if (activeCancel) activeCancel.hidden = !show || currentRideStatus === "in_progress";
-    if (findingCancel) findingCancel.hidden = !show;
+    if (activeCancel) {
+      activeCancel.hidden = !show;
+      activeCancel.classList.toggle("is-hidden", !show);
+      activeCancel.setAttribute("aria-hidden", show ? "false" : "true");
+    }
+    if (findingCancel) {
+      findingCancel.hidden = !show;
+      findingCancel.classList.toggle("is-hidden", !show);
+    }
   }
 
   function normalizeRideResponse(data) {
@@ -160,12 +186,13 @@
   }
 
   function isTripLiveStatus(status) {
-    return TRIP_LIVE_STATUSES.indexOf(status || "") >= 0;
+    return TRIP_LIVE_STATUSES.indexOf(normalizeRideStatus(status)) >= 0;
   }
 
   function canRiderStartTrip(status) {
+    status = normalizeRideStatus(status);
     if (tripHasStarted || isTripLiveStatus(status) || status === "completed") return false;
-    return STARTABLE_STATUSES.indexOf(status || "") >= 0;
+    return STARTABLE_STATUSES.indexOf(status) >= 0;
   }
 
   function setStartTripLoading(btn, loading) {
@@ -198,6 +225,8 @@
   function markTripStartedUi(btn) {
     tripHasStarted = true;
     startTripInFlight = false;
+    currentRideStatus = "in_progress";
+    updateCancelButtonVisibility();
     if (!btn) btn = document.getElementById("tracking-start-trip");
     if (!btn) return;
     setStartTripLoading(btn, false);
@@ -407,8 +436,8 @@
   function updateRideUi(ride) {
     if (!ride) return;
     ride = mergeRideState(ride);
-    var status = ride.status || "";
-    currentRideStatus = status;
+    var status = normalizeRideStatus(ride.status);
+    currentRideStatus = status || currentRideStatus;
     if (isTripLiveStatus(status)) tripHasStarted = true;
 
     if (ride.id) config.rideId = ride.id;
@@ -442,6 +471,9 @@
     updateDriverPanel(driver, status);
     if (window.RideVoiceCall && (driver.full_name || driver.name)) {
       window.RideVoiceCall.setPeerLabel(driver.full_name || driver.name);
+    }
+    if (window.RideVoiceCall && (driver.phone || driver.phone_number)) {
+      window.RideVoiceCall.setPeerPhone(driver.phone || driver.phone_number);
     }
     if (ride.driver_location) {
       updateDriverOnMap(ride.driver_location);
@@ -685,6 +717,10 @@
     if (!modal || !form) return null;
 
     function tierForStatus(status) {
+      status = normalizeRideStatus(status);
+      if (isTripLiveStatus(status) || status === "completed" || status === "cancelled" || tripHasStarted) {
+        return "locked";
+      }
       return CANCEL_TIERS[status] || "before_accept";
     }
 
@@ -706,7 +742,15 @@
 
     function openCancelModal() {
       resetModal();
-      var tier = tierForStatus(currentRideStatus);
+      var status = normalizeRideStatus(currentRideStatus);
+      var tier = tierForStatus(status);
+
+      if (tier === "locked" || !canCancelStatus(status)) {
+        updateCancelButtonVisibility();
+        window.alert("This trip has started and can no longer be cancelled. Contact support if you need help.");
+        return;
+      }
+
       if (lead) {
         if (tier === "before_accept") {
           lead.textContent = "Cancel before a driver accepts. No fee will be charged.";
@@ -759,7 +803,17 @@
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
-      var tier = tierForStatus(currentRideStatus);
+      var status = normalizeRideStatus(currentRideStatus);
+      var tier = tierForStatus(status);
+      if (tier === "locked" || !canCancelStatus(status)) {
+        if (errorEl) {
+          errorEl.textContent = "This trip has started and can no longer be cancelled.";
+          errorEl.hidden = false;
+          errorEl.classList.remove("is-hidden");
+        }
+        updateCancelButtonVisibility();
+        return;
+      }
       var payload = {};
       if (tier === "after_accept") {
         var selected = form.querySelector('input[name="cancel_reason"]:checked');
@@ -886,6 +940,7 @@
       authToken: config.token || "",
       role: "customer",
       peerLabel: driverNameEl ? driverNameEl.textContent.trim() : "Driver",
+      peerPhone: config.driverPhone || "",
       apiBase: "/user/api/rides",
       apiPost: UserApi.post,
       apiGet: UserApi.request,
@@ -1184,11 +1239,24 @@
     function setReloadBtnHiddenForChat(hidden) {
       var reloadBtn = document.getElementById("pwa-reload-btn");
       if (!reloadBtn) return;
-      var isSmall = window.matchMedia("(max-width: 900px)").matches;
-      if (hidden && isSmall) {
+      if (hidden) {
         reloadBtn.classList.add("is-chat-hidden");
+        reloadBtn.hidden = true;
+        reloadBtn.setAttribute("hidden", "");
+        reloadBtn.setAttribute("aria-hidden", "true");
+        return;
+      }
+      reloadBtn.classList.remove("is-chat-hidden");
+      reloadBtn.removeAttribute("aria-hidden");
+      if (
+        document.documentElement.classList.contains("is-pwa") &&
+        document.documentElement.classList.contains("pwa-ready")
+      ) {
+        reloadBtn.hidden = false;
+        reloadBtn.removeAttribute("hidden");
       } else {
-        reloadBtn.classList.remove("is-chat-hidden");
+        reloadBtn.hidden = true;
+        reloadBtn.setAttribute("hidden", "");
       }
     }
 

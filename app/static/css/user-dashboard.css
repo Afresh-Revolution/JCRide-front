@@ -636,7 +636,11 @@ button.rider-link:hover {
 
 /* display:inline-flex on .rider-btn can override the hidden attribute — force hide. */
 #tracking-start-trip[hidden],
-#tracking-start-trip.is-hidden {
+#tracking-start-trip.is-hidden,
+#tracking-cancel-ride[hidden],
+#tracking-cancel-ride.is-hidden,
+#tracking-cancel-request[hidden],
+#tracking-cancel-request.is-hidden {
   display: none !important;
 }
 

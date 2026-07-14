@@ -48,8 +48,17 @@
 
   function showReloadButton() {
     if (!reloadBtn || !html.classList.contains("is-pwa")) return;
-    reloadBtn.hidden = false;
     bindReloadButton();
+    if (
+      reloadBtn.classList.contains("is-chat-hidden") ||
+      (document.body &&
+        (document.body.classList.contains("rider-trip-chat-open") ||
+          document.body.classList.contains("driver-trip-chat-open")))
+    ) {
+      reloadBtn.hidden = true;
+      return;
+    }
+    reloadBtn.hidden = false;
   }
 
   function showSkeleton() {

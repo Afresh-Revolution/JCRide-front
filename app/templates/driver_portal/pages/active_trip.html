@@ -19,6 +19,7 @@
   "token": driver_token,
   "wsUrl": ws_url,
   "riderName": trip.rider_name,
+  "riderPhone": trip.rider_phone or '',
   "driverName": (profile.name if profile else '') or session.get('driver_name') or session.get('full_name') or ''
 } | tojson }}</script>
 <section class="active-trip-page" aria-label="Active trip">
@@ -81,9 +82,9 @@
           </p>
         </form>
 
-        <form method="post" action="{{ url_for('driver_portal.cancel_trip') }}" class="active-trip-cancel-form" id="driver-trip-cancel-form">
+        <form method="post" action="{{ url_for('driver_portal.cancel_trip') }}" class="active-trip-cancel-form{% if trip.status in ['in_progress', 'started', 'on_trip', 'completed', 'cancelled'] %} is-hidden{% endif %}" id="driver-trip-cancel-form"{% if trip.status in ['in_progress', 'started', 'on_trip', 'completed', 'cancelled'] %} hidden{% endif %}>
           <input type="hidden" name="reason" id="driver-trip-cancel-reason" value="">
-          <button type="button" class="driver-btn driver-btn--outline driver-btn--block active-trip-cancel-btn" id="driver-trip-cancel-btn">
+          <button type="button" class="driver-btn driver-btn--outline driver-btn--block active-trip-cancel-btn" id="driver-trip-cancel-btn"{% if trip.status in ['in_progress', 'started', 'on_trip', 'completed', 'cancelled'] %} disabled{% endif %}>
             Cancel trip
           </button>
         </form>

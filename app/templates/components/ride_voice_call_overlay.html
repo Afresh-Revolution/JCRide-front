@@ -79,3 +79,37 @@
 
   <div id="ride-voice-call-audio" class="ride-voice-call__audio" aria-hidden="true"></div>
 </div>
+
+<dialog class="ride-call-method" id="ride-call-method-modal" aria-labelledby="ride-call-method-title">
+  <div class="ride-call-method__panel">
+    <button type="button" class="ride-call-method__close" id="ride-call-method-close" aria-label="Close">&times;</button>
+    <h2 class="ride-call-method__title" id="ride-call-method-title">Call options</h2>
+    <p class="ride-call-method__lead" id="ride-call-method-lead">Choose how you want to call.</p>
+    <div class="ride-call-method__actions">
+      <button type="button" class="ride-call-method__option" id="ride-call-method-inapp">
+        <span class="ride-call-method__option-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <rect x="5" y="2" width="14" height="20" rx="2"/>
+            <line x1="12" y1="18" x2="12.01" y2="18"/>
+          </svg>
+        </span>
+        <span class="ride-call-method__option-copy">
+          <strong>In app</strong>
+          <span>Voice call inside JosRide</span>
+        </span>
+      </button>
+      <button type="button" class="ride-call-method__option" id="ride-call-method-phone">
+        <span class="ride-call-method__option-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </span>
+        <span class="ride-call-method__option-copy">
+          <strong>Phone</strong>
+          <span id="ride-call-method-phone-hint">Call with your phone dialer</span>
+        </span>
+      </button>
+    </div>
+    <button type="button" class="ride-call-method__dismiss" id="ride-call-method-dismiss">Cancel</button>
+  </div>
+</dialog>

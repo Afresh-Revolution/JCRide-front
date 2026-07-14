@@ -1779,6 +1779,11 @@ body.driver-cancel-trip-modal-open {
   border-color: #fecaca;
 }
 
+#driver-trip-cancel-form[hidden],
+#driver-trip-cancel-form.is-hidden {
+  display: none !important;
+}
+
 .driver-active-ride-card {
   position: relative;
   margin-bottom: 0.25rem;

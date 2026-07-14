@@ -44,19 +44,12 @@
 }
 
 body.admin-nav-open .scroll-to-top,
-body.user-nav-open .scroll-to-top {
+body.user-nav-open .scroll-to-top,
+body.driver-trip-chat-open .scroll-to-top,
+body.rider-trip-chat-open .scroll-to-top {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none;
-}
-
-@media (max-width: 900px) {
-  body.driver-trip-chat-open .scroll-to-top,
-  body.rider-trip-chat-open .scroll-to-top {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none;
-  }
 }
 
 /* Sit above PWA reload FAB when both are shown */

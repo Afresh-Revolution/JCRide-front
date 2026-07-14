@@ -16,6 +16,7 @@
   var rideStatus = "";
   var userId = "";
   var peerLabel = "";
+  var peerPhone = "";
   var apiPost = null;
   var apiGet = null;
   var callButton = null;
@@ -37,6 +38,13 @@
   var endBtn = null;
   var muteBtn = null;
   var audioHost = null;
+  var methodModal = null;
+  var methodCloseBtn = null;
+  var methodDismissBtn = null;
+  var methodInAppBtn = null;
+  var methodPhoneBtn = null;
+  var methodPhoneHint = null;
+  var methodLead = null;
 
   var room = null;
   var activeCall = null;
@@ -220,6 +228,84 @@
         /* ignore */
       }
     }
+  }
+
+  function normalizePhone(value) {
+    var raw = String(value || "").trim();
+    if (!raw) return "";
+    var cleaned = raw.replace(/[^\d+]/g, "");
+    if (!cleaned) return "";
+    if (cleaned.indexOf("+") > 0) {
+      cleaned = cleaned.replace(/\+/g, "");
+    }
+    return cleaned;
+  }
+
+  function telHref(phone) {
+    var cleaned = normalizePhone(phone);
+    return cleaned ? "tel:" + cleaned : "";
+  }
+
+  function closeCallMethodChooser() {
+    if (!methodModal) return;
+    try {
+      if (typeof methodModal.close === "function" && methodModal.open) {
+        methodModal.close();
+      } else {
+        methodModal.removeAttribute("open");
+        methodModal.hidden = true;
+      }
+    } catch (err) {
+      methodModal.removeAttribute("open");
+      methodModal.hidden = true;
+    }
+  }
+
+  function updateCallMethodChooser() {
+    var phone = normalizePhone(peerPhone);
+    if (methodPhoneBtn) {
+      methodPhoneBtn.disabled = !phone;
+      methodPhoneBtn.setAttribute("aria-disabled", phone ? "false" : "true");
+    }
+    if (methodPhoneHint) {
+      methodPhoneHint.textContent = phone
+        ? "Opens your phone dialer · " + phone
+        : "Phone number not available yet";
+    }
+    if (methodLead) {
+      methodLead.textContent = peerLabel
+        ? "Choose how you want to call " + peerLabel + "."
+        : "Choose how you want to call.";
+    }
+  }
+
+  function openCallMethodChooser() {
+    if (!methodModal) {
+      startOutgoingCall();
+      return;
+    }
+    updateCallMethodChooser();
+    try {
+      if (typeof methodModal.showModal === "function") {
+        if (!methodModal.open) methodModal.showModal();
+      } else {
+        methodModal.setAttribute("open", "open");
+        methodModal.hidden = false;
+      }
+    } catch (err) {
+      methodModal.setAttribute("open", "open");
+      methodModal.hidden = false;
+    }
+  }
+
+  function placePhoneCall() {
+    var href = telHref(peerPhone);
+    if (!href) {
+      notifyError(null, "Phone number is not available for this contact.");
+      return;
+    }
+    closeCallMethodChooser();
+    global.location.href = href;
   }
 
   function updateCallButton() {
@@ -766,11 +852,43 @@
     if (endBtn) endBtn.addEventListener("click", endActiveCall);
     if (muteBtn) muteBtn.addEventListener("click", toggleMute);
 
+    methodModal = document.getElementById("ride-call-method-modal");
+    methodCloseBtn = document.getElementById("ride-call-method-close");
+    methodDismissBtn = document.getElementById("ride-call-method-dismiss");
+    methodInAppBtn = document.getElementById("ride-call-method-inapp");
+    methodPhoneBtn = document.getElementById("ride-call-method-phone");
+    methodPhoneHint = document.getElementById("ride-call-method-phone-hint");
+    methodLead = document.getElementById("ride-call-method-lead");
+
+    if (methodCloseBtn) methodCloseBtn.addEventListener("click", closeCallMethodChooser);
+    if (methodDismissBtn) methodDismissBtn.addEventListener("click", closeCallMethodChooser);
+    if (methodInAppBtn) {
+      methodInAppBtn.addEventListener("click", function () {
+        closeCallMethodChooser();
+        unlockAudio();
+        startOutgoingCall();
+      });
+    }
+    if (methodPhoneBtn) {
+      methodPhoneBtn.addEventListener("click", function () {
+        placePhoneCall();
+      });
+    }
+    if (methodModal) {
+      methodModal.addEventListener("cancel", function (event) {
+        event.preventDefault();
+        closeCallMethodChooser();
+      });
+      methodModal.addEventListener("click", function (event) {
+        if (event.target === methodModal) closeCallMethodChooser();
+      });
+    }
+
     if (callButton) {
       callButton.addEventListener("click", function (event) {
         event.preventDefault();
         unlockAudio();
-        startOutgoingCall();
+        openCallMethodChooser();
       });
     }
 
@@ -778,6 +896,7 @@
     document.addEventListener("touchstart", unlockAudio, { once: true, capture: true });
 
     domBound = true;
+    updateCallMethodChooser();
     return true;
   }
 
@@ -805,6 +924,7 @@
     rideStatus = options.rideStatus || "";
     userId = resolveUserId(options);
     peerLabel = options.peerLabel || "";
+    peerPhone = options.peerPhone || "";
     apiPost = options.apiPost;
     apiGet = options.apiGet;
     callButton =
@@ -817,6 +937,7 @@
 
     updateAvatar();
     updateCallButton();
+    updateCallMethodChooser();
     startSyncPolling();
     syncActiveCallFromServer();
     return true;
@@ -838,9 +959,23 @@
   function setPeerLabel(name) {
     peerLabel = name || "";
     updateAvatar();
+    updateCallMethodChooser();
     if (phase === "incoming" || phase === "outgoing" || phase === "active") {
       setTitle(peerLabel || titleEl.textContent);
     }
+  }
+
+  function setPeerPhone(phone) {
+    peerPhone = phone || "";
+    updateCallMethodChooser();
+  }
+
+  function getPeerLabel() {
+    return peerLabel || "";
+  }
+
+  function getPeerPhone() {
+    return peerPhone || "";
   }
 
   function destroy() {
@@ -848,6 +983,7 @@
       global.clearInterval(syncTimer);
       syncTimer = null;
     }
+    closeCallMethodChooser();
     resetUi();
     options = null;
     callButton = null;
@@ -860,6 +996,9 @@
     setRideId: setRideId,
     setUserId: setUserId,
     setPeerLabel: setPeerLabel,
+    setPeerPhone: setPeerPhone,
+    getPeerLabel: getPeerLabel,
+    getPeerPhone: getPeerPhone,
     handleEvent: handleRealtimeEvent,
     startOutgoingCall: startOutgoingCall,
     syncActiveCall: syncActiveCallFromServer,
