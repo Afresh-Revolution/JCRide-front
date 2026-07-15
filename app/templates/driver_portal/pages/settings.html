@@ -62,7 +62,7 @@
       </ul>
     </article>
 
-    <article class="driver-settings-card">
+    <article class="driver-settings-card driver-settings-card--account">
       <h2 class="driver-settings-card__title">Account</h2>
       <ul class="driver-settings-account">
         <li class="driver-settings-account__row">
@@ -70,7 +70,7 @@
             <span class="driver-settings-account__label">Switch to offline</span>
             <span class="driver-settings-account__hint">Stop receiving requests</span>
           </div>
-          <form method="post" action="{{ url_for('driver_portal.settings_go_offline') }}">
+          <form method="post" action="{{ url_for('driver_portal.settings_go_offline') }}" class="driver-settings-account__form">
             <button type="submit" class="driver-settings-account__btn">Go offline</button>
           </form>
         </li>
@@ -79,19 +79,29 @@
             <span class="driver-settings-account__label">Take a break</span>
             <span class="driver-settings-account__hint">Pause for up to 7 days</span>
           </div>
-          <form method="post" action="{{ url_for('driver_portal.settings_pause') }}">
+          <form method="post" action="{{ url_for('driver_portal.settings_pause') }}" class="driver-settings-account__form">
             <button type="submit" class="driver-settings-account__btn">Pause</button>
           </form>
         </li>
-        <li class="driver-settings-account__row">
+        <li class="driver-settings-account__row driver-settings-account__row--danger">
           <div>
             <span class="driver-settings-account__label">Deactivate account</span>
-            <span class="driver-settings-account__hint">Permanent - contact support to restore</span>
+            <span class="driver-settings-account__hint">{% if on_active_trip %}Finish your active trip first{% else %}Stops driving — contact support to restore{% endif %}</span>
           </div>
-          <form method="post" action="{{ url_for('driver_portal.settings_deactivate') }}" onsubmit="return confirm('Request account deactivation? Support must restore your account.');">
-            <button type="submit" class="driver-settings-account__btn driver-settings-account__btn--danger">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          <form method="post" action="{{ url_for('driver_portal.settings_deactivate') }}" id="driver-deactivate-form" class="driver-settings-account__form">
+            <button type="submit" class="driver-settings-account__btn driver-settings-account__btn--danger" id="driver-deactivate-btn"{% if on_active_trip %} disabled aria-disabled="true"{% endif %}>
               Deactivate
+            </button>
+          </form>
+        </li>
+        <li class="driver-settings-account__row driver-settings-account__row--danger">
+          <div>
+            <span class="driver-settings-account__label">Delete account</span>
+            <span class="driver-settings-account__hint">{% if on_active_trip %}Finish your active trip first{% else %}Permanent · erases all your data{% endif %}</span>
+          </div>
+          <form method="post" action="{{ url_for('driver_portal.settings_delete') }}" id="driver-delete-form" class="driver-settings-account__form">
+            <button type="submit" class="driver-settings-account__btn driver-settings-account__btn--danger-solid" id="driver-delete-btn"{% if on_active_trip %} disabled aria-disabled="true"{% endif %}>
+              Delete
             </button>
           </form>
         </li>
@@ -99,4 +109,9 @@
     </article>
   </div>
 </section>
+<script type="application/json" id="driver-settings-account-flags">{{ {"hasActiveTrip": on_active_trip|default(false)} | tojson }}</script>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/driver-settings.js') }}"></script>
 {% endblock %}

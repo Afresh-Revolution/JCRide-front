@@ -100,20 +100,92 @@
     });
   }
 
+  function confirmAction(options) {
+    if (window.UserConfirm && typeof UserConfirm.show === "function") {
+      return UserConfirm.show(options);
+    }
+    return Promise.resolve(
+      window.confirm((options.title || "Confirm") + "\n\n" + (options.message || ""))
+    );
+  }
+
+  function readAccountFlags() {
+    var el = document.getElementById("settings-account-flags");
+    if (!el || !el.textContent) return { hasActiveTrip: false };
+    try {
+      return JSON.parse(el.textContent) || { hasActiveTrip: false };
+    } catch (err) {
+      return { hasActiveTrip: false };
+    }
+  }
+
+  function blockIfActiveTrip(actionLabel) {
+    var flags = readAccountFlags();
+    if (!flags.hasActiveTrip) return Promise.resolve(true);
+    return confirmAction({
+      title: "Active trip in progress",
+      message:
+        "Finish your active trip or delivery before you can " + actionLabel + " your account.",
+      confirmLabel: "OK",
+      variant: "primary",
+    }).then(function () {
+      return false;
+    });
+  }
+
+  var deactivateBtn = document.getElementById("settings-deactivate-btn");
+  if (deactivateBtn) {
+    deactivateBtn.addEventListener("click", function () {
+      blockIfActiveTrip("deactivate").then(function (allowed) {
+        if (!allowed) return;
+        confirmAction({
+          title: "Deactivate account?",
+          message:
+            "We'll suspend your account so you can't book rides. Contact support if you want it restored later.",
+          confirmLabel: "Deactivate",
+          variant: "danger",
+        }).then(function (confirmed) {
+          if (!confirmed) return;
+          withBtn(
+            deactivateBtn,
+            UserApi.post("/user/api/settings/deactivate-request", {})
+              .then(function () {
+                window.location.href = "/logout";
+              })
+              .catch(function (err) {
+                window.alert(err.message || "Could not deactivate account.");
+              })
+          );
+        });
+      });
+    });
+  }
+
   var deleteBtn = document.getElementById("settings-delete-btn");
   if (deleteBtn) {
     deleteBtn.addEventListener("click", function () {
-      if (!window.confirm("Request permanent account deletion? This cannot be undone.")) return;
-      withBtn(
-        deleteBtn,
-        UserApi.post("/user/api/settings/delete-request", {})
-          .then(function () {
-            alert("Deletion request submitted.");
-          })
-          .catch(function (err) {
-            alert(err.message || "Could not request deletion.");
-          })
-      );
+      blockIfActiveTrip("delete").then(function (allowed) {
+        if (!allowed) return;
+        confirmAction({
+          title: "Delete account permanently?",
+          message:
+            "This permanently erases your account, trip history, wallet data, and profile. This cannot be undone.",
+          confirmLabel: "Delete everything",
+          variant: "danger",
+        }).then(function (confirmed) {
+          if (!confirmed) return;
+          withBtn(
+            deleteBtn,
+            UserApi.post("/user/api/settings/delete-request", {})
+              .then(function () {
+                window.location.href = "/";
+              })
+              .catch(function (err) {
+                window.alert(err.message || "Could not delete account.");
+              })
+          );
+        });
+      });
     });
   }
 

@@ -434,6 +434,14 @@ def driver_settings_deactivate_request(token):
     )
 
 
+def driver_settings_delete_request(token):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/settings/delete-request",
+        token=token,
+    )
+
+
 def submit_driver_support_ticket(token, category, description, trip_id=None):
     return create_support_ticket(
         token,
@@ -1072,6 +1080,10 @@ def pause_account(token, pause_until):
         token=token,
         json={"pause_until": pause_until},
     )
+
+
+def request_account_deactivation(token):
+    return _request("POST", f"{API_PREFIX}/settings/account/deactivate-request", token=token)
 
 
 def request_account_deletion(token):

@@ -3386,7 +3386,8 @@ html[data-user-theme="dark"] .earnings-withdraw-form__actions {
   }
 
   .driver-settings-row__form,
-  .driver-settings-account__row form {
+  .driver-settings-account__row form,
+  .driver-settings-account__form {
     width: 100%;
   }
 
@@ -4245,6 +4246,10 @@ html[data-user-theme="dark"] .driver-vehicle-field select {
   padding: 1.125rem 1.25rem;
 }
 
+.driver-settings-card--account {
+  grid-column: 1 / -1;
+}
+
 .driver-settings-card__title {
   margin: 0 0 0.875rem;
   font-size: 0.9375rem;
@@ -4299,7 +4304,8 @@ html[data-user-theme="dark"] .driver-vehicle-field select {
 }
 
 .driver-settings-row__form,
-.driver-settings-account__row form {
+.driver-settings-account__row form,
+.driver-settings-account__form {
   margin: 0;
   flex-shrink: 0;
 }
@@ -4366,8 +4372,29 @@ html[data-user-theme="dark"] .driver-vehicle-field select {
   color: #b91c1c;
 }
 
-.driver-settings-account__btn--danger:hover {
+.driver-settings-account__btn--danger:hover:not(:disabled) {
   background: #fee2e2;
+}
+
+.driver-settings-account__btn--danger-solid {
+  background: #b91c1c;
+  border-color: #991b1b;
+  color: #fff;
+}
+
+.driver-settings-account__btn--danger-solid:hover:not(:disabled) {
+  background: #991b1b;
+}
+
+.driver-settings-account__btn:disabled,
+.driver-settings-account__btn--danger:disabled,
+.driver-settings-account__btn--danger-solid:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.driver-settings-account__row--danger {
+  align-items: flex-start;
 }
 
 @media (max-width: 1024px) {
@@ -4803,6 +4830,12 @@ html[data-user-theme="dark"] .driver-vehicle-field select {
     background: rgba(127, 29, 29, 0.25);
     border-color: #7f1d1d;
     color: #fca5a5;
+  }
+
+  .driver-settings-account__btn--danger-solid {
+    background: #b91c1c;
+    border-color: #7f1d1d;
+    color: #fff;
   }
 }
 

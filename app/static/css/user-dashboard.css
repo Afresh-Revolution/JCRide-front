@@ -3753,6 +3753,121 @@ body.rider-trip-chat-open {
   height: 14px;
 }
 
+/* Confirm dialog */
+.user-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.user-confirm-overlay[hidden] {
+  display: none;
+}
+
+.user-confirm {
+  width: min(100%, 24rem);
+  border-radius: 1rem;
+  border: 1px solid var(--user-border);
+  background: var(--user-card, #fff);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.28);
+  overflow: hidden;
+}
+
+.user-confirm__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.75rem;
+}
+
+.user-confirm__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--user-text);
+}
+
+.user-confirm__close {
+  border: 0;
+  background: transparent;
+  color: var(--user-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.user-confirm__close:hover {
+  color: var(--user-text);
+}
+
+.user-confirm__body {
+  padding: 0 1rem 1rem;
+}
+
+.user-confirm__message {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--user-muted);
+}
+
+.user-confirm__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem 1rem;
+  border-top: 1px solid var(--user-border);
+}
+
+.user-confirm__btn {
+  min-height: 2.4rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.user-confirm__btn--ghost {
+  background: transparent;
+  border-color: var(--user-border);
+  color: var(--user-text);
+}
+
+.user-confirm__btn--ghost:hover {
+  background: var(--user-field-bg, #f9fafb);
+}
+
+.user-confirm__btn--primary {
+  background: #0d6b38;
+  color: #fff;
+}
+
+.user-confirm__btn--primary:hover {
+  background: #0a5630;
+}
+
+.user-confirm__btn--danger {
+  background: #b91c1c;
+  color: #fff;
+}
+
+.user-confirm__btn--danger:hover {
+  background: #991b1b;
+}
+
+body.user-confirm-open {
+  overflow: hidden;
+}
+
 /* Support */
 .support-quick-grid {
   display: grid;

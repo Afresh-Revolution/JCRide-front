@@ -46,6 +46,7 @@ from app.services.api_client import (
     delete_notifications,
     driver_ride_arrived,
     driver_settings_deactivate_request,
+    driver_settings_delete_request,
     driver_settings_go_offline,
     driver_settings_pause,
     get_driver_profile,
@@ -1248,6 +1249,42 @@ def settings_deactivate():
 
     flash("Deactivation request submitted. Our support team will follow up.", "success")
     return redirect(url_for("driver_portal.settings"))
+
+
+@driver_portal_bp.route("/settings/delete", methods=["POST"])
+def settings_delete():
+    guard = _require_driver()
+    if guard:
+        return guard
+
+    token = _driver_token()
+    if token:
+        try:
+            driver_settings_delete_request(token)
+        except ApiError as exc:
+            flash(exc.message, "error")
+            return redirect(url_for("driver_portal.settings"))
+
+    for key in (
+        "driver_token",
+        "driver_phone",
+        "driver_email",
+        "driver_name",
+        "driver_online",
+        "active_trip_id",
+        "token",
+        "user_id",
+        "email",
+        "phone",
+        "name",
+        "role",
+        "portal",
+        DRIVER_APP_SETTINGS_KEY,
+    ):
+        session.pop(key, None)
+    revoke_driver_entry()
+    flash("Your account and all associated data have been permanently deleted.", "success")
+    return redirect(url_for("main.home"))
 
 
 @driver_portal_bp.route("/support", methods=["GET", "POST"])

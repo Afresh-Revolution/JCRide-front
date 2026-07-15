@@ -130,18 +130,32 @@
     </div>
     <div class="settings-action-row">
       <div>
-        <strong>Delete account</strong>
-        <span>Permanent · cannot be undone</span>
+        <strong>Deactivate account</strong>
+        <span>{% if has_active_trip %}Finish your active trip first{% else %}Stops bookings — contact support to restore{% endif %}</span>
       </div>
-      <button type="button" class="rider-btn rider-btn--danger-sm" id="settings-delete-btn">
+      <button type="button" class="rider-btn rider-btn--danger-sm" id="settings-deactivate-btn"{% if has_active_trip %} disabled aria-disabled="true"{% endif %}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Deactivate
+      </button>
+    </div>
+    <div class="settings-action-row">
+      <div>
+        <strong>Delete account</strong>
+        <span>{% if has_active_trip %}Finish your active trip first{% else %}Permanent · erases all your data{% endif %}</span>
+      </div>
+      <button type="button" class="rider-btn rider-btn--danger-sm" id="settings-delete-btn"{% if has_active_trip %} disabled aria-disabled="true"{% endif %}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         Delete
       </button>
     </div>
   </article>
 </div>
+
+{% include "user/includes/confirm_dialog.html" %}
+<script type="application/json" id="settings-account-flags">{{ {"hasActiveTrip": has_active_trip|default(false)} | tojson }}</script>
 {% endblock %}
 
 {% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-confirm.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-settings.js') }}"></script>
 {% endblock %}
