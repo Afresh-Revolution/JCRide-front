@@ -147,6 +147,15 @@ def _load_live_trips_map(token):
         return live_trips_to_map([])
 
 
+def _load_revenue_chart(token, period="1Y"):
+    try:
+        return normalize_revenue(get_admin_revenue(token, period), period)
+    except ApiError as exc:
+        if exc.status_code in {401, 403}:
+            raise
+        return normalize_revenue([], period)
+
+
 def _payment_stat_card(amount_ngn, transaction_count, provider_label=None):
     card = {
         "amount_ngn": round(float(amount_ngn or 0), 2),
@@ -257,12 +266,23 @@ def _wallet_stats_fallback(token):
     }
 
 
+def _wants_json_response():
+    if request.path.startswith("/admin/api/"):
+        return True
+    best = request.accept_mimetypes.best_match(["application/json", "text/html"])
+    return best == "application/json"
+
+
 def admin_required(view):
     @wraps(view)
     def wrapped(**kwargs):
         if not has_admin_entry():
+            if _wants_json_response():
+                return jsonify({"message": "Admin portal access required."}), 401
             return redirect(url_for("main.home"))
         if not session.get("admin_token"):
+            if _wants_json_response():
+                return jsonify({"message": "Please sign in to the admin portal."}), 401
             flash("Please sign in to the admin portal.", "error")
             return redirect(url_for("admin.login_page"))
         return view(**kwargs)
@@ -336,18 +356,21 @@ def dashboard():
     try:
         stats = _load_dashboard_stats(token)
         live_trips = _load_live_trips_map(token)
+        revenue_chart = _load_revenue_chart(token, "1Y")
     except ApiError as exc:
         redirect_response = _handle_api_error(exc)
         if redirect_response:
             return redirect_response
         stats = EMPTY_STATS
         live_trips = live_trips_to_map([])
+        revenue_chart = normalize_revenue([], "1Y")
 
     return render_template(
         "admin/dashboard.html",
         active_page="dashboard",
         stats=stats,
         live_trips=live_trips,
+        revenue_chart=revenue_chart,
     )
 
 

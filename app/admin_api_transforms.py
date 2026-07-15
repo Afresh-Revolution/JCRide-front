@@ -123,21 +123,36 @@ def _format_revenue_label(date_value: str, period: str) -> str:
     if period == "1M":
         return parsed.strftime("%d %b")
     if period == "3M":
-        return parsed.strftime("W%U") if period == "3M" else parsed.strftime("%d %b")
+        return parsed.strftime("%d %b")
     if period == "All":
-        return parsed.strftime("%Y")
+        return parsed.strftime("%b %Y")
     return parsed.strftime("%b")
 
 
 def normalize_revenue(raw, period: str = "1Y") -> dict:
-    rows = raw if isinstance(raw, list) else raw.get("data") or raw.get("points") or []
+    if isinstance(raw, list):
+        rows = raw
+    elif isinstance(raw, dict):
+        rows = raw.get("data") or raw.get("points") or raw.get("items") or []
+    else:
+        rows = []
     labels: list[str] = []
     raw_values: list[float] = []
     for row in rows:
         if not isinstance(row, dict):
             continue
-        labels.append(_format_revenue_label(str(row.get("date") or ""), period))
-        raw_values.append(float(row.get("total_fare") or 0))
+        labels.append(
+            _format_revenue_label(str(row.get("date") or row.get("bucket") or ""), period)
+        )
+        raw_values.append(
+            float(
+                row.get("total_fare")
+                or row.get("net_revenue")
+                or row.get("revenue")
+                or row.get("amount")
+                or 0
+            )
+        )
 
     total_ngn = sum(raw_values)
     max_val = max(raw_values) if raw_values else 0
