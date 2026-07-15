@@ -89,6 +89,7 @@
       <canvas id="revenue-chart" aria-label="Revenue growth chart"></canvas>
       <p class="chart-empty" id="revenue-chart-empty" hidden>No revenue in this period yet.</p>
     </div>
+    <script type="application/json" id="revenue-chart-bootstrap">{{ revenue_chart | default({}) | tojson }}</script>
   </article>
 
   <article class="dash-card dash-card--narrow">

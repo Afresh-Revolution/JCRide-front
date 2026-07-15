@@ -66,6 +66,10 @@
     return isDarkTheme() ? "#374151" : "#f3f4f6";
   }
 
+  function chartTickColor() {
+    return isDarkTheme() ? "#9ca3af" : "#6b7280";
+  }
+
   function bindAdminMapTheme() {
     if (!window.matchMedia) return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -298,21 +302,41 @@
     });
   }
 
+  function parseJsonResponse(res) {
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error("Expected JSON from admin API");
+    }
+    return res.json();
+  }
+
+  function readBootstrapRevenue() {
+    const el = document.getElementById("revenue-chart-bootstrap");
+    if (!el || !el.textContent) return null;
+    try {
+      return JSON.parse(el.textContent);
+    } catch (err) {
+      return null;
+    }
+  }
+
   function fetchStats() {
     return fetch("/admin/api/stats")
       .then(function (res) {
         if (!res.ok) throw new Error("Failed to load stats");
-        return res.json();
+        return parseJsonResponse(res);
       })
       .then(renderStats)
       .catch(function () {});
   }
 
   function fetchRevenue(period) {
-    return fetch("/admin/api/revenue?period=" + encodeURIComponent(period))
+    return fetch("/admin/api/revenue?period=" + encodeURIComponent(period), {
+      headers: { Accept: "application/json" },
+    })
       .then(function (res) {
         if (!res.ok) throw new Error("Failed to load revenue");
-        return res.json();
+        return parseJsonResponse(res);
       })
       .then(function (data) {
         buildRevenueChart(data.labels || [], data.values || [], period, data);
@@ -323,10 +347,18 @@
   }
 
   function fetchTiers() {
-    return fetch("/admin/api/ride-tiers")
-      .then(function (res) { return res.json(); })
+    return fetch("/admin/api/ride-tiers", {
+      headers: { Accept: "application/json" },
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Failed to load ride tiers");
+        return parseJsonResponse(res);
+      })
       .then(function (data) {
         buildTierChart(data.tiers || []);
+      })
+      .catch(function () {
+        buildTierChart([]);
       });
   }
 
@@ -518,6 +550,19 @@
 
     bindPeriodToggle();
     fetchStats();
+
+    const bootRevenue = readBootstrapRevenue();
+    if (bootRevenue) {
+      buildRevenueChart(
+        bootRevenue.labels || [],
+        bootRevenue.values || [],
+        bootRevenue.period || "1Y",
+        bootRevenue
+      );
+    } else {
+      fetchRevenue("1Y");
+    }
+    // Refresh from API so period toggles and live totals stay accurate.
     fetchRevenue("1Y");
     fetchTiers();
     fetchLiveTrips();
