@@ -60,6 +60,7 @@ from app.services.api_client import (
     search_rider,
     register_device,
     register_driver,
+    request_account_deactivation,
     request_account_deletion,
     request_delivery,
     request_ride,
@@ -1905,11 +1906,13 @@ def user_settings():
         return guard
     settings_data, ok = _safe_rider_api(get_user_settings)
     settings = settings_from_api(settings_data if ok else None)
+    has_active_trip = bool(session.get("active_trip"))
     return render_template(
         "user/settings.html",
         active_page="settings",
         settings=settings,
         api_connected=ok,
+        has_active_trip=has_active_trip,
         **_rider_context(),
     )
 
@@ -2358,13 +2361,28 @@ def user_api_settings_pause():
         return _user_api_error(exc)
 
 
+@main_bp.route("/user/api/settings/deactivate-request", methods=["POST"])
+def user_api_settings_deactivate():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        result = request_account_deactivation(_rider_token())
+        session.clear()
+        return jsonify(result)
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
 @main_bp.route("/user/api/settings/delete-request", methods=["POST"])
 def user_api_settings_delete():
     guard = _require_rider_api()
     if guard:
         return guard
     try:
-        return jsonify(request_account_deletion(_rider_token()))
+        result = request_account_deletion(_rider_token())
+        session.clear()
+        return jsonify(result)
     except ApiError as exc:
         return _user_api_error(exc)
 
