@@ -1,0 +1,24 @@
+{% extends "landing_base.html" %}
+
+{% block title %}Privacy Policy · JosRide{% endblock %}
+
+{% block content %}
+<section class="legal-page">
+  <div class="legal-page__inner landing-container">
+    <p class="legal-page__eyebrow"><a href="{{ url_for('main.home') }}">JosRide</a></p>
+    <h1>Privacy Policy</h1>
+    <p class="legal-page__updated">Last updated: 27 July 2026</p>
+    <p>JosRide collects account details, trip locations, payment records, and device information needed to provide ride-hailing and delivery services in Nigeria.</p>
+    <h2>What we use</h2>
+    <ul>
+      <li>To match riders with drivers and complete trips</li>
+      <li>To process payments, refunds, and wallet activity</li>
+      <li>To improve safety features such as SOS and accident reporting</li>
+      <li>To send in-app notifications about rides and account security</li>
+    </ul>
+    <h2>Your choices</h2>
+    <p>You can update privacy toggles in Settings, download your data, deactivate your account, or request deletion. Contact support for help restoring a deactivated account.</p>
+    <p><a href="{{ url_for('main.terms_of_service') }}">Terms of Service</a></p>
+  </div>
+</section>
+{% endblock %}

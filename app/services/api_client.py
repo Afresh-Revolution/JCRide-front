@@ -783,6 +783,54 @@ def cancel_scheduled_ride(token, scheduled_id, reason=None):
     )
 
 
+def update_scheduled_ride(token, scheduled_id, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/scheduled-rides/{scheduled_id}",
+        token=token,
+        json=payload,
+    )
+
+
+def report_accident(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/safety/accidents",
+        token=token,
+        json=payload,
+    )
+
+
+def get_admin_accident_reports(token):
+    return _request("GET", f"{API_PREFIX}/admin/accidents", token=token)
+
+
+def acknowledge_admin_accident(token, report_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/accidents/{report_id}/acknowledge",
+        token=token,
+    )
+
+
+def resolve_admin_accident(token, report_id, status_value="resolved"):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/accidents/{report_id}/resolve",
+        token=token,
+        json={"status": status_value},
+    )
+
+
+def change_password(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/auth/change-password",
+        token=token,
+        json=payload,
+    )
+
+
 def get_wallet(token):
     return _request("GET", f"{API_PREFIX}/wallet", token=token)
 
@@ -1439,6 +1487,10 @@ def update_admin_ops_notification_settings(token, payload):
 
 def get_public_landing_page():
     return _request("GET", f"{API_PREFIX}/public/landing-page")
+
+
+def get_public_trip_share(share_token: str):
+    return _request("GET", f"{API_PREFIX}/public/trips/share", params={"s": share_token})
 
 
 def get_admin_landing_page(token):

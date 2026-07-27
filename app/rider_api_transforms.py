@@ -382,6 +382,15 @@ def notification_kind(n_type: str | None) -> str:
 def notifications_to_ui(notifications: list[dict]) -> list[dict]:
     rows = []
     for item in notifications:
+        n_type = (item.get("type") or "").lower()
+        data = item.get("data") if isinstance(item.get("data"), dict) else {}
+        href = None
+        if n_type == "scheduled_ride_dispatched":
+            ride_id = data.get("ride_id") or data.get("created_ride_id")
+            href = "/user/live-tracking" + (f"?ride_id={ride_id}" if ride_id else "")
+        elif n_type in {"ride_created", "ride_accepted", "driver_arrived", "ride_started"}:
+            ride_id = data.get("ride_id")
+            href = "/user/live-tracking" + (f"?ride_id={ride_id}" if ride_id else "")
         rows.append(
             {
                 "id": item.get("id"),
@@ -390,6 +399,7 @@ def notifications_to_ui(notifications: list[dict]) -> list[dict]:
                 "body": item.get("body") or "",
                 "time": format_relative_time(item.get("created_at")),
                 "unread": not bool(item.get("read_at")),
+                "href": href,
             }
         )
     return rows
@@ -445,7 +455,8 @@ def prefs_update_from_ui(group: str, pref_id: str, enabled: bool) -> dict[str, b
 
 def scheduled_ride_to_ui(item: dict) -> dict:
     scheduled_for = _parse_dt(item.get("scheduled_for"))
-    when = scheduled_for.astimezone().strftime("%a, %d %b · %I:%M %p") if scheduled_for else "-"
+    local = scheduled_for.astimezone() if scheduled_for else None
+    when = local.strftime("%a, %d %b · %I:%M %p") if local else "-"
     tier = (item.get("service_tier") or "comfort").capitalize()
     fare = item.get("estimated_fare_ngn") or 0
     return {
@@ -453,8 +464,9 @@ def scheduled_ride_to_ui(item: dict) -> dict:
         "pickup": item.get("pickup_address") or "-",
         "destination": item.get("destination_address") or "-",
         "datetime": when,
+        "edit_date": local.strftime("%m/%d/%Y") if local else "",
+        "edit_time": local.strftime("%I:%M %p") if local else "",
         "class": tier,
-        "repeat": "Once",
         "reminder": f"{item.get('reminder_minutes_before', 30)} min before",
         "fare": format_ngn(fare),
     }

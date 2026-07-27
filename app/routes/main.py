@@ -10,6 +10,7 @@ from app.services.api_client import (
     cancel_delivery,
     cancel_ride,
     cancel_scheduled_ride,
+    change_password,
     create_scheduled_ride,
     create_support_ticket,
     create_wallet_funding_request,
@@ -53,9 +54,11 @@ from app.services.api_client import (
     get_nearby_drivers,
     get_referral_info,
     get_support_faq,
+    get_public_trip_share,
     list_customer_rides,
     list_saved_locations,
     list_trusted_contacts,
+    report_accident,
     reset_password,
     search_rider,
     register_device,
@@ -79,13 +82,21 @@ from app.services.api_client import (
     update_notification_preferences,
     update_customer_profile_extras,
     update_profile,
+    update_scheduled_ride,
     update_user_settings,
     upload_driver_document,
     verify_otp,
     verify_paystack,
     withdraw_wallet,
 )
-from app.config import get_public_app_url, get_ws_url
+from app.config import (
+    build_public_trip_share_url,
+    format_support_phone_display,
+    get_driver_support_phone,
+    get_emergency_phone,
+    get_public_app_url,
+    get_ws_url,
+)
 from app.rider_api_transforms import (
     contacts_to_share_ui,
     dashboard_stats_from_api,
@@ -675,6 +686,16 @@ def _handle_login(portal: str):
 @main_bp.route("/")
 def home():
     return render_template("home.html", landing=load_landing_page())
+
+
+@main_bp.route("/privacy")
+def privacy_policy():
+    return render_template("legal/privacy.html")
+
+
+@main_bp.route("/terms")
+def terms_of_service():
+    return render_template("legal/terms.html")
 
 
 @main_bp.route("/portals")
@@ -1600,7 +1621,6 @@ def user_schedule_ride():
         date_str = request.form.get("date", "").strip()
         time_str = request.form.get("time", "").strip()
         vehicle_class = request.form.get("vehicle_class", "comfort")
-        repeat = request.form.get("repeat", "Once")
         reminder = request.form.get("reminder", "30 min before")
 
         schedule_form.update({
@@ -1608,7 +1628,6 @@ def user_schedule_ride():
             "destination": destination,
             "date": date_str or schedule_form["date"],
             "time": time_str or schedule_form["time"],
-            "repeat": repeat,
             "reminder": reminder,
             "vehicle_class": vehicle_class,
         })
@@ -1630,13 +1649,24 @@ def user_schedule_ride():
                 time_str or schedule_form["time"],
             )
             from app.rider_defaults import resolve_location_coords
-            from app.rider_api_transforms import infer_city
+            from app.rider_api_transforms import format_ngn, infer_city
 
-            pickup_coords = resolve_location_coords(pickup)
-            dest_coords = resolve_location_coords(destination)
+            def _coords(prefix: str, address: str) -> dict:
+                try:
+                    lat = float(request.form.get(f"{prefix}_lat") or "")
+                    lng = float(request.form.get(f"{prefix}_lng") or "")
+                    if lat and lng:
+                        return {"lat": lat, "lng": lng}
+                except (TypeError, ValueError):
+                    pass
+                return resolve_location_coords(address)
+
+            pickup_coords = _coords("pickup", pickup)
+            dest_coords = _coords("destination", destination)
             api_ok = False
+            created = {}
             try:
-                create_scheduled_ride(
+                created = create_scheduled_ride(
                     token,
                     {
                         "pickup_address": pickup,
@@ -1647,8 +1677,10 @@ def user_schedule_ride():
                         "destination_lng": dest_coords["lng"],
                         "city": infer_city(pickup or destination),
                         "service_tier": vehicle_class,
+                        "vehicle_category": "car",
                         "scheduled_for": scheduled_for.isoformat(),
                         "reminder_minutes_before": _schedule_reminder_minutes(reminder),
+                        "stops": [],
                     },
                 )
                 api_ok = True
@@ -1658,12 +1690,14 @@ def user_schedule_ride():
             if api_ok:
                 parsed_date = _parse_schedule_date(date_str or schedule_form["date"])
                 class_label = SCHEDULE_CLASS_LABELS.get(vehicle_class, "Comfort")
+                fare_value = created.get("estimated_fare_ngn") if isinstance(created, dict) else None
                 session["schedule_success"] = {
                     "when": _format_schedule_success_when(
                         parsed_date, time_str or schedule_form["time"]
                     ),
                     "class": class_label,
                     "reminder": reminder,
+                    "fare": format_ngn(fare_value) if fare_value is not None else None,
                 }
                 return redirect(url_for("main.user_schedule_ride"))
 
@@ -1678,6 +1712,79 @@ def user_schedule_ride():
         schedule_success=session.get("schedule_success"),
         **_rider_context(),
     )
+
+
+@main_bp.route("/user/schedule-ride/<scheduled_id>/cancel", methods=["POST"])
+def user_cancel_scheduled_ride(scheduled_id):
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    reason = request.form.get("reason")
+    if request.is_json:
+        reason = (request.get_json(silent=True) or {}).get("reason")
+    try:
+        cancel_scheduled_ride(token, scheduled_id, reason=reason)
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"ok": True})
+        flash("Scheduled ride cancelled.", "success")
+    except ApiError as exc:
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"message": exc.message}), exc.status_code
+        flash(exc.message, "error")
+    return redirect(url_for("main.user_schedule_ride"))
+
+
+@main_bp.route("/user/schedule-ride/<scheduled_id>/edit", methods=["POST"])
+def user_edit_scheduled_ride(scheduled_id):
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    payload = request.get_json(silent=True) or {}
+    date_str = (payload.get("date") or request.form.get("date") or "").strip()
+    time_str = (payload.get("time") or request.form.get("time") or "").strip()
+    pickup = (payload.get("pickup") or request.form.get("pickup") or "").strip()
+    destination = (payload.get("destination") or request.form.get("destination") or "").strip()
+    reminder = (payload.get("reminder") or request.form.get("reminder") or "").strip()
+
+    update_payload = {}
+    if date_str and time_str:
+        update_payload["scheduled_for"] = _parse_schedule_time(date_str, time_str).isoformat()
+    if pickup:
+        from app.rider_defaults import resolve_location_coords
+
+        coords = resolve_location_coords(pickup)
+        update_payload["pickup_address"] = pickup
+        update_payload["pickup_lat"] = coords["lat"]
+        update_payload["pickup_lng"] = coords["lng"]
+    if destination:
+        from app.rider_defaults import resolve_location_coords
+
+        coords = resolve_location_coords(destination)
+        update_payload["destination_address"] = destination
+        update_payload["destination_lat"] = coords["lat"]
+        update_payload["destination_lng"] = coords["lng"]
+    if reminder:
+        update_payload["reminder_minutes_before"] = _schedule_reminder_minutes(reminder)
+
+    if not update_payload:
+        msg = "Nothing to update."
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"message": msg}), 400
+        flash(msg, "error")
+        return redirect(url_for("main.user_schedule_ride"))
+
+    try:
+        updated = update_scheduled_ride(token, scheduled_id, update_payload)
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"ok": True, "ride": updated})
+        flash("Scheduled ride updated.", "success")
+    except ApiError as exc:
+        if request.is_json or request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"message": exc.message}), exc.status_code
+        flash(exc.message, "error")
+    return redirect(url_for("main.user_schedule_ride"))
 
 
 @main_bp.route("/user/live-tracking")
@@ -1760,6 +1867,52 @@ def user_api_cancel_ride(ride_id):
         return _user_api_error(exc)
 
 
+@main_bp.route("/api/public/trips/share")
+def api_public_trip_share():
+    share_token = (request.args.get("s") or "").strip()
+    if not share_token:
+        return jsonify({"detail": "Missing share token"}), 400
+    try:
+        return jsonify(get_public_trip_share(share_token))
+    except ApiError as exc:
+        return jsonify({"detail": exc.message}), exc.status_code
+
+
+@main_bp.route("/t/<booking_id>")
+def public_shared_trip(booking_id: str):
+    """Public live-trip page for shared links (josride.com/t/...)."""
+    share_token = (request.args.get("s") or "").strip()
+    trip = None
+    error = None
+    if not share_token:
+        error = "This share link is missing a tracking token."
+    else:
+        try:
+            trip = get_public_trip_share(share_token)
+        except ApiError as exc:
+            error = exc.message or "This share link is unavailable."
+
+    status = (trip or {}).get("status") or ""
+    status_labels = {
+        "accepted": "Driver on the way",
+        "driver_arrived": "Driver has arrived",
+        "in_progress": "Trip in progress",
+        "completed": "Trip completed",
+        "cancelled": "Trip ended",
+        "expired": "Trip ended",
+    }
+    return render_template(
+        "public/shared_trip.html",
+        booking_id=booking_id,
+        share_token=share_token,
+        trip=trip,
+        error=error,
+        status_label=status_labels.get(status, "Live trip"),
+        app_download_url="https://josride.com",
+        app_scheme_url=f"josride://t/{booking_id}?s={share_token}" if share_token else "josride://",
+    )
+
+
 @main_bp.route("/user/live-tracking/share")
 def user_share_ride():
     guard = _require_rider()
@@ -1783,9 +1936,19 @@ def user_share_ride():
     if token and ride_id:
         try:
             link = create_ride_share_link(token, ride_id)
-            share_url = link.get("share_url")
+            booking_id = (
+                active.get("booking_id")
+                or (link.get("share_url") or "").split("/t/")[-1].split("?")[0]
+                or ride_id
+            )
+            share_token = link.get("share_token") or ""
+            share_url = (
+                build_public_trip_share_url(booking_id, share_token)
+                if share_token
+                else link.get("share_url") or ""
+            )
             share["share_message"] = (
-                f"I'm sharing my JosRide trip with you. Track live: {share_url}"
+                f"I'm sharing my JosRide trip with you. Track live (or open in the JosRide app): {share_url}"
             )
         except ApiError:
             pass
@@ -1907,12 +2070,22 @@ def user_settings():
     settings_data, ok = _safe_rider_api(get_user_settings)
     settings = settings_from_api(settings_data if ok else None)
     has_active_trip = bool(session.get("active_trip"))
+    profile_data, profile_ok = _safe_rider_api(get_profile)
+    user = {}
+    if profile_ok and isinstance(profile_data, dict):
+        user = profile_data.get("user") or profile_data
+    has_local_password = bool(user.get("has_local_password"))
+    joscity_only = bool(user.get("joscity_user_id")) and not has_local_password
     return render_template(
         "user/settings.html",
         active_page="settings",
         settings=settings,
         api_connected=ok,
         has_active_trip=has_active_trip,
+        has_local_password=has_local_password or not joscity_only,
+        joscity_only=joscity_only,
+        notification_channels=_notification_channels(),
+        notification_topics=_notification_topics(),
         **_rider_context(),
     )
 
@@ -2043,17 +2216,57 @@ def user_support():
     )
     faq_data, faq_ok = _safe_rider_api(lambda token: get_support_faq(), None)
     faq_items = faq_from_api(faq_data) if faq_ok and faq_data else []
+    support_phone = get_driver_support_phone()
     return render_template(
         "user/support.html",
         active_page="support",
         faq_items=faq_items,
         support_tickets=support_tickets,
         api_connected=tickets_ok,
+        support_phone=support_phone,
+        support_phone_display=format_support_phone_display(support_phone),
+        emergency_phone=get_emergency_phone(),
         **_rider_context(),
     )
 
 
 # ── Rider JSON API (proxies to JosRide-back) ──
+
+
+@main_bp.route("/user/api/safety/accidents", methods=["POST"])
+def user_api_report_accident():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    description = (payload.get("description") or "").strip()
+    if len(description) < 10:
+        return jsonify({"message": "Description must be at least 10 characters."}), 400
+    body = {
+        "description": description,
+        "severity": payload.get("severity") or "moderate",
+        "injuries": bool(payload.get("injuries")),
+        "ride_id": payload.get("ride_id") or None,
+        "contact_phone": payload.get("contact_phone") or None,
+        "lat": payload.get("lat"),
+        "lng": payload.get("lng"),
+    }
+    try:
+        return jsonify(report_accident(_rider_token(), body)), 201
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@main_bp.route("/user/api/auth/change-password", methods=["POST"])
+def user_api_change_password():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(change_password(_rider_token(), payload))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
 
 
 @main_bp.route("/user/api/rides/current")
