@@ -113,6 +113,35 @@ def normalize_sos_list(alerts) -> dict:
     return {"items": items, "total": len(items)}
 
 
+def normalize_accident_list(reports) -> dict:
+    items = []
+    for row in reports if isinstance(reports, list) else (reports.get("items") or []):
+        if not isinstance(row, dict):
+            continue
+        status = str(row.get("status") or "received")
+        items.append(
+            {
+                "id": row.get("id"),
+                "ride_id": row.get("ride_id"),
+                "ride_short": _short_id(row.get("ride_id")),
+                "customer_id": row.get("customer_id"),
+                "description": row.get("description") or "",
+                "severity": row.get("severity") or "moderate",
+                "injuries": bool(row.get("injuries")),
+                "lat": row.get("lat"),
+                "lng": row.get("lng"),
+                "contact_phone": row.get("contact_phone"),
+                "status": status,
+                "created_at": row.get("created_at"),
+                "acknowledged_at": row.get("acknowledged_at"),
+                "resolved_at": row.get("resolved_at"),
+                "can_acknowledge": status == "received",
+                "can_resolve": status in {"received", "acknowledged"},
+            }
+        )
+    return {"items": items, "total": len(items)}
+
+
 def normalize_report_list(data: dict, *, report_type: str) -> dict:
     items = data.get("items") or []
     total = int(data.get("total") or len(items))

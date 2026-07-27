@@ -51,7 +51,12 @@
   if (listEl) {
     listEl.addEventListener("click", function (event) {
       var item = event.target.closest(".rider-notification-item");
-      if (item) markItemRead(item);
+      if (!item) return;
+      markItemRead(item);
+      var href = item.getAttribute("data-href");
+      if (href) {
+        window.location.href = href;
+      }
     });
   }
 

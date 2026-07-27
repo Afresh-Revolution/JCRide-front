@@ -1,0 +1,19 @@
+{% extends "landing_base.html" %}
+
+{% block title %}Terms of Service · JosRide{% endblock %}
+
+{% block content %}
+<section class="legal-page">
+  <div class="legal-page__inner landing-container">
+    <p class="legal-page__eyebrow"><a href="{{ url_for('main.home') }}">JosRide</a></p>
+    <h1>Terms of Service</h1>
+    <p class="legal-page__updated">Last updated: 27 July 2026</p>
+    <p>By using JosRide you agree to book and complete trips lawfully, pay fares and applicable fees, treat drivers and riders respectfully, and follow safety instructions during trips.</p>
+    <h2>Accounts</h2>
+    <p>You are responsible for keeping login details secure. JosCity-linked accounts must manage passwords on JosCity. Misuse, fraud, or safety violations may lead to suspension or deletion.</p>
+    <h2>Trips &amp; payments</h2>
+    <p>Estimated fares may change with distance, waiting time, and traffic. Cancellation fees and wallet rules may apply as shown in the app or website.</p>
+    <p><a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a></p>
+  </div>
+</section>
+{% endblock %}

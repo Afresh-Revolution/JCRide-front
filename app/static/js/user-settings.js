@@ -55,6 +55,59 @@
   bindToggle(document.getElementById("settings-share-analytics"), "share_trip_data_for_analytics");
   bindToggle(document.getElementById("settings-share-name"), "allow_driver_see_name");
 
+  document.querySelectorAll(".settings-notif-toggle").forEach(function (input) {
+    input.addEventListener("change", function () {
+      if (!window.UserApi) return;
+      UserApi.patch("/user/api/notifications/preferences", {
+        group: input.getAttribute("data-group"),
+        id: input.getAttribute("data-id"),
+        enabled: input.checked,
+      }).catch(function () {
+        input.checked = !input.checked;
+      });
+    });
+  });
+
+  var passwordForm = document.getElementById("settings-password-form");
+  if (passwordForm && window.UserApi) {
+    passwordForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var btn = document.getElementById("settings-password-btn");
+      var statusEl = document.getElementById("settings-password-status");
+      var payload = {
+        current_password: passwordForm.current_password.value,
+        new_password: passwordForm.new_password.value,
+        confirm_password: passwordForm.confirm_password.value,
+      };
+      if (payload.new_password !== payload.confirm_password) {
+        if (statusEl) {
+          statusEl.hidden = false;
+          statusEl.textContent = "New passwords do not match.";
+        }
+        return;
+      }
+      withBtn(
+        btn,
+        UserApi.post("/user/api/auth/change-password", payload)
+          .then(function (data) {
+            passwordForm.reset();
+            if (statusEl) {
+              statusEl.hidden = false;
+              statusEl.textContent = data.message || "Password updated successfully.";
+            }
+          })
+          .catch(function (err) {
+            if (statusEl) {
+              statusEl.hidden = false;
+              statusEl.textContent = err.message || "Could not update password.";
+            } else {
+              alert(err.message || "Could not update password.");
+            }
+          })
+      );
+    });
+  }
+
   function withBtn(btn, promise) {
     if (btn && window.ButtonLoading) return window.ButtonLoading.wrap(btn, promise);
     return promise;
