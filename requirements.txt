@@ -15,4 +15,4 @@ wtforms==3.2.1
 watchdog==6.0.0
 
 # Icon generation (PWA): pip install pillow && python scripts/generate_pwa_icons.py
-pillow==11.1.0
+pillow>=11.2.0

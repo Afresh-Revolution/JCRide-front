@@ -706,8 +706,26 @@ def cancel_ride(token, ride_id, reason=None, reason_code=None):
     )
 
 
-def estimate_delivery(token, pickup, dropoff):
-    coords = _ride_coords(pickup, dropoff)
+def estimate_delivery(
+    token,
+    pickup,
+    dropoff,
+    pickup_lat=None,
+    pickup_lng=None,
+    dest_lat=None,
+    dest_lng=None,
+):
+    if None not in (pickup_lat, pickup_lng, dest_lat, dest_lng):
+        from app.rider_api_transforms import infer_city
+        coords = {
+            "pickup_lat": pickup_lat,
+            "pickup_lng": pickup_lng,
+            "destination_lat": dest_lat,
+            "destination_lng": dest_lng,
+            "city": infer_city(pickup or dropoff),
+        }
+    else:
+        coords = _ride_coords(pickup, dropoff)
     return _request(
         "POST",
         f"{API_PREFIX}/deliveries/estimate",
@@ -720,8 +738,29 @@ def estimate_delivery(token, pickup, dropoff):
     )
 
 
-def request_delivery(token, pickup, dropoff, package_details, recipient_name, recipient_phone):
-    coords = _ride_coords(pickup, dropoff)
+def request_delivery(
+    token,
+    pickup,
+    dropoff,
+    package_details,
+    recipient_name,
+    recipient_phone,
+    pickup_lat=None,
+    pickup_lng=None,
+    dest_lat=None,
+    dest_lng=None,
+):
+    if None not in (pickup_lat, pickup_lng, dest_lat, dest_lng):
+        from app.rider_api_transforms import infer_city
+        coords = {
+            "pickup_lat": pickup_lat,
+            "pickup_lng": pickup_lng,
+            "destination_lat": dest_lat,
+            "destination_lng": dest_lng,
+            "city": infer_city(pickup or dropoff),
+        }
+    else:
+        coords = _ride_coords(pickup, dropoff)
     return _request(
         "POST",
         f"{API_PREFIX}/deliveries/request",

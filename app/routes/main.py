@@ -1544,6 +1544,10 @@ def user_bike_delivery():
         package_notes = request.form.get("package_notes", "").strip()
         recipient_name = request.form.get("recipient_name", "").strip()
         recipient_phone = request.form.get("recipient_phone", "").strip()
+        pickup_lat = request.form.get("pickup_lat", type=float)
+        pickup_lng = request.form.get("pickup_lng", type=float)
+        dropoff_lat = request.form.get("dropoff_lat", type=float)
+        dropoff_lng = request.form.get("dropoff_lng", type=float)
         delivery.update({
             "pickup": pickup,
             "dropoff": dropoff,
@@ -1565,6 +1569,10 @@ def user_bike_delivery():
                     package_notes or "Package delivery",
                     recipient_name,
                     recipient_phone,
+                    pickup_lat=pickup_lat,
+                    pickup_lng=pickup_lng,
+                    dest_lat=dropoff_lat,
+                    dest_lng=dropoff_lng,
                 )
                 ride = (result or {}).get("delivery") or result or {}
                 session["active_trip"] = ride_to_active_trip(ride)
@@ -2231,6 +2239,31 @@ def user_support():
 
 
 # ── Rider JSON API (proxies to JosRide-back) ──
+
+
+@main_bp.route("/user/api/delivery/estimate", methods=["POST"])
+def user_api_delivery_estimate():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    pickup = payload.get("pickup_address", "").strip()
+    dropoff = payload.get("destination_address", "").strip()
+    if not pickup or not dropoff:
+        return jsonify({"message": "pickup_address and destination_address are required"}), 400
+    try:
+        result = estimate_delivery(
+            _rider_token(),
+            pickup,
+            dropoff,
+            pickup_lat=payload.get("pickup_lat"),
+            pickup_lng=payload.get("pickup_lng"),
+            dest_lat=payload.get("destination_lat"),
+            dest_lng=payload.get("destination_lng"),
+        )
+        return jsonify(result)
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
 
 
 @main_bp.route("/user/api/safety/accidents", methods=["POST"])
