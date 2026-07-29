@@ -200,12 +200,26 @@
 
     if (route.length >= 2) {
       L.polyline(route, {
+        pane: "routePane",
+        color: "#34d399",
+        weight: 8,
+        opacity: 0.18,
+        lineCap: "round",
+        lineJoin: "round",
+        interactive: false,
+      }).addTo(routeMapInstance);
+      L.polyline(route, {
+        pane: "routePane",
         color: mapGreen,
         weight: 5,
-        opacity: 0.92,
+        opacity: 0.98,
         dashArray: config.use_fastest_route ? null : "12, 10",
         lineCap: "round",
-      }).addTo(routeMapInstance);
+        lineJoin: "round",
+        interactive: false,
+      })
+        .addTo(routeMapInstance)
+        .bringToFront();
       boundsPoints = boundsPoints.concat(route);
     }
 
@@ -318,6 +332,9 @@
       zoomControl: false,
       attributionControl: false,
     }).setView([center.lat, center.lng], zoom);
+
+    routeMapInstance.createPane("routePane");
+    routeMapInstance.getPane("routePane").style.zIndex = 450;
 
     routeMapTileLayer = L.tileLayer(tileLayerUrl(), {
       maxZoom: 19,
