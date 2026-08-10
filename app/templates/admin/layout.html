@@ -33,6 +33,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 {% endif %}
 {% if dashboard_map or admin_leaflet %}
+{% include "includes/maps_config.html" %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 {% endif %}
 {% if dashboard_charts or dashboard_map %}

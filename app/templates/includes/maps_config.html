@@ -1,0 +1,10 @@
+{# Shared Google Maps / Leaflet bootstrap for rider, driver, and admin maps. #}
+<script type="application/json" id="josride-maps-config">{{ {"googleMapsApiKey": google_maps_api_key or ""} | tojson }}</script>
+<script src="{{ url_for('static', filename='js/josride-maps.js') }}"></script>
+{% if has_google_maps %}
+<script>
+  if (window.JosRideMaps && window.JosRideMaps.hasGoogle) {
+    window.JosRideMaps.loadGoogle().catch(function () {});
+  }
+</script>
+{% endif %}

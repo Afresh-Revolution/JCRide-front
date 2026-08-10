@@ -57,6 +57,9 @@
   }
 
   function adminTileLayerUrl() {
+    if (window.JosRideMaps && typeof window.JosRideMaps.tileLayerUrl === "function") {
+      return window.JosRideMaps.tileLayerUrl();
+    }
     return isDarkTheme()
       ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";

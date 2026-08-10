@@ -129,6 +129,17 @@ def get_emergency_phone() -> str:
     return _FILE_ENV.get("EMERGENCY_PHONE") or os.getenv("EMERGENCY_PHONE") or "112"
 
 
+def get_google_maps_api_key() -> str:
+    """Google Maps JS / Directions key (same name as mobile EXPO_PUBLIC_*)."""
+    return (
+        _FILE_ENV.get("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY")
+        or os.getenv("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY")
+        or _FILE_ENV.get("GOOGLE_MAPS_API_KEY")
+        or os.getenv("GOOGLE_MAPS_API_KEY")
+        or ""
+    ).strip()
+
+
 def format_support_phone_display(phone: str | None) -> str:
     raw = "".join(ch for ch in str(phone or "") if ch.isdigit() or ch == "+")
     if raw in {"0700527433", "+234700527433", "234700527433"}:

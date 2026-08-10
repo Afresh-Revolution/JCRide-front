@@ -58,6 +58,9 @@
   }
 
   function tileLayerUrl() {
+    if (window.JosRideMaps && typeof window.JosRideMaps.tileLayerUrl === "function") {
+      return window.JosRideMaps.tileLayerUrl();
+    }
     var isDark =
       window.matchMedia &&
       window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -392,6 +395,73 @@
     return isPrePickup(tripData) ? tripData.start : tripData.end;
   }
 
+  function fetchGoogleRoute(from, to) {
+    if (!from || !to) return Promise.resolve(null);
+    if (!window.JosRideMaps || !window.JosRideMaps.hasGoogle) {
+      return Promise.resolve(null);
+    }
+
+    return window.JosRideMaps.loadGoogle()
+      .then(function () {
+        return new Promise(function (resolve) {
+          var service = new google.maps.DirectionsService();
+          service.route(
+            {
+              origin: { lat: Number(from.lat), lng: Number(from.lng) },
+              destination: { lat: Number(to.lat), lng: Number(to.lng) },
+              travelMode: google.maps.TravelMode.DRIVING,
+              drivingOptions: {
+                departureTime: new Date(),
+                trafficModel: google.maps.TrafficModel.BEST_GUESS,
+              },
+              provideRouteAlternatives: false,
+            },
+            function (result, status) {
+              if (status !== "OK" || !result || !result.routes || !result.routes.length) {
+                resolve(null);
+                return;
+              }
+              var route = result.routes[0];
+              var path = [];
+              (route.overview_path || []).forEach(function (point) {
+                path.push({ lat: point.lat(), lng: point.lng() });
+              });
+              var leg = route.legs && route.legs[0];
+              var distanceM = leg && leg.distance ? leg.distance.value : 0;
+              var durationSec =
+                leg && leg.duration_in_traffic
+                  ? leg.duration_in_traffic.value
+                  : leg && leg.duration
+                    ? leg.duration.value
+                    : 0;
+              var steps = leg && leg.steps ? leg.steps : [];
+              resolve({
+                route: path,
+                distance_km: distanceM / 1000,
+                duration_min: Math.max(1, Math.round(durationSec / 60)),
+                steps: steps.map(function (step) {
+                  return {
+                    name: step.instructions
+                      ? String(step.instructions).replace(/<[^>]+>/g, "")
+                      : "",
+                    distance: step.distance ? step.distance.value : 0,
+                    maneuver: {
+                      type: step.maneuver || "straight",
+                      modifier: "",
+                    },
+                  };
+                }),
+                provider: "google",
+              });
+            }
+          );
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
   function fetchOsrmRoute(from, to) {
     if (!from || !to) return Promise.resolve(null);
     var url =
@@ -421,11 +491,19 @@
           distance_km: route.distance / 1000,
           duration_min: Math.max(1, Math.round(route.duration / 60)),
           steps: steps,
+          provider: "osrm",
         };
       })
       .catch(function () {
         return null;
       });
+  }
+
+  function fetchDrivingRoute(from, to) {
+    return fetchGoogleRoute(from, to).then(function (googleRoute) {
+      if (googleRoute) return googleRoute;
+      return fetchOsrmRoute(from, to);
+    });
   }
 
   function stepInstruction(step) {
@@ -547,7 +625,7 @@
     }
 
     var requestId = ++navRequestId;
-    return fetchOsrmRoute(from, to).then(function (nav) {
+    return fetchDrivingRoute(from, to).then(function (nav) {
       if (requestId !== navRequestId) return;
       if (nav && nav.route && nav.route.length >= 2) {
         cachedNav = nav;
