@@ -63,6 +63,7 @@ from app.services.api_client import (
     search_rider,
     register_device,
     register_driver,
+    update_driver_profile,
     request_account_deactivation,
     request_account_deletion,
     request_delivery,
@@ -818,15 +819,26 @@ def _submit_driver_application(signup: dict, token: str) -> dict:
     nin_url = documents.get("nin_document_url", "")
     if not all(len(url) >= 8 for url in (license_url, papers_url, nin_url)):
         raise ApiError("Upload all required documents before submitting.", 400)
-    register_driver(
-        token,
-        {
-            "driver_license_url": license_url,
-            "vehicle_papers_url": papers_url,
-            "nin_document_url": nin_url,
-            "vehicle_category": signup.get("vehicle_type") or "car",
-        },
-    )
+    vehicle_category = signup.get("vehicle_type") or "car"
+    if vehicle_category not in {"car", "bike"}:
+        vehicle_category = "car"
+    register_payload = {
+        "driver_license_url": license_url,
+        "vehicle_papers_url": papers_url,
+        "nin_document_url": nin_url,
+        "vehicle_category": vehicle_category,
+    }
+    if vehicle_category == "bike":
+        register_payload["service_tier"] = "economy"
+    register_driver(token, register_payload)
+    # Ensure category sticks even if an older API ignores it on register.
+    try:
+        patch = {"vehicle_category": vehicle_category}
+        if vehicle_category == "bike":
+            patch["service_tier"] = "economy"
+        update_driver_profile(token, patch)
+    except ApiError:
+        pass
     profile = get_profile(token)
     user = profile.get("user") or {}
     if user.get("role") != "driver":
@@ -839,6 +851,10 @@ def _submit_driver_application(signup: dict, token: str) -> dict:
 
 def _resume_driver_signup_from_login(result: dict, identifier: str) -> None:
     user = result.get("user") or {}
+    previous = _get_driver_signup()
+    vehicle_type = previous.get("vehicle_type")
+    if vehicle_type not in {"car", "bike"}:
+        vehicle_type = None
     signup = {
         "access_token": result.get("access_token", ""),
         "user_id": user.get("id"),
@@ -846,6 +862,8 @@ def _resume_driver_signup_from_login(result: dict, identifier: str) -> None:
         "email_verified": _driver_account_verified(user),
         "registered": True,
     }
+    if vehicle_type:
+        signup["vehicle_type"] = vehicle_type
     signup["step"] = _driver_signup_resume_step(signup)
     _save_driver_signup(signup)
 
@@ -921,6 +939,19 @@ def driver_register_page():
                         },
                         signup.get("email", ""),
                     )
+                    # Heal bike/car choice if register ignored vehicle_category.
+                    vehicle_type = signup.get("vehicle_type")
+                    if vehicle_type in {"car", "bike"}:
+                        try:
+                            driver = get_driver_profile(token)
+                            driver_row = driver.get("driver") or driver
+                            if not driver_row.get("vehicle_category"):
+                                patch = {"vehicle_category": vehicle_type}
+                                if vehicle_type == "bike":
+                                    patch["service_tier"] = "economy"
+                                update_driver_profile(token, patch)
+                        except ApiError:
+                            pass
                     _clear_driver_signup()
                     return redirect(url_for("driver_portal.dashboard"))
                 except ApiError as exc:
