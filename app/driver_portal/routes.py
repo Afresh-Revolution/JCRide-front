@@ -351,10 +351,13 @@ def update_vehicle_profile():
         vehicle_model = parts[1]
 
     payload = {}
-    if service_tier in SERVICE_TIERS:
-        payload["service_tier"] = service_tier
     if vehicle_category in VEHICLE_CATEGORIES:
         payload["vehicle_category"] = vehicle_category
+    if vehicle_category == "bike":
+        # Bike partners only run delivery jobs on the economy tier.
+        payload["service_tier"] = "economy"
+    elif service_tier in SERVICE_TIERS:
+        payload["service_tier"] = service_tier
     if vehicle_make:
         payload["vehicle_make"] = vehicle_make
     if vehicle_model:
@@ -370,7 +373,7 @@ def update_vehicle_profile():
 
     try:
         update_driver_profile(token, payload)
-        flash("Vehicle profile saved.", "success")
+        flash("Bike profile saved." if vehicle_category == "bike" else "Vehicle profile saved.", "success")
     except ApiError as exc:
         flash(exc.message, "error")
 

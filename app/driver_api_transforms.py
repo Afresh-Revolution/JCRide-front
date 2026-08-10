@@ -298,10 +298,11 @@ def profile_from_api(data: dict, performance: dict | None = None) -> dict:
     plate = _vehicle_field(driver.get("plate_number"))
     raw_category = _vehicle_field(driver.get("vehicle_category")).lower()
     raw_tier = _vehicle_field(driver.get("service_tier")).lower()
-    vehicle_category = raw_category or "car"
-    service_tier = raw_tier or "economy"
+    # Keep empty when unset so bike signups are not silently treated as cars.
+    vehicle_category = raw_category
+    service_tier = raw_tier or ("economy" if raw_category == "bike" else "")
     make_model = f"{make} {model}".strip()
-    vehicle_complete = bool(make and model and color and plate and raw_category and raw_tier)
+    vehicle_complete = bool(make and model and color and plate and raw_category and (raw_tier or raw_category == "bike"))
 
     return {
         "name": name,
