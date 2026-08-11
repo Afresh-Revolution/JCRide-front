@@ -180,6 +180,7 @@
     var initialZoom = config.map_zoom || 14;
 
     initPromise = window.JosRideMaps.createSurface(areaMapEl, {
+      preferGoogle: true,
       center: initialCenter,
       zoom: initialZoom,
       zoomControl: true,

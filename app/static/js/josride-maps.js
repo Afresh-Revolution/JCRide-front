@@ -433,24 +433,41 @@
   }
 
   function createSurface(el, options) {
+    var opts = options || {};
+    // Google is the default whenever EXPO_PUBLIC_GOOGLE_MAPS_API_KEY is present.
+    var preferGoogle = opts.preferGoogle !== false;
     if (!el) {
       return Promise.reject(new Error("Map element missing"));
     }
-    if (apiKey) {
+    if (apiKey && preferGoogle) {
       return loadGoogle()
         .then(function () {
-          return createGoogleSurface(el, options);
+          return createGoogleSurface(el, opts);
         })
-        .catch(function () {
-          return createLeafletSurface(el, options);
+        .catch(function (err) {
+          if (typeof console !== "undefined" && console.warn) {
+            console.warn("[JosRideMaps] Google Maps failed; Leaflet fallback.", err);
+          }
+          if (opts.allowLeafletFallback === false) {
+            throw err;
+          }
+          if (typeof L === "undefined") {
+            throw err;
+          }
+          return createLeafletSurface(el, opts);
         });
     }
-    return Promise.resolve(createLeafletSurface(el, options));
+    if (typeof L === "undefined") {
+      return Promise.reject(new Error("No map provider available (missing Google key and Leaflet)"));
+    }
+    return Promise.resolve(createLeafletSurface(el, opts));
   }
 
   window.JosRideMaps = {
     apiKey: apiKey,
     hasGoogle: Boolean(apiKey),
+    preferGoogle: Boolean(apiKey),
+    providerDefault: apiKey ? "google" : "leaflet",
     isDark: isDark,
     cartoUrl: cartoUrl,
     tileLayerUrl: cartoUrl,
