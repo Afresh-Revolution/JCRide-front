@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.rating_display import format_public_rating_label, format_public_rating_short
 from app.rider_api_transforms import faq_from_api, format_relative_time
 from app.services.api_client import get_support_faq
 
@@ -124,6 +125,11 @@ def dashboard_from_api(data: dict, earnings: dict | None = None, demand: dict | 
 
     today_earnings = float(earnings.get("today_earnings") or 0)
     rating = float(data.get("rating_avg") or 0)
+    rating_count = int(
+        data.get("rating_valid_count")
+        or data.get("rating_count")
+        or 0
+    )
     completed = int(data.get("completed_trips") or 0)
     online_hours = float(data.get("online_hours") or 0)
 
@@ -148,7 +154,7 @@ def dashboard_from_api(data: dict, earnings: dict | None = None, demand: dict | 
         },
         {
             "title": "Rating",
-            "value": f"{rating:.2f} / 5" if rating else "-",
+            "value": format_public_rating_label(rating, rating_count),
             "trend": None,
             "icon": "star",
         },
@@ -195,12 +201,14 @@ def ride_requests_from_api(requests: list[dict]) -> list[dict]:
         duration = int(item.get("estimated_duration_minutes") or 0)
         distance = float(item.get("distance_km") or 0)
         rider_name = item.get("customer_name") or item.get("recipient_name") or "Rider"
+        rating_avg = float(item.get("customer_rating") or item.get("rating_avg") or 0) or None
+        rating_count = item.get("customer_rating_count") or item.get("rating_valid_count") or item.get("rating_count")
         rows.append(
             {
                 "id": str(item.get("ride_id") or item.get("id") or ""),
                 "rider_name": rider_name,
                 "rider_initials": _initials(rider_name),
-                "rating": float(item.get("customer_rating") or 0) or None,
+                "rating": format_public_rating_short(rating_avg, rating_count) if rating_avg is not None or rating_count else None,
                 "rider_tier": str(item.get("service_tier") or "economy").replace("_", " ").title() + " rider",
                 "distance_km": distance,
                 "duration_min": duration,
@@ -307,7 +315,14 @@ def profile_from_api(data: dict, performance: dict | None = None) -> dict:
         "name": name,
         "initials": _initials(name),
         "since": str(since) if since else "-",
-        "rating": float(driver.get("rating_avg") or performance.get("avg_rating") or 0),
+        "rating": format_public_rating_short(
+            driver.get("rating_avg") or performance.get("avg_rating"),
+            driver.get("rating_valid_count") or driver.get("rating_count"),
+        ),
+        "rating_label": format_public_rating_label(
+            driver.get("rating_avg") or performance.get("avg_rating"),
+            driver.get("rating_valid_count") or driver.get("rating_count"),
+        ),
         "trips": int(driver.get("total_completed_trips") or performance.get("total_completed_trips") or 0),
         "acceptance": f"{performance.get('acceptance_rate_pct', 0):.0f}%" if performance else "-",
         "completion": f"{performance.get('completion_rate_pct', 0):.0f}%" if performance else "-",

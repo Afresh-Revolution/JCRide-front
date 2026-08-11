@@ -15,7 +15,7 @@
     {% set portal_badge = 'DRIVER' %}
     {% set profile_name = profile.name %}
     {% set profile_initials = profile.initials %}
-    {% set profile_meta = '★ ' ~ profile.rating ~ ' · ' ~ profile.plate %}
+    {% set profile_meta = (profile.rating_label or profile.rating or 'New on JosRide') ~ ' · ' ~ profile.plate %}
     {% set show_topbar_quick_actions = true %}
     {% set quick_notifications_url = url_for('driver_portal.notifications') %}
     {% set quick_settings_url = url_for('driver_portal.settings') %}
@@ -45,6 +45,7 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/driver-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/josride-rating.js') }}"></script>
 <script src="{{ url_for('static', filename='js/driver-confirm.js') }}"></script>
 <script src="{{ url_for('static', filename='js/loading.js') }}"></script>
 <script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}"></script>

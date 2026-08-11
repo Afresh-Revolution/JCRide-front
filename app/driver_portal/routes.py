@@ -5,6 +5,7 @@ import json
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 
+from app.rating_display import format_public_rating_short
 from app.config import get_ws_url
 from app.driver_api_transforms import ride_requests_from_api, support_faq_for_driver
 from app.driver_portal.dashboard_service import resolve_dashboard
@@ -53,6 +54,7 @@ from app.services.api_client import (
     get_driver_active_ride,
     get_driver_payout_account,
     get_driver_ride_requests,
+    get_rating_eligibility,
     get_ride_messages,
     list_support_tickets,
     login,
@@ -70,6 +72,7 @@ from app.services.api_client import (
     send_ride_message,
     set_availability,
     start_ride,
+    submit_trip_rating,
     update_driver_profile,
     update_driver_settings,
     update_notification_preferences,
@@ -148,6 +151,7 @@ def _driver_profile():
     driver = _load_driver_profile()
     name = session.get("driver_name") or "Driver"
     rating = 0
+    rating_count = 0
     plate = "-"
     approval_status = ""
     initials = "DR"
@@ -155,15 +159,23 @@ def _driver_profile():
     if driver:
         name = driver.get("full_name") or name
         rating = float(driver.get("rating_avg") or 0)
+        rating_count = int(
+            driver.get("rating_valid_count")
+            or driver.get("rating_count")
+            or 0
+        )
         plate = driver.get("plate_number") or "-"
         approval_status = str(driver.get("status") or "").replace("_", " ").title()
         initials = "".join(part[0] for part in name.split()[:2]).upper() or "DR"
         session["driver_online"] = bool(driver.get("is_online"))
 
+    rating_label = format_public_rating_short(rating, rating_count)
     return {
         "name": name,
         "initials": initials,
-        "rating": rating,
+        "rating": rating_label,
+        "rating_label": rating_label,
+        "rating_avg": rating,
         "plate": plate,
         "approval_status": approval_status,
     }
@@ -649,7 +661,7 @@ def complete_trip():
 
     session.pop("active_trip_id", None)
     flash("Trip completed. Great job, captain!", "success")
-    return redirect(url_for("driver_portal.dashboard"))
+    return redirect(url_for("driver_portal.dashboard", rate_ride=trip["id"]))
 
 
 @driver_portal_bp.route("/active-trip/cancel", methods=["POST"])
@@ -1486,6 +1498,29 @@ def driver_api_complete_ride(ride_id):
         return jsonify(
             complete_driver_ride(_driver_token(), ride_id, metrics=payload or None)
         )
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/rate", methods=["POST"])
+def driver_api_rate_ride(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(submit_trip_rating(_driver_token(), ride_id, payload))
+    except ApiError as exc:
+        return _driver_api_error(exc)
+
+
+@driver_portal_bp.route("/api/rides/<ride_id>/rating-eligibility", methods=["GET"])
+def driver_api_rating_eligibility(ride_id):
+    guard = _require_driver_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(get_rating_eligibility(_driver_token(), ride_id))
     except ApiError as exc:
         return _driver_api_error(exc)
 

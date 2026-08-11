@@ -39,7 +39,9 @@ from app.services.api_client import (
     mark_all_notifications_read,
     mark_notification_read,
     pause_account,
+    get_rating_eligibility,
     rate_driver,
+    submit_trip_rating,
     register,
     create_ride_share_link,
     create_live_chat_session,
@@ -53,6 +55,7 @@ from app.services.api_client import (
     get_nearby_drivers,
     get_referral_info,
     get_support_faq,
+    get_public_trip_share,
     list_customer_rides,
     list_saved_locations,
     list_trusted_contacts,
@@ -85,7 +88,7 @@ from app.services.api_client import (
     verify_paystack,
     withdraw_wallet,
 )
-from app.config import get_public_app_url, get_ws_url
+from app.config import build_public_trip_share_url, get_public_app_url, get_ws_url
 from app.rider_api_transforms import (
     contacts_to_share_ui,
     dashboard_stats_from_api,
@@ -1760,6 +1763,52 @@ def user_api_cancel_ride(ride_id):
         return _user_api_error(exc)
 
 
+@main_bp.route("/api/public/trips/share")
+def api_public_trip_share():
+    share_token = (request.args.get("s") or "").strip()
+    if not share_token:
+        return jsonify({"detail": "Missing share token"}), 400
+    try:
+        return jsonify(get_public_trip_share(share_token))
+    except ApiError as exc:
+        return jsonify({"detail": exc.message}), exc.status_code
+
+
+@main_bp.route("/t/<booking_id>")
+def public_shared_trip(booking_id: str):
+    """Public live-trip page for shared links (josride.com/t/...)."""
+    share_token = (request.args.get("s") or "").strip()
+    trip = None
+    error = None
+    if not share_token:
+        error = "This share link is missing a tracking token."
+    else:
+        try:
+            trip = get_public_trip_share(share_token)
+        except ApiError as exc:
+            error = exc.message or "This share link is unavailable."
+
+    status = (trip or {}).get("status") or ""
+    status_labels = {
+        "accepted": "Driver on the way",
+        "driver_arrived": "Driver has arrived",
+        "in_progress": "Trip in progress",
+        "completed": "Trip completed",
+        "cancelled": "Trip ended",
+        "expired": "Trip ended",
+    }
+    return render_template(
+        "public/shared_trip.html",
+        booking_id=booking_id,
+        share_token=share_token,
+        trip=trip,
+        error=error,
+        status_label=status_labels.get(status, "Live trip"),
+        app_download_url="https://josride.com",
+        app_scheme_url=f"josride://t/{booking_id}?s={share_token}" if share_token else "josride://",
+    )
+
+
 @main_bp.route("/user/live-tracking/share")
 def user_share_ride():
     guard = _require_rider()
@@ -1783,9 +1832,19 @@ def user_share_ride():
     if token and ride_id:
         try:
             link = create_ride_share_link(token, ride_id)
-            share_url = link.get("share_url")
+            booking_id = (
+                active.get("booking_id")
+                or (link.get("share_url") or "").split("/t/")[-1].split("?")[0]
+                or ride_id
+            )
+            share_token = link.get("share_token") or ""
+            share_url = (
+                build_public_trip_share_url(booking_id, share_token)
+                if share_token
+                else link.get("share_url") or ""
+            )
             share["share_message"] = (
-                f"I'm sharing my JosRide trip with you. Track live: {share_url}"
+                f"I'm sharing my JosRide trip with you. Track live (or open in the JosRide app): {share_url}"
             )
         except ApiError:
             pass
@@ -2106,10 +2165,43 @@ def user_api_rate_ride(ride_id):
         return guard
     payload = request.get_json(silent=True) or {}
     try:
-        rating = int(payload.get("rating", 0))
+        # Prefer full two-sided payload; keep legacy rating/comment keys working.
+        if payload.get("overall_stars") is not None or payload.get("driving_safety") is not None:
+            return jsonify(submit_trip_rating(_rider_token(), ride_id, payload))
+        rating = int(payload.get("rating") or payload.get("overall_stars") or 0)
+        extra = {
+            k: payload.get(k)
+            for k in (
+                "driving_safety",
+                "professional_conduct",
+                "vehicle_cleanliness",
+                "pickup_experience",
+                "reason_codes",
+            )
+            if payload.get(k) is not None
+        }
         return jsonify(
-            rate_driver(_rider_token(), ride_id, rating, payload.get("comment"))
+            rate_driver(
+                _rider_token(),
+                ride_id,
+                rating,
+                payload.get("comment"),
+                **extra,
+            )
         )
+    except ApiError as exc:
+        return _user_api_error(exc)
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid rating"}), 400
+
+
+@main_bp.route("/user/api/rides/<ride_id>/rating-eligibility", methods=["GET"])
+def user_api_rating_eligibility(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(get_rating_eligibility(_rider_token(), ride_id))
     except ApiError as exc:
         return _user_api_error(exc)
 

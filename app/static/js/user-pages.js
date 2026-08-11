@@ -90,9 +90,17 @@
 
   document.querySelectorAll(".history-rate-btn").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      if (!window.UserApi) return;
       var rideId = btn.getAttribute("data-ride-id");
       if (!rideId) return;
+      if (window.JosRideRating) {
+        window.JosRideRating.open({
+          rideId: rideId,
+          role: "customer",
+          triggerEl: btn,
+        });
+        return;
+      }
+      if (!window.UserApi) return;
       var rating = Number(window.prompt("Rate your driver (1-5 stars):", "5") || 0);
       if (rating < 1 || rating > 5) return;
       var comment = window.prompt("Optional comment:") || "";

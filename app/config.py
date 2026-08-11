@@ -87,18 +87,34 @@ def get_api_timeout() -> int:
 
 
 def get_public_app_url() -> str:
-    """Origin for user-facing share links (invite URLs, etc.)."""
+    """Origin for user-facing share links (invite URLs, trip share, etc.)."""
     from flask import request
 
     configured = _FILE_ENV.get("PUBLIC_APP_URL") or os.getenv("PUBLIC_APP_URL")
     if not configured:
         configured = _FILE_ENV.get("FRONTEND_BASE_URL") or os.getenv("FRONTEND_BASE_URL")
+    # Prefer josride.com when a comma-separated list is configured.
+    for candidate in _parse_url_list(configured):
+        host = candidate.lower().replace("https://", "").replace("http://", "")
+        if host.startswith("josride.com") or host.startswith("www.josride.com"):
+            return _normalize_url(candidate)
     if configured:
-        return _normalize_url(configured)
+        first = _parse_url_list(configured)
+        if first:
+            return first[0]
+        return _normalize_url(configured.split(",")[0])
 
     proto = request.headers.get("X-Forwarded-Proto", request.scheme)
     host = request.headers.get("X-Forwarded-Host") or request.host
     return f"{proto}://{host}".rstrip("/")
+
+
+def build_public_trip_share_url(booking_id: str, share_token: str) -> str:
+    base = get_public_app_url().rstrip("/")
+    # Always expose the brand domain for share links when possible.
+    if "vercel.app" in base.lower() or "localhost" in base.lower() or "127.0.0.1" in base.lower():
+        base = "https://josride.com"
+    return f"{base}/t/{booking_id}?s={share_token}"
 
 
 def reload_env() -> None:

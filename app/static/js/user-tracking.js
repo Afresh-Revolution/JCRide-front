@@ -395,17 +395,24 @@
     }
 
     var ratingEl = document.querySelector(".tracking-driver__rating");
-    if (ratingEl && (driver.rating_avg != null || driver.rating != null || driver.trips != null || driver.completed_trips != null)) {
-      var rating = driver.rating_avg != null ? driver.rating_avg : driver.rating;
-      var trips = driver.completed_trips != null ? driver.completed_trips : driver.trips;
-      if (rating == null || rating === "") rating = "—";
-      if (trips == null || trips === "") trips = 0;
+    if (ratingEl && (driver.rating_avg != null || driver.rating != null || driver.rating_label || driver.trips != null || driver.completed_trips != null || driver.rating_count != null || driver.rating_valid_count != null)) {
+      var label = driver.rating_label;
+      if (!label && window.JosRideRating && window.JosRideRating.formatPublicRatingLabel) {
+        label = window.JosRideRating.formatPublicRatingLabel(
+          driver.rating_avg != null ? driver.rating_avg : driver.rating,
+          driver.rating_valid_count != null ? driver.rating_valid_count : driver.rating_count
+        );
+      }
+      if (!label) {
+        var rating = driver.rating_avg != null ? driver.rating_avg : driver.rating;
+        var trips = driver.completed_trips != null ? driver.completed_trips : driver.trips;
+        if (rating == null || rating === "") rating = "—";
+        if (trips == null || trips === "") trips = 0;
+        label = rating + " · " + trips + " trips";
+      }
       ratingEl.innerHTML =
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> ' +
-        rating +
-        " · " +
-        trips +
-        " trips";
+        label;
     }
 
     var plateEl = document.querySelector(".tracking-plate");
@@ -448,7 +455,12 @@
     }
 
     if (status === "completed") {
-      window.location.href = "/user/dashboard?completed=1";
+      var rideId = ride.id || (config && config.rideId) || "";
+      if (rideId) {
+        window.location.href = "/user/dashboard?rate_ride=" + encodeURIComponent(rideId);
+      } else {
+        window.location.href = "/user/dashboard?completed=1";
+      }
       return;
     }
 

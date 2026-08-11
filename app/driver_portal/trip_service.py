@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from datetime import UTC, datetime
 
+from app.rating_display import format_public_rating_short
 from app.services.api_client import ApiError, get_driver_active_ride, get_driver_profile
 
 DESTINATION_RADIUS_KM = 0.15
@@ -216,7 +217,12 @@ def api_ride_to_active_trip(ride: dict, token: str | None = None) -> dict:
         "rider_name": rider_name,
         "rider_initials": _initials(rider_name),
         "rider_tier": str(payload.get("service_tier") or "economy").replace("_", " ").title() + " rider",
-        "rating": float(customer.get("rating") or payload.get("rider_rating") or 0),
+        "rating": format_public_rating_short(
+            customer.get("rating") or customer.get("rating_avg") or payload.get("rider_rating"),
+            customer.get("rating_valid_count")
+            or customer.get("rating_count")
+            or payload.get("rider_rating_count"),
+        ),
         "distance_left_km": distance_left,
         "earnings_live": _fmt_ngn(fare),
         "trip_time": _elapsed_trip_time(payload) if trip_is_picked_up({"status": status}) else "-",

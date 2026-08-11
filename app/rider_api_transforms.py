@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from app.rating_display import format_public_rating_label, format_public_rating_short
 from app.rider_defaults import (
     LIVE_AREA,
     LIVE_TRACKING,
@@ -594,7 +595,14 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
             "driver": {
                 "initials": initials,
                 "name": driver_name,
-                "rating": str(driver.get("rating_avg") or "-"),
+                "rating": format_public_rating_short(
+                    driver.get("rating_avg") or driver.get("rating_bayesian"),
+                    driver.get("rating_valid_count") or driver.get("rating_count"),
+                ),
+                "rating_label": format_public_rating_label(
+                    driver.get("rating_avg") or driver.get("rating_bayesian"),
+                    driver.get("rating_valid_count") or driver.get("rating_count"),
+                ),
                 "trips": str(driver.get("completed_trips") or "-"),
                 "plate": driver.get("vehicle_plate") or "-",
                 "vehicle": driver.get("vehicle_model") or "-",

@@ -1405,6 +1405,218 @@ a { color: inherit; text-decoration: none; }
   opacity: 0.75;
 }
 
+/* ── Mobile app banner ── */
+.landing-mobile {
+  padding: 2.5rem 0 1.5rem;
+}
+
+.landing-mobile__card {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: center;
+  padding: clamp(1.75rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem);
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse 80% 70% at 90% 20%, rgba(16, 185, 129, 0.18), transparent 55%),
+    linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 40%, #ffffff 100%);
+  border: 1px solid rgba(6, 95, 70, 0.08);
+  overflow: hidden;
+}
+
+.landing-mobile__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(6, 95, 70, 0.22);
+  background: rgba(236, 253, 245, 0.9);
+  color: var(--green-800);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.landing-mobile__title {
+  margin: 0 0 0.85rem;
+  font-size: clamp(1.55rem, 3.2vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.landing-mobile__text {
+  margin: 0 0 1.75rem;
+  max-width: 48ch;
+  font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+  line-height: 1.65;
+  color: var(--ink-muted);
+  text-wrap: pretty;
+}
+
+.landing-mobile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.landing-mobile__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.25rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.landing-mobile__btn--android,
+.landing-mobile__btn--ios {
+  background: var(--green-brand);
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+.landing-mobile__btn--android:hover,
+.landing-mobile__btn--ios:hover {
+  background: var(--green-brand-hover);
+  transform: translateY(-1px);
+}
+
+.landing-mobile__btn--ghost {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+}
+
+.landing-mobile__btn--ghost:hover {
+  background: var(--surface-muted);
+}
+
+.landing-mobile__visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 240px;
+}
+
+.landing-mobile__phone {
+  position: relative;
+  width: min(180px, 42vw);
+  aspect-ratio: 9 / 18.5;
+  padding: 10px;
+  border-radius: 28px;
+  background: linear-gradient(160deg, #1f2937, #0f172a);
+  box-shadow:
+    0 24px 48px rgba(15, 23, 42, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.landing-mobile__phone-notch {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 2;
+  width: 36%;
+  height: 10px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #0b1220;
+}
+
+.landing-mobile__phone-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  height: 100%;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--green-600), var(--green-800) 55%, var(--green-900));
+}
+
+.landing-mobile__phone-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  backdrop-filter: blur(6px);
+}
+
+.landing-mobile__phone-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.landing-mobile__phone-dot {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 0 3px rgba(163, 230, 53, 0.25);
+}
+
+.landing-mobile__phone-label {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+@media (prefers-color-scheme: dark) {
+  .landing-mobile__card {
+    background:
+      radial-gradient(ellipse 80% 70% at 90% 20%, rgba(16, 185, 129, 0.16), transparent 55%),
+      linear-gradient(135deg, #0b1a14 0%, #10241c 45%, #111827 100%);
+    border-color: rgba(16, 185, 129, 0.18);
+  }
+
+  .landing-mobile__badge {
+    background: rgba(6, 78, 59, 0.45);
+    border-color: rgba(52, 211, 153, 0.35);
+    color: #a7f3d0;
+  }
+
+  .landing-mobile__title {
+    color: #f8fafc;
+  }
+
+  .landing-mobile__text {
+    color: #94a3b8;
+  }
+
+  .landing-mobile__btn--ghost {
+    background: rgba(15, 23, 42, 0.65);
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #f1f5f9;
+  }
+
+  .landing-mobile__btn--ghost:hover {
+    background: rgba(30, 41, 59, 0.9);
+  }
+
+  .landing-mobile__phone {
+    box-shadow:
+      0 24px 48px rgba(0, 0, 0, 0.45),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+}
+
 /* ── Footer ── */
 .landing-footer {
   padding-top: 4rem;
@@ -1689,6 +1901,7 @@ a { color: inherit; text-decoration: none; }
   .landing-hero__grid-lines,
   .landing-hero__accent,
   .landing-cta,
+  .landing-mobile__phone,
   .landing-footer__dot {
     animation: none !important;
   }
@@ -1994,6 +2207,15 @@ a { color: inherit; text-decoration: none; }
   .landing-price-card--featured { grid-column: auto; transform: none; }
   .landing-cta__grid { grid-template-columns: 1fr; }
   .landing-cta__stats { grid-template-columns: repeat(2, 1fr); }
+  .landing-mobile__card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .landing-mobile__badge { justify-content: center; }
+  .landing-mobile__text { margin-inline: auto; }
+  .landing-mobile__actions { justify-content: center; }
+  .landing-mobile__visual { order: -1; min-height: 0; }
+  .landing-mobile__phone { width: min(150px, 46vw); }
   .landing-footer__grid { grid-template-columns: 1fr 1fr; }
   .landing-footer__bar-inner { flex-direction: column; align-items: flex-start; }
 }
@@ -2004,6 +2226,24 @@ a { color: inherit; text-decoration: none; }
   .landing-features,
   .landing-steps,
   .landing-testimonials { grid-template-columns: 1fr; }
+
+  .landing-mobile {
+    padding: 1.5rem 0 0.75rem;
+  }
+
+  .landing-mobile__card {
+    padding: 1.35rem 1.1rem 1.5rem;
+    border-radius: 22px;
+  }
+
+  .landing-mobile__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing-mobile__btn {
+    width: 100%;
+  }
 
   .landing-hero__mockup {
     border-radius: clamp(16px, 4.5vw, 22px);
