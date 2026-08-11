@@ -254,6 +254,7 @@
       center: center,
       zoom: zoom,
       zoomControl: true,
+      preferGoogle: true,
     }).then(function (surface) {
       routeSurface = surface;
       initPromise = null;
