@@ -167,11 +167,11 @@ def get_google_maps_api_key() -> str:
     Google Maps JS / Directions key for website maps.
 
     Prefer EXPO_PUBLIC_GOOGLE_MAPS_API_KEY (same name as mobile).
-    Reads JCRide-front/.env first, then JCRide-back/.env so a single
-    backend key works in local monorepo setups.
+    Reads JCRide-back/.env first (backend is the source of truth locally),
+    then JCRide-front/.env as override.
     """
     names = ("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY", "GOOGLE_MAPS_API_KEY")
-    return _env_value(*names, paths=(ENV_PATH, *BACKEND_ENV_PATHS))
+    return _env_value(*names, paths=(*BACKEND_ENV_PATHS, ENV_PATH))
 
 
 def _env_flag_on(*names: str, fresh: bool = False) -> bool:
