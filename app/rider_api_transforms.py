@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
+from app.rating_display import format_public_rating_label, format_public_rating_short
 from app.rider_defaults import (
     LIVE_AREA,
     LIVE_TRACKING,
@@ -536,15 +537,20 @@ def delivery_estimate_to_defaults(estimate: dict, pickup: str, dropoff: str) -> 
 
 def ride_to_active_trip(ride: dict) -> dict:
     fare = ride.get("estimated_fare_ngn") or ride.get("final_fare_ngn") or 0
+    is_bike = (
+        ride.get("vehicle_category") == "bike"
+        or ride.get("request_type") == "delivery"
+    )
     return {
         "ride_id": ride.get("id"),
         "booking_id": ride.get("booking_id"),
         "pickup": ride.get("pickup_address") or "",
         "dropoff": ride.get("destination_address") or "",
-        "tier": ride.get("service_tier") or "economy",
+        # Delivery bikes have no service tier.
+        "tier": "" if is_bike else (ride.get("service_tier") or "economy"),
         "fare": format_ngn(fare),
-        "vehicle_type": "bike" if ride.get("vehicle_category") == "bike" else "car",
-        "request_type": ride.get("request_type") or "ride",
+        "vehicle_type": "bike" if is_bike else "car",
+        "request_type": ride.get("request_type") or ("delivery" if is_bike else "ride"),
         "status": ride.get("status"),
         "stops": normalize_ride_stops(ride),
     }
@@ -594,6 +600,10 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
         "in_progress": "Trip in progress",
         "completed": "Trip completed",
     }
+    is_bike = (
+        ride.get("vehicle_category") == "bike"
+        or ride.get("request_type") == "delivery"
+    )
     tracking.update(
         {
             "status_label": status_labels.get(status, status.replace("_", " ").title()),
@@ -601,12 +611,21 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
             "destination": ride.get("destination_address") or tracking["destination"],
             "stops": normalize_ride_stops(ride),
             "booking_id": ride.get("booking_id") or tracking["booking_id"],
-            "tier": (ride.get("service_tier") or "economy").capitalize(),
+            # Delivery bikes have no economy/comfort/premium type.
+            "tier": "" if is_bike else (ride.get("service_tier") or "economy").capitalize(),
+            "is_delivery": is_bike,
             "fare_estimate": format_ngn(fare),
             "driver": {
                 "initials": initials,
                 "name": driver_name,
-                "rating": str(driver.get("rating_avg") or "-"),
+                "rating": format_public_rating_short(
+                    driver.get("rating_avg") or driver.get("rating_bayesian"),
+                    driver.get("rating_valid_count") or driver.get("rating_count"),
+                ),
+                "rating_label": format_public_rating_label(
+                    driver.get("rating_avg") or driver.get("rating_bayesian"),
+                    driver.get("rating_valid_count") or driver.get("rating_count"),
+                ),
                 "trips": str(driver.get("completed_trips") or "-"),
                 "plate": driver.get("vehicle_plate") or "-",
                 "vehicle": driver.get("vehicle_model") or "-",

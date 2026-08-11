@@ -1,5 +1,10 @@
-{# Shared Google Maps / Leaflet bootstrap for rider, driver, and admin maps. #}
-<script type="application/json" id="josride-maps-config">{{ {"googleMapsApiKey": google_maps_api_key or ""} | tojson }}</script>
+{# Shared Google Maps / Leaflet bootstrap for rider, driver, and admin maps.
+   Key comes from EXPO_PUBLIC_GOOGLE_MAPS_API_KEY in JCRide-front/.env #}
+<script type="application/json" id="josride-maps-config">{{ {
+  "googleMapsApiKey": google_maps_api_key or "",
+  "envVar": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY",
+  "hasGoogleMaps": has_google_maps|default(false)
+} | tojson }}</script>
 <script src="{{ url_for('static', filename='js/josride-maps.js') }}"></script>
 {% if has_google_maps %}
 <script>

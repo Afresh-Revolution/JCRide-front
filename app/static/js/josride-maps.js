@@ -75,7 +75,7 @@
       script.src =
         "https://maps.googleapis.com/maps/api/js?key=" +
         encodeURIComponent(apiKey) +
-        "&callback=" +
+        "&libraries=geometry&callback=" +
         callbackName;
       script.onerror = function () {
         reject(new Error("Google Maps script failed to load"));
@@ -225,17 +225,32 @@
       addPolyline: function (path, style) {
         style = style || {};
         var latLngs = (path || []).map(latLngLiteral).filter(Boolean);
-        return track(
-          new google.maps.Polyline({
-            map: map,
-            path: latLngs,
-            strokeColor: style.color || "#0a4f2a",
-            strokeOpacity: style.opacity == null ? 0.98 : style.opacity,
-            strokeWeight: style.weight == null ? 5 : style.weight,
-            geodesic: false,
-            zIndex: style.zIndex || 1,
-          })
-        );
+        var polyOpts = {
+          map: map,
+          path: latLngs,
+          strokeColor: style.color || "#0a4f2a",
+          strokeOpacity: style.opacity == null ? 0.98 : style.opacity,
+          strokeWeight: style.weight == null ? 5 : style.weight,
+          geodesic: true,
+          zIndex: style.zIndex || 1,
+        };
+        // Approximate Leaflet dashArray with a dotted stroke on Google Maps.
+        if (style.dashArray) {
+          polyOpts.icons = [
+            {
+              icon: {
+                path: "M 0,-1 0,1",
+                strokeOpacity: style.opacity == null ? 0.98 : style.opacity,
+                strokeWeight: style.weight == null ? 5 : style.weight,
+                scale: 1,
+              },
+              offset: "0",
+              repeat: "14px",
+            },
+          ];
+          polyOpts.strokeOpacity = 0;
+        }
+        return track(new google.maps.Polyline(polyOpts));
       },
       addCircle: function (lat, lng, radiusM, style) {
         style = style || {};

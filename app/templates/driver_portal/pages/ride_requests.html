@@ -1,17 +1,34 @@
 {% extends "layouts/portal_layout.html" %}
-{% block page_title %}Ride Requests{% endblock %}
+{% set bike_mode = is_bike|default(false) %}
+{% block page_title %}{% if bike_mode %}Delivery Requests{% else %}Ride Requests{% endif %}{% endblock %}
 
 {% block portal_content %}
   <header class="driver-page-header">
-    <h1 class="driver-page-header__title">Ride Requests</h1>
-    <p class="driver-page-header__sub ride-requests-count">{{ ride_requests|length }} nearby requests waiting for you</p>
+    <h1 class="driver-page-header__title">{% if bike_mode %}Delivery Requests{% else %}Ride Requests{% endif %}</h1>
+    <p class="driver-page-header__sub ride-requests-count">
+      {% if ride_requests %}
+        {% if bike_mode %}
+          {{ ride_requests|length }} nearby deliver{{ 'y' if ride_requests|length == 1 else 'ies' }} waiting for you
+        {% else %}
+          {{ ride_requests|length }} nearby request{{ '' if ride_requests|length == 1 else 's' }} waiting for you
+        {% endif %}
+      {% else %}
+        No nearby {% if bike_mode %}deliveries{% else %}requests{% endif %} right now
+      {% endif %}
+    </p>
   </header>
 
-  <section class="ride-requests-list" id="driver-ride-requests-list">
+  <section class="ride-requests-list" id="driver-ride-requests-list" data-bike-mode="{{ 'true' if bike_mode else 'false' }}">
     {% for request in ride_requests %}
       {% include "components/requests/ride_request_card.html" %}
     {% else %}
-      <div class="driver-empty" id="driver-ride-requests-empty">No ride requests right now. Go online to receive trips.</div>
+      <div class="driver-empty" id="driver-ride-requests-empty">
+        {% if bike_mode %}
+          No delivery requests right now. Go online to receive bike jobs.
+        {% else %}
+          No ride requests right now. Go online to receive trips.
+        {% endif %}
+      </div>
     {% endfor %}
   </section>
 {% endblock %}

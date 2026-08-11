@@ -999,15 +999,65 @@ def start_ride(token, ride_id):
     return _request("POST", f"{API_PREFIX}/rides/{ride_id}/start", token=token)
 
 
-def rate_driver(token, ride_id, rating, comment=None):
-    payload = {"rating": rating}
+def rate_driver(token, ride_id, rating, comment=None, **extra):
+    """Legacy-compatible wrapper; prefers the two-sided ratings API."""
+    payload = {
+        "overall_stars": int(rating),
+        **{k: v for k, v in (extra or {}).items() if v is not None},
+    }
     if comment:
         payload["comment"] = comment
+    try:
+        return _request(
+            "POST",
+            f"{API_PREFIX}/ratings/rides/{ride_id}",
+            token=token,
+            json=payload,
+        )
+    except ApiError as exc:
+        if getattr(exc, "status_code", None) not in (404, 405):
+            raise
+        legacy = {"rating": int(rating)}
+        if comment:
+            legacy["comment"] = comment
+        return _request(
+            "POST",
+            f"{API_PREFIX}/rides/{ride_id}/rate-driver",
+            token=token,
+            json=legacy,
+        )
+
+
+def submit_trip_rating(token, ride_id, payload):
+    """POST /api/v1/ratings/rides/{ride_id} — rider or driver rating."""
+    body = dict(payload or {})
+    if "overall_stars" not in body and body.get("rating") is not None:
+        body["overall_stars"] = int(body.pop("rating"))
     return _request(
         "POST",
-        f"{API_PREFIX}/rides/{ride_id}/rate-driver",
+        f"{API_PREFIX}/ratings/rides/{ride_id}",
         token=token,
-        json=payload,
+        json=body,
+    )
+
+
+def get_rating_eligibility(token, ride_id):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/ratings/rides/{ride_id}/eligibility",
+        token=token,
+    )
+
+
+def get_my_rating_summary(token):
+    return _request("GET", f"{API_PREFIX}/ratings/me", token=token)
+
+
+def get_public_rating_summary(token, user_id):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/ratings/users/{user_id}/public",
+        token=token,
     )
 
 
@@ -1196,6 +1246,23 @@ def set_availability(token, online, current_lat=None, current_lng=None):
     return _request(
         "POST",
         f"{API_PREFIX}/drivers/availability",
+        token=token,
+        json=payload,
+    )
+
+
+def update_driver_location(token, lat, lng, accuracy=None, heading=None, speed=None):
+    """Push live GPS to JCRide-back while the driver is online."""
+    payload = {"lat": float(lat), "lng": float(lng)}
+    if accuracy is not None:
+        payload["accuracy"] = float(accuracy)
+    if heading is not None:
+        payload["heading"] = float(heading)
+    if speed is not None:
+        payload["speed"] = float(speed)
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/location",
         token=token,
         json=payload,
     )

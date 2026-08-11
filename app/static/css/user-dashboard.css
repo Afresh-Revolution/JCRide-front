@@ -2474,6 +2474,16 @@ body.rider-trip-chat-open {
   gap: 0.75rem;
 }
 
+.tracking-sim-actions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.tracking-sim-actions[hidden] {
+  display: none;
+}
+
 .tracking-bottom-actions .rider-btn--danger-outline {
   grid-column: 1 / -1;
 }

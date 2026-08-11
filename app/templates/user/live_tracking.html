@@ -14,6 +14,8 @@
   "token": session.get("token"),
   "wsUrl": ws_url,
   "showFinding": show_finding,
+  "isDelivery": is_delivery|default(false),
+  "skipDriverMatch": skip_driver_match|default(false),
   "cancellationFeeNgn": 500,
   "unlockFeeNgn": 2000,
   "riderName": rider_name or session.get('full_name') or '',
@@ -71,7 +73,7 @@
           <strong>{{ tracking.driver.name }}</strong>
           <span class="tracking-driver__rating">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            {{ tracking.driver.rating }} · {{ tracking.driver.trips }} trips
+            {{ tracking.driver.rating_label or tracking.driver.rating }}
           </span>
         </div>
       </div>
@@ -129,7 +131,9 @@
           </div>
         </div>
       </div>
-      <p class="tracking-booking-id">Booking ID - {{ tracking.booking_id }} · {{ tracking.tier }}</p>
+      <p class="tracking-booking-id">
+        Booking ID - {{ tracking.booking_id }}{% if tracking.tier %} · {{ tracking.tier }}{% endif %}
+      </p>
     </article>
 
     <div class="tracking-bottom-actions">
@@ -140,6 +144,17 @@
         SOS
       </button>
     </div>
+    {% if skip_driver_match|default(false) %}
+    <div class="tracking-sim-actions" id="tracking-sim-actions" hidden>
+      <button type="button" class="rider-btn rider-btn--outline-sm" id="tracking-sim-arrived" hidden>
+        {% if is_delivery|default(false) %}Simulate biker arrived{% else %}Simulate driver arrived{% endif %}
+      </button>
+      <button type="button" class="rider-btn rider-btn--outline-sm" id="tracking-sim-started" hidden>Simulate delivery started</button>
+      <button type="button" class="rider-btn rider-btn--outline-sm" id="tracking-sim-completed" hidden>
+        {% if is_delivery|default(false) %}Simulate delivery completed{% else %}Simulate ride completed{% endif %}
+      </button>
+    </div>
+    {% endif %}
     <button type="button" class="rider-btn rider-btn--request" id="tracking-start-trip" data-loading-text="Starting…">Start trip</button>
   </aside>
 </div>

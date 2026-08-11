@@ -32,6 +32,7 @@ def create_app() -> Flask:
     @app.context_processor
     def inject_globals():
         maps_key = get_google_maps_api_key()
+        app.config["GOOGLE_MAPS_API_KEY"] = maps_key
         return {
             "static_url": static_url,
             "google_maps_api_key": maps_key,
@@ -40,7 +41,20 @@ def create_app() -> Flask:
 
     @app.get("/api-config-check")
     def api_config_check():
-        """Dev helper: confirms which backend URL the app is using."""
-        return {"api_url": get_api_url(), "env_file": str(app.root_path)}
+        """Dev helper: confirms backend URL + Google Maps env wiring."""
+        from app.config import BACKEND_ENV_PATHS, ENV_PATH
+
+        maps_key = get_google_maps_api_key()
+        return {
+            "api_url": get_api_url(),
+            "env_file": str(ENV_PATH),
+            "backend_env_files": [str(p) for p in BACKEND_ENV_PATHS if p.exists()],
+            "google_maps": {
+                "env_var": "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY",
+                "loaded": bool(maps_key),
+                "key_suffix": maps_key[-6:] if maps_key else "",
+                "provider": "google" if maps_key else "leaflet_fallback",
+            },
+        }
 
     return app

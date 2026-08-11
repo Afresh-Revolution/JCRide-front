@@ -96,6 +96,7 @@ from app.config import (
     get_driver_support_phone,
     get_emergency_phone,
     get_public_app_url,
+    get_skip_driver_match,
     get_ws_url,
 )
 from app.rider_api_transforms import (
@@ -403,14 +404,20 @@ def _tracking_page_context() -> dict:
             return delivery.get("ride") or delivery.get("data") or delivery
         return None
 
+    skip_driver_match = get_skip_driver_match()
     ride, ok = _safe_rider_api(_load_current)
     if ok and ride:
         active = ride_to_active_trip(ride)
         session["active_trip"] = active
     elif ok:
-        # API succeeded and there is no live ride — drop stale session trip state.
-        session.pop("active_trip", None)
-        active = {}
+        # Keep website preview trips when simulation mode is on.
+        preview_id = str(active.get("ride_id") or "")
+        if skip_driver_match and preview_id.startswith("preview"):
+            pass
+        else:
+            # API succeeded and there is no live ride — drop stale session trip state.
+            session.pop("active_trip", None)
+            active = {}
 
     tracking, finding = ride_to_tracking(ride if ok else None)
     vehicle_type = active.get("vehicle_type") or "car"
@@ -447,16 +454,34 @@ def _tracking_page_context() -> dict:
             vehicle_type=vehicle_type,
         )
     )
+    is_delivery = (
+        vehicle_type == "bike"
+        or active.get("request_type") == "delivery"
+        or (ride or {}).get("request_type") == "delivery"
+        or (ride or {}).get("vehicle_category") == "bike"
+    )
+    # Preview mode: never trap the rider on the finding screen.
+    show_finding = not (ok and ride and driver_ready) and not skip_driver_match
+    preview_status = status
+    if skip_driver_match and not driver_ready:
+        preview_status = "accepted"
+    ride_id = active.get("ride_id") or ((ride or {}).get("id") if ok else None)
+    tracking_live = bool(ok and ride) or (
+        skip_driver_match and bool(ride_id) and str(ride_id).startswith("preview")
+    )
+
     return {
         "tracking": tracking,
         "finding": finding,
         "route_map": route_map,
-        "tracking_live": bool(ok and ride),
-        "show_finding": not (ok and ride and driver_ready),
-        "ride_id": active.get("ride_id") or ((ride or {}).get("id") if ok else None),
-        "ride_status": status,
+        "tracking_live": tracking_live,
+        "show_finding": show_finding,
+        "ride_id": ride_id,
+        "ride_status": preview_status,
         "rider_user_id": _resolved_rider_user_id(),
         "ws_url": get_ws_url(),
+        "is_delivery": is_delivery,
+        "skip_driver_match": skip_driver_match,
     }
 
 
@@ -1609,13 +1634,29 @@ def user_bike_delivery():
                 session["active_trip"] = ride_to_active_trip(ride)
                 flash("Bike delivery requested - courier on the way.", "success")
             except ApiError as exc:
-                session["active_trip"] = {
-                    "pickup": pickup,
-                    "dropoff": dropoff,
-                    "fare": delivery["fare"],
-                    "vehicle_type": "bike",
-                }
-                flash(exc.message, "error")
+                if get_skip_driver_match():
+                    # Website preview: still open live tracking with simulate controls.
+                    session["active_trip"] = {
+                        "ride_id": "preview-delivery",
+                        "booking_id": "PREVIEW",
+                        "pickup": pickup,
+                        "dropoff": dropoff,
+                        "fare": delivery.get("fare") or "-",
+                        "vehicle_type": "bike",
+                        "request_type": "delivery",
+                        "status": "accepted",
+                        "tier": "",
+                    }
+                    flash("Preview mode: simulate delivery progress on live tracking.", "info")
+                else:
+                    session["active_trip"] = {
+                        "pickup": pickup,
+                        "dropoff": dropoff,
+                        "fare": delivery["fare"],
+                        "vehicle_type": "bike",
+                        "request_type": "delivery",
+                    }
+                    flash(exc.message, "error")
             return redirect(url_for("main.user_live_tracking", reset=1))
 
     if token and delivery["pickup"] and delivery["dropoff"]:

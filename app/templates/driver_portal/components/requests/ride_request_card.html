@@ -1,5 +1,6 @@
-{# Single ride request card #}
-<article class="ride-request-card">
+{# Single ride / delivery request card #}
+{% set delivery = request.is_delivery|default(is_bike|default(false)) %}
+<article class="ride-request-card" data-ride-id="{{ request.id }}">
   <div class="ride-request-card__top">
     <div class="ride-request-card__rider">
       <div class="ride-request-card__avatar" aria-hidden="true">
@@ -8,10 +9,14 @@
       <div class="ride-request-card__rider-info">
         <div class="ride-request-card__name-row">
           <span class="ride-request-card__name">{{ request.rider_name }}</span>
+          {% if request.rating %}
           <span class="ride-request-card__rating">
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             {{ request.rating }}
           </span>
+          {% elif delivery %}
+          <span class="ride-request-card__badge">Delivery</span>
+          {% endif %}
         </div>
         <div class="ride-request-card__meta">
           <span class="ride-request-card__meta-item">
@@ -24,6 +29,11 @@
           </span>
           <span class="ride-request-card__badge">{{ request.pickup_eta }}</span>
         </div>
+        {% if delivery and request.package_details %}
+        <div class="ride-request-card__meta">
+          <span class="ride-request-card__meta-item">{{ request.package_details }}</span>
+        </div>
+        {% endif %}
       </div>
     </div>
     <div class="ride-request-card__earn">
@@ -43,7 +53,7 @@
     <div class="ride-request-card__stop ride-request-card__stop--dest">
       <span class="ride-request-card__dot ride-request-card__dot--dest" aria-hidden="true"></span>
       <div>
-        <span class="ride-request-card__stop-label">DESTINATION</span>
+        <span class="ride-request-card__stop-label">{{ request.dest_label or ('DROPOFF' if delivery else 'DESTINATION') }}</span>
         <span class="ride-request-card__stop-value">{{ request.destination }}</span>
       </div>
     </div>
@@ -54,7 +64,7 @@
       <button type="submit" class="driver-btn driver-btn--outline driver-btn--pill">Reject</button>
     </form>
     <form method="post" action="{{ url_for('driver_portal.accept_ride', request_id=request.id) }}">
-      <button type="submit" class="driver-btn driver-btn--primary driver-btn--pill">Accept ride</button>
+      <button type="submit" class="driver-btn driver-btn--primary driver-btn--pill">{{ request.accept_label or ('Accept delivery' if delivery else 'Accept ride') }}</button>
     </form>
   </div>
 </article>
