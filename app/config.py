@@ -6,6 +6,11 @@ from dotenv import dotenv_values, load_dotenv
 # Project root (folder containing run.py)
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = BASE_DIR / ".env"
+# Nested or sibling JCRide-back .env (local monorepo layouts)
+BACKEND_ENV_PATHS = (
+    BASE_DIR / "JCRide-back" / ".env",
+    BASE_DIR.parent / "JCRide-back" / ".env",
+)
 
 # .env must override any stale shell / IDE environment variables
 load_dotenv(ENV_PATH, override=True)
@@ -129,15 +134,34 @@ def get_emergency_phone() -> str:
     return _FILE_ENV.get("EMERGENCY_PHONE") or os.getenv("EMERGENCY_PHONE") or "112"
 
 
+def _env_value(*names: str, paths: tuple[Path, ...] | None = None) -> str:
+    """First non-empty value for names across env files then process env."""
+    search_paths = paths if paths is not None else (ENV_PATH,)
+    for path in search_paths:
+        if not path.exists():
+            continue
+        values = dotenv_values(path)
+        for name in names:
+            raw = (values.get(name) or "").strip()
+            if raw:
+                return raw
+    for name in names:
+        raw = (os.getenv(name) or "").strip()
+        if raw:
+            return raw
+    return ""
+
+
 def get_google_maps_api_key() -> str:
-    """Google Maps JS / Directions key (same name as mobile EXPO_PUBLIC_*)."""
-    return (
-        _FILE_ENV.get("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY")
-        or os.getenv("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY")
-        or _FILE_ENV.get("GOOGLE_MAPS_API_KEY")
-        or os.getenv("GOOGLE_MAPS_API_KEY")
-        or ""
-    ).strip()
+    """
+    Google Maps JS / Directions key for website maps.
+
+    Prefer EXPO_PUBLIC_GOOGLE_MAPS_API_KEY (same name as mobile).
+    Reads JCRide-front/.env first, then JCRide-back/.env so a single
+    backend key works in local monorepo setups.
+    """
+    names = ("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY", "GOOGLE_MAPS_API_KEY")
+    return _env_value(*names, paths=(ENV_PATH, *BACKEND_ENV_PATHS))
 
 
 def _env_flag_on(*names: str, fresh: bool = False) -> bool:

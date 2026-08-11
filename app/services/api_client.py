@@ -1201,6 +1201,23 @@ def set_availability(token, online, current_lat=None, current_lng=None):
     )
 
 
+def update_driver_location(token, lat, lng, accuracy=None, heading=None, speed=None):
+    """Push live GPS to JCRide-back while the driver is online."""
+    payload = {"lat": float(lat), "lng": float(lng)}
+    if accuracy is not None:
+        payload["accuracy"] = float(accuracy)
+    if heading is not None:
+        payload["heading"] = float(heading)
+    if speed is not None:
+        payload["speed"] = float(speed)
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/location",
+        token=token,
+        json=payload,
+    )
+
+
 def get_admin_stats(token):
     return _request("GET", f"{API_PREFIX}/admin/dashboard", token=token)
 

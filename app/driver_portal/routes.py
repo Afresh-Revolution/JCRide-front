@@ -74,6 +74,7 @@ from app.services.api_client import (
     send_ride_message,
     set_availability,
     start_ride,
+    update_driver_location,
     update_driver_profile,
     update_driver_settings,
     update_notification_preferences,
@@ -654,10 +655,29 @@ def driver_api_save_location():
     payload = request.get_json(silent=True) or {}
     lat = payload.get("lat")
     lng = payload.get("lng")
-    if lat is not None and lng is not None:
-        session["driver_lat"] = float(lat)
-        session["driver_lng"] = float(lng)
-    return jsonify({"ok": True, "lat": lat, "lng": lng})
+    if lat is None or lng is None:
+        return jsonify({"error": "lat and lng are required"}), 400
+
+    session["driver_lat"] = float(lat)
+    session["driver_lng"] = float(lng)
+
+    token = _driver_token()
+    backend = None
+    if token and session.get("driver_online"):
+        try:
+            backend = update_driver_location(
+                token,
+                lat,
+                lng,
+                accuracy=payload.get("accuracy"),
+                heading=payload.get("heading"),
+                speed=payload.get("speed"),
+            )
+        except ApiError as exc:
+            # Keep session coords even if backend rejects (e.g. briefly offline).
+            return jsonify({"ok": True, "lat": lat, "lng": lng, "backend_error": exc.message}), 200
+
+    return jsonify({"ok": True, "lat": lat, "lng": lng, "backend": backend})
 
 
 @driver_portal_bp.route("/active-trip/arrived", methods=["POST"])
