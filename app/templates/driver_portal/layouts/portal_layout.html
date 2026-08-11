@@ -12,13 +12,14 @@
   <div class="admin-main">
     {% set menu_toggle_id = 'driver-menu-toggle' %}
     {% set sidebar_id = 'driver-sidebar' %}
-    {% set portal_badge = 'DRIVER' %}
+    {% set portal_badge = 'BIKE' if is_bike|default(false) else 'DRIVER' %}
     {% set profile_name = profile.name %}
     {% set profile_initials = profile.initials %}
     {% set profile_meta = (profile.rating_label or profile.rating or 'New on JosRide') ~ ' · ' ~ profile.plate %}
     {% set show_topbar_quick_actions = true %}
     {% set quick_notifications_url = url_for('driver_portal.notifications') %}
     {% set quick_settings_url = url_for('driver_portal.settings') %}
+    {% set search_placeholder = 'Search deliveries, places...' if is_bike|default(false) else 'Search rides, drivers, places...' %}
     {% include "includes/portal_navbar.html" %}
 
     <div class="admin-content driver-content">
@@ -38,9 +39,14 @@
   "token": driver_token,
   "userId": session.get('user_id') or portal_user_id,
   "activeTripId": active_trip_id,
+  "isBike": is_bike|default(false),
   "rideRequestsUrl": url_for('driver_portal.ride_requests'),
   "dashboardUrl": url_for('driver_portal.dashboard')
 } | tojson }}</script>
+<script>
+  window.JosRideDriver = window.JosRideDriver || {};
+  window.JosRideDriver.isBike = {{ 'true' if is_bike|default(false) else 'false' }};
+</script>
 {% endblock %}
 
 {% block scripts %}
@@ -51,6 +57,7 @@
 <script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}"></script>
 <script src="{{ url_for('static', filename='js/driver-ride-requests.js') }}"></script>
 <script src="{{ url_for('static', filename='js/driver-geolocation.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/driver-online-location.js') }}" defer></script>
 {% block page_scripts %}{% endblock %}
 <script src="{{ url_for('static', filename='js/driver-realtime.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pwa-register.js') }}"></script>

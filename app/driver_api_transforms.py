@@ -107,7 +107,13 @@ def driver_channel_settings_from_api(prefs: dict | None) -> list[dict]:
     ]
 
 
-def dashboard_from_api(data: dict, earnings: dict | None = None, demand: dict | None = None) -> dict:
+def dashboard_from_api(
+    data: dict,
+    earnings: dict | None = None,
+    demand: dict | None = None,
+    *,
+    is_bike: bool = False,
+) -> dict:
     earnings = earnings or {}
     demand = demand or {}
     weekly = data.get("weekly_earnings") or []
@@ -133,15 +139,16 @@ def dashboard_from_api(data: dict, earnings: dict | None = None, demand: dict | 
     completed = int(data.get("completed_trips") or 0)
     online_hours = float(data.get("online_hours") or 0)
 
+    job_label = "deliveries" if is_bike else "trips"
     metrics = [
         {
             "title": "Today's Earnings",
             "value": _fmt_ngn(today_earnings),
-            "trend": f"▲ {completed} trips total" if completed else None,
+            "trend": f"▲ {completed} {job_label} total" if completed else None,
             "icon": "wallet",
         },
         {
-            "title": "Completed Trips",
+            "title": "Completed Deliveries" if is_bike else "Completed Trips",
             "value": str(completed),
             "trend": None,
             "icon": "route",
@@ -194,13 +201,20 @@ def dashboard_from_api(data: dict, earnings: dict | None = None, demand: dict | 
     }
 
 
-def ride_requests_from_api(requests: list[dict]) -> list[dict]:
+def ride_requests_from_api(requests: list[dict], *, is_bike: bool = False) -> list[dict]:
     rows = []
     for item in requests:
         fare = float(item.get("estimated_fare_ngn") or item.get("driver_earning_ngn") or 0)
         duration = int(item.get("estimated_duration_minutes") or 0)
         distance = float(item.get("distance_km") or 0)
-        rider_name = item.get("customer_name") or item.get("recipient_name") or "Rider"
+        request_type = str(item.get("request_type") or ("delivery" if is_bike else "ride")).lower()
+        is_delivery = is_bike or request_type == "delivery"
+        rider_name = (
+            item.get("recipient_name")
+            or item.get("customer_name")
+            or ("Customer" if is_delivery else "Rider")
+        )
+        package = (item.get("package_details") or item.get("package_notes") or "").strip()
         rating_avg = float(item.get("customer_rating") or item.get("rating_avg") or 0) or None
         rating_count = item.get("customer_rating_count") or item.get("rating_valid_count") or item.get("rating_count")
         rows.append(
@@ -209,13 +223,22 @@ def ride_requests_from_api(requests: list[dict]) -> list[dict]:
                 "rider_name": rider_name,
                 "rider_initials": _initials(rider_name),
                 "rating": format_public_rating_short(rating_avg, rating_count) if rating_avg is not None or rating_count else None,
-                "rider_tier": str(item.get("service_tier") or "economy").replace("_", " ").title() + " rider",
+                # Delivery bikes have no economy/comfort/premium type.
+                "rider_tier": (
+                    ""
+                    if is_delivery
+                    else str(item.get("service_tier") or "economy").replace("_", " ").title() + " rider"
+                ),
                 "distance_km": distance,
                 "duration_min": duration,
                 "pickup_eta": f"~{max(3, duration // 4)} min" if duration else "-",
                 "pickup": item.get("pickup_address") or "",
                 "destination": item.get("destination_address") or "",
                 "earnings": _fmt_ngn(fare),
+                "is_delivery": is_delivery,
+                "package_details": package,
+                "accept_label": "Accept delivery" if is_delivery else "Accept ride",
+                "dest_label": "DROPOFF" if is_delivery else "DESTINATION",
             }
         )
     return rows
@@ -306,10 +329,14 @@ def profile_from_api(data: dict, performance: dict | None = None) -> dict:
     plate = _vehicle_field(driver.get("plate_number"))
     raw_category = _vehicle_field(driver.get("vehicle_category")).lower()
     raw_tier = _vehicle_field(driver.get("service_tier")).lower()
-    vehicle_category = raw_category or "car"
-    service_tier = raw_tier or "economy"
+    # Keep empty when unset so bike signups are not silently treated as cars.
+    vehicle_category = raw_category
+    # Bikes have no public tier type; still keep economy internally if the API set it.
+    service_tier = "" if raw_category == "bike" else raw_tier
     make_model = f"{make} {model}".strip()
-    vehicle_complete = bool(make and model and color and plate and raw_category and raw_tier)
+    vehicle_complete = bool(
+        make and model and color and plate and raw_category and (raw_category == "bike" or raw_tier)
+    )
 
     return {
         "name": name,
@@ -334,7 +361,7 @@ def profile_from_api(data: dict, performance: dict | None = None) -> dict:
             "color": color or "-",
             "plate": plate or "-",
             "category": raw_category.replace("_", " ").title() if raw_category else "-",
-            "tier_label": raw_tier.replace("_", " ").title() if raw_tier else "-",
+            "tier_label": "" if raw_category == "bike" else (raw_tier.replace("_", " ").title() if raw_tier else "-"),
             "vehicle_category": vehicle_category,
             "service_tier": service_tier,
             "is_complete": vehicle_complete,

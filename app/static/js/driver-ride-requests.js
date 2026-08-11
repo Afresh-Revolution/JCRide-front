@@ -18,11 +18,29 @@
     return window.location.pathname.indexOf("/ride-requests") >= 0;
   }
 
+  function isBikeMode() {
+    var listEl = document.getElementById("driver-ride-requests-list");
+    if (listEl && listEl.getAttribute("data-bike-mode") === "true") return true;
+    var banner = document.getElementById("driver-status-banner");
+    if (banner && banner.getAttribute("data-bike-mode") === "true") return true;
+    return Boolean(window.JosRideDriver && window.JosRideDriver.isBike);
+  }
+
   function updateCount(count) {
     var countEl = document.querySelector(".ride-requests-count");
     if (!countEl) return;
+    var bike = isBikeMode();
     if (!count) {
-      countEl.textContent = "No nearby requests right now";
+      countEl.textContent = bike
+        ? "No nearby deliveries right now"
+        : "No nearby requests right now";
+      return;
+    }
+    if (bike) {
+      countEl.textContent =
+        count === 1
+          ? "1 nearby delivery waiting for you"
+          : count + " nearby deliveries waiting for you";
       return;
     }
     countEl.textContent =
@@ -30,7 +48,26 @@
   }
 
   function renderRequestCard(request) {
-    var rating = request.rating != null ? request.rating : "-";
+    var rating = request.rating != null ? request.rating : "";
+    var delivery = Boolean(request.is_delivery || isBikeMode());
+    var destLabel = request.dest_label || (delivery ? "DROPOFF" : "DESTINATION");
+    var acceptLabel = request.accept_label || (delivery ? "Accept delivery" : "Accept ride");
+    var packageHtml = "";
+    if (delivery && request.package_details) {
+      packageHtml =
+        '<div class="ride-request-card__meta"><span class="ride-request-card__meta-item">' +
+        escapeHtml(request.package_details) +
+        "</span></div>";
+    }
+    var ratingHtml = rating
+      ? '<span class="ride-request-card__rating">' +
+        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ' +
+        escapeHtml(rating) +
+        "</span>"
+      : delivery
+        ? '<span class="ride-request-card__badge">Delivery</span>'
+        : "";
+
     return (
       '<article class="ride-request-card" data-ride-id="' +
       escapeHtml(request.id) +
@@ -45,10 +82,7 @@
       '<span class="ride-request-card__name">' +
       escapeHtml(request.rider_name) +
       "</span>" +
-      '<span class="ride-request-card__rating">' +
-      '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> ' +
-      escapeHtml(rating) +
-      "</span>" +
+      ratingHtml +
       "</div>" +
       '<div class="ride-request-card__meta">' +
       '<span class="ride-request-card__meta-item">' +
@@ -62,7 +96,9 @@
       '<span class="ride-request-card__badge">' +
       escapeHtml(request.pickup_eta) +
       "</span>" +
-      "</div></div></div>" +
+      "</div>" +
+      packageHtml +
+      "</div></div>" +
       '<div class="ride-request-card__earn">' +
       '<span class="ride-request-card__earn-label">YOU EARN</span>' +
       '<span class="ride-request-card__earn-value">' +
@@ -77,7 +113,9 @@
       "</span></div></div>" +
       '<div class="ride-request-card__stop ride-request-card__stop--dest">' +
       '<span class="ride-request-card__dot ride-request-card__dot--dest" aria-hidden="true"></span>' +
-      "<div><span class=\"ride-request-card__stop-label\">DESTINATION</span>" +
+      '<div><span class="ride-request-card__stop-label">' +
+      escapeHtml(destLabel) +
+      "</span>" +
       '<span class="ride-request-card__stop-value">' +
       escapeHtml(request.destination) +
       "</span></div></div></div>" +
@@ -89,7 +127,9 @@
       '<form method="post" action="/driver-portal/ride-requests/' +
       encodeURIComponent(request.id) +
       '/accept">' +
-      '<button type="submit" class="driver-btn driver-btn--primary driver-btn--pill">Accept ride</button></form>' +
+      '<button type="submit" class="driver-btn driver-btn--primary driver-btn--pill">' +
+      escapeHtml(acceptLabel) +
+      "</button></form>" +
       "</div></article>"
     );
   }
@@ -103,7 +143,11 @@
 
     if (!items.length) {
       listEl.innerHTML =
-        '<div class="driver-empty" id="driver-ride-requests-empty">No ride requests right now. Go online to receive trips.</div>';
+        '<div class="driver-empty" id="driver-ride-requests-empty">' +
+        (isBikeMode()
+          ? "No delivery requests right now. Go online to receive bike jobs."
+          : "No ride requests right now. Go online to receive trips.") +
+        "</div>";
       return true;
     }
 
@@ -115,6 +159,12 @@
     if (!window.DriverApi) return Promise.resolve(false);
     return DriverApi.rideRequests()
       .then(function (data) {
+        if (data && typeof data.is_bike === "boolean") {
+          window.JosRideDriver = window.JosRideDriver || {};
+          window.JosRideDriver.isBike = data.is_bike;
+          var listEl = document.getElementById("driver-ride-requests-list");
+          if (listEl) listEl.setAttribute("data-bike-mode", data.is_bike ? "true" : "false");
+        }
         var items = (data && data.ui) || [];
         if (isRideRequestsPage()) {
           return renderRequests(items);
@@ -139,7 +189,9 @@
     toast.id = "driver-new-request-toast";
     toast.className = "driver-new-request-toast";
     toast.href = "/driver-portal/ride-requests";
-    var label = (payload && payload.booking_id) || "New ride request";
+    var label =
+      (payload && payload.booking_id) ||
+      (isBikeMode() ? "New delivery request" : "New ride request");
     toast.innerHTML =
       "<strong>" +
       escapeHtml(label) +

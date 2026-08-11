@@ -70,23 +70,97 @@
     });
   });
 
-  document.querySelectorAll(".schedule-item__delete").forEach(function (btn) {
+  function schedulePost(url, body) {
+    return fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify(body || {}),
+      credentials: "same-origin",
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        if (!res.ok) throw new Error(data.message || data.detail || "Request failed");
+        return data;
+      });
+    });
+  }
+
+  document.querySelectorAll(".schedule-item__cancel").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var item = btn.closest(".schedule-item");
-      if (item) item.remove();
+      var id = btn.getAttribute("data-id");
+      if (!id) return;
+      if (!window.confirm("Cancel this scheduled ride?")) return;
+      if (window.ButtonLoading) window.ButtonLoading.start(btn, { text: "Cancelling…" });
+      schedulePost("/user/schedule-ride/" + encodeURIComponent(id) + "/cancel", {
+        reason: "Cancelled by rider",
+      })
+        .then(function () {
+          var item = btn.closest(".schedule-item");
+          if (item) item.remove();
+          if (window.ButtonLoading) window.ButtonLoading.stop(btn);
+        })
+        .catch(function (err) {
+          if (window.ButtonLoading) window.ButtonLoading.stop(btn);
+          alert(err.message || "Could not cancel scheduled ride.");
+        });
     });
   });
 
-  document.querySelectorAll(".schedule-item__actions .rider-btn--danger-text").forEach(function (btn) {
+  var editDialog = document.getElementById("schedule-edit-dialog");
+  var editForm = document.getElementById("schedule-edit-form");
+  var editError = document.getElementById("schedule-edit-error");
+
+  document.querySelectorAll(".schedule-item__edit").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var item = btn.closest(".schedule-item");
-      if (item) item.remove();
+      if (!editDialog || !editForm) return;
+      document.getElementById("schedule-edit-id").value = btn.getAttribute("data-id") || "";
+      document.getElementById("schedule-edit-pickup").value = btn.getAttribute("data-pickup") || "";
+      document.getElementById("schedule-edit-destination").value =
+        btn.getAttribute("data-destination") || "";
+      document.getElementById("schedule-edit-date").value = btn.getAttribute("data-date") || "";
+      document.getElementById("schedule-edit-time").value = btn.getAttribute("data-time") || "";
+      if (editError) {
+        editError.hidden = true;
+        editError.textContent = "";
+      }
+      if (typeof editDialog.showModal === "function") editDialog.showModal();
     });
   });
 
-  document.querySelectorAll(".support-form").forEach(function (form) {
-    /* server-side POST handles ticket creation */
-  });
+  if (editForm && editDialog) {
+    editForm.addEventListener("submit", function (event) {
+      var submitter = event.submitter;
+      var action = submitter && submitter.value ? submitter.value : "cancel";
+      if (action !== "save") return;
+      event.preventDefault();
+      var id = document.getElementById("schedule-edit-id").value;
+      if (!id) return;
+      var payload = {
+        pickup: document.getElementById("schedule-edit-pickup").value.trim(),
+        destination: document.getElementById("schedule-edit-destination").value.trim(),
+        date: document.getElementById("schedule-edit-date").value.trim(),
+        time: document.getElementById("schedule-edit-time").value.trim(),
+      };
+      if (window.ButtonLoading && submitter) {
+        window.ButtonLoading.start(submitter, { text: "Saving…" });
+      }
+      schedulePost("/user/schedule-ride/" + encodeURIComponent(id) + "/edit", payload)
+        .then(function () {
+          window.location.reload();
+        })
+        .catch(function (err) {
+          if (window.ButtonLoading && submitter) window.ButtonLoading.stop(submitter);
+          if (editError) {
+            editError.hidden = false;
+            editError.textContent = err.message || "Could not update scheduled ride.";
+          } else {
+            alert(err.message || "Could not update scheduled ride.");
+          }
+        });
+    });
+  }
 
   document.querySelectorAll(".history-rate-btn").forEach(function (btn) {
     btn.addEventListener("click", function () {

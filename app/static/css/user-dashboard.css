@@ -2474,6 +2474,16 @@ body.rider-trip-chat-open {
   gap: 0.75rem;
 }
 
+.tracking-sim-actions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.tracking-sim-actions[hidden] {
+  display: none;
+}
+
 .tracking-bottom-actions .rider-btn--danger-outline {
   grid-column: 1 / -1;
 }
@@ -3948,6 +3958,121 @@ body.user-confirm-open {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: 1rem;
+}
+
+.support-layout__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.support-accident__lead,
+.support-accident__hint {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--user-muted);
+  line-height: 1.45;
+}
+
+.support-accident__hint {
+  margin: 0.75rem 0 0;
+}
+
+.support-field--checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.support-field--checkbox input {
+  width: auto;
+}
+
+.support-field--checkbox span {
+  margin: 0;
+  font-weight: 500;
+}
+
+.settings-security-note {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--user-muted);
+  line-height: 1.5;
+}
+
+.settings-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.settings-password-status {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--user-muted);
+}
+
+.settings-legal-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.schedule-select--full {
+  grid-column: 1 / -1;
+}
+
+.schedule-edit-dialog {
+  border: none;
+  border-radius: var(--user-radius);
+  padding: 0;
+  max-width: 26rem;
+  width: calc(100% - 2rem);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+.schedule-edit-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.schedule-edit-dialog__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.schedule-edit-dialog__panel h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+}
+
+.schedule-edit-dialog__panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--user-muted);
+}
+
+.schedule-edit-dialog__panel input {
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--user-border);
+  border-radius: var(--user-radius-sm);
+  background: var(--user-field-bg);
+  color: var(--user-text);
+  font-size: 0.9375rem;
+}
+
+.schedule-edit-dialog__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.schedule-edit-dialog__error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.875rem;
 }
 
 .support-field {

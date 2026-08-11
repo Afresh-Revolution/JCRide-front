@@ -4,8 +4,8 @@
   var mapGreen = "#0a4f2a";
   var routeMapEl = document.getElementById("rider-route-map");
   var routeMapDataEl = document.getElementById("rider-route-map-data");
-  var routeMapInstance = null;
-  var routeMapTileLayer = null;
+  var routeSurface = null;
+  var initPromise = null;
 
   var LOCATION_COORDS = {
     "lekki, lagos": { lat: 6.4474, lng: 3.5569 },
@@ -97,71 +97,10 @@
     }
   }
 
-  function tileLayerUrl() {
-    var root = document.documentElement;
-    var manualTheme = root.getAttribute("data-user-theme");
-    var isDark =
-      manualTheme === "dark" ||
-      (!manualTheme &&
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
-    return isDark
-      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
-  }
-
   function mapHostVisible() {
     if (!routeMapEl) return false;
     if (routeMapEl.closest("[hidden]")) return false;
     return routeMapEl.offsetWidth > 0 && routeMapEl.offsetHeight > 0;
-  }
-
-  function bindThemeListener() {
-    var onChange = function () {
-      if (!routeMapInstance || !routeMapTileLayer) return;
-      routeMapTileLayer.setUrl(tileLayerUrl());
-    };
-
-    if (window.matchMedia) {
-      var mq = window.matchMedia("(prefers-color-scheme: dark)");
-      if (mq.addEventListener) {
-        mq.addEventListener("change", onChange);
-      } else if (mq.addListener) {
-        mq.addListener(onChange);
-      }
-    }
-
-    if (window.MutationObserver) {
-      var observer = new MutationObserver(onChange);
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["data-user-theme"],
-      });
-    }
-  }
-
-  function refreshMapSize() {
-    if (!routeMapEl) return;
-    if (!routeMapInstance) {
-      if (mapHostVisible()) {
-        initRouteMap();
-      }
-      return;
-    }
-    routeMapInstance.invalidateSize();
-    var config = readMapConfig();
-    if (config) {
-      renderRouteMap(config);
-    }
-  }
-
-  function createDivIcon(html, size, anchor) {
-    return L.divIcon({
-      className: "",
-      html: html,
-      iconSize: size,
-      iconAnchor: anchor,
-    });
   }
 
   function vehicleIcon(type) {
@@ -185,13 +124,9 @@
   }
 
   function renderRouteMap(config) {
-    if (!routeMapInstance || typeof L === "undefined" || !config) return;
+    if (!routeSurface || !config) return;
 
-    routeMapInstance.eachLayer(function (layer) {
-      if (layer !== routeMapTileLayer) {
-        routeMapInstance.removeLayer(layer);
-      }
-    });
+    routeSurface.clearOverlays();
 
     var pickup = config.pickup;
     var dropoff = config.dropoff;
@@ -199,96 +134,93 @@
     var boundsPoints = [];
 
     if (route.length >= 2) {
-      L.polyline(route, {
+      routeSurface.addPolyline(route, {
+        color: "#34d399",
+        weight: 8,
+        opacity: 0.18,
+      });
+      routeSurface.addPolyline(route, {
         color: mapGreen,
         weight: 5,
-        opacity: 0.92,
+        opacity: 0.98,
         dashArray: config.use_fastest_route ? null : "12, 10",
-        lineCap: "round",
-      }).addTo(routeMapInstance);
+      });
       boundsPoints = boundsPoints.concat(route);
     }
 
     (config.drivers || []).forEach(function (driver) {
-      L.circleMarker([driver.lat, driver.lng], {
+      routeSurface.addCircleMarker(driver.lat, driver.lng, {
         radius: 7,
         color: mapGreen,
         fillColor: "#0d6b38",
-        fillOpacity: 0.92,
-        weight: 2,
-      })
-        .bindTooltip("Driver nearby", { direction: "top", offset: [0, -6] })
-        .addTo(routeMapInstance);
+        title: "Driver nearby",
+      });
       boundsPoints.push([driver.lat, driver.lng]);
     });
 
     (config.stops || []).forEach(function (stop, index) {
-      L.marker([stop.lat, stop.lng], {
-        icon: createDivIcon(
-          '<div class="map-marker-stop">' + (index + 1) + "</div>",
-          [18, 18],
-          [9, 9]
-        ),
-        zIndexOffset: 90,
-      })
-        .bindTooltip(stop.label || "Stop " + (index + 1), {
-          direction: "top",
-          offset: [0, -8],
-        })
-        .addTo(routeMapInstance);
+      routeSurface.addDomMarker(
+        stop.lat,
+        stop.lng,
+        '<div class="map-marker-stop">' + (index + 1) + "</div>",
+        {
+          size: [18, 18],
+          anchor: [9, 9],
+          title: stop.label || "Stop " + (index + 1),
+          zIndex: 90,
+        }
+      );
       boundsPoints.push([stop.lat, stop.lng]);
     });
 
     if (pickup) {
-      L.marker([pickup.lat, pickup.lng], {
-        icon: createDivIcon(
-          '<div class="map-marker-start"></div>',
-          [14, 14],
-          [7, 7]
-        ),
-        zIndexOffset: 100,
-      })
-        .bindTooltip(config.pickup_label || "Pickup", {
-          direction: "top",
-          offset: [0, -8],
-        })
-        .addTo(routeMapInstance);
+      routeSurface.addDomMarker(
+        pickup.lat,
+        pickup.lng,
+        '<div class="map-marker-start"></div>',
+        {
+          size: [14, 14],
+          anchor: [7, 7],
+          title: config.pickup_label || "Pickup",
+          zIndex: 100,
+        }
+      );
       boundsPoints.push([pickup.lat, pickup.lng]);
     }
 
     if (config.vehicle_position && !(config.drivers && config.drivers.length)) {
       var pos = config.vehicle_position;
-      L.marker([pos.lat, pos.lng], {
-        icon: createDivIcon(
-          vehicleIcon(config.vehicle_type || "car"),
-          [36, 36],
-          [18, 18]
-        ),
-        zIndexOffset: 200,
-      }).addTo(routeMapInstance);
+      routeSurface.addDomMarker(
+        pos.lat,
+        pos.lng,
+        vehicleIcon(config.vehicle_type || "car"),
+        {
+          size: [36, 36],
+          anchor: [18, 18],
+          zIndex: 200,
+        }
+      );
       boundsPoints.push([pos.lat, pos.lng]);
     }
 
     if (dropoff) {
-      L.marker([dropoff.lat, dropoff.lng], {
-        icon: createDivIcon(
-          '<div class="map-marker-end"></div>',
-          [16, 16],
-          [8, 8]
-        ),
-        zIndexOffset: 100,
-      })
-        .bindTooltip(config.dropoff_label || "Drop-off", {
-          direction: "top",
-          offset: [0, -8],
-        })
-        .addTo(routeMapInstance);
+      routeSurface.addDomMarker(
+        dropoff.lat,
+        dropoff.lng,
+        '<div class="map-marker-end"></div>',
+        {
+          size: [16, 16],
+          anchor: [8, 8],
+          title: config.dropoff_label || "Drop-off",
+          zIndex: 100,
+        }
+      );
       boundsPoints.push([dropoff.lat, dropoff.lng]);
     }
 
     if (boundsPoints.length) {
-      routeMapInstance.fitBounds(boundsPoints, {
-        padding: [48, 48],
+      routeSurface.fitBounds(boundsPoints, {
+        padding: 48,
         maxZoom: config.map_zoom || 13,
       });
     }
@@ -299,39 +231,75 @@
     }
   }
 
-  function initRouteMap() {
-    if (!routeMapEl || typeof L === "undefined") return;
-    if (!mapHostVisible()) return;
+  function ensureSurface() {
+    if (routeSurface) {
+      return Promise.resolve(routeSurface);
+    }
+    if (initPromise) {
+      return initPromise;
+    }
+    if (!routeMapEl || !window.JosRideMaps) {
+      return Promise.reject(new Error("Map bootstrap missing"));
+    }
 
     var config = readMapConfig();
-    if (!config) return;
-
-    if (routeMapInstance) {
-      routeMapInstance.remove();
-      routeMapInstance = null;
+    if (!config) {
+      return Promise.reject(new Error("Map config missing"));
     }
 
     var center = config.map_center || config.pickup || { lat: 6.5244, lng: 3.3792 };
     var zoom = config.map_zoom || 13;
 
-    routeMapInstance = L.map(routeMapEl, {
-      zoomControl: false,
-      attributionControl: false,
-    }).setView([center.lat, center.lng], zoom);
+    initPromise = window.JosRideMaps.createSurface(routeMapEl, {
+      center: center,
+      zoom: zoom,
+      zoomControl: true,
+    }).then(function (surface) {
+      routeSurface = surface;
+      initPromise = null;
+      return surface;
+    });
 
-    routeMapTileLayer = L.tileLayer(tileLayerUrl(), {
-      maxZoom: 19,
-    }).addTo(routeMapInstance);
+    return initPromise;
+  }
 
-    bindThemeListener();
-    L.control.zoom({ position: "topright" }).addTo(routeMapInstance);
-    renderRouteMap(config);
+  function initRouteMap() {
+    if (!routeMapEl) return;
+    if (!mapHostVisible()) return;
 
-    window.setTimeout(function () {
-      if (routeMapInstance) {
-        routeMapInstance.invalidateSize();
+    var config = readMapConfig();
+    if (!config) return;
+
+    ensureSurface()
+      .then(function () {
+        renderRouteMap(config);
+        window.setTimeout(function () {
+          if (routeSurface) routeSurface.invalidateSize();
+        }, 120);
+      })
+      .catch(function () {
+        // Leaflet may still be loading via defer; retry shortly.
+        window.setTimeout(function () {
+          if (!routeSurface && mapHostVisible()) {
+            initRouteMap();
+          }
+        }, 200);
+      });
+  }
+
+  function refreshMapSize() {
+    if (!routeMapEl) return;
+    if (!routeSurface) {
+      if (mapHostVisible()) {
+        initRouteMap();
       }
-    }, 120);
+      return;
+    }
+    routeSurface.invalidateSize();
+    var config = readMapConfig();
+    if (config) {
+      renderRouteMap(config);
+    }
   }
 
   window.RiderRouteMap = {
@@ -341,7 +309,7 @@
     update: function (config) {
       if (!routeMapDataEl) return;
       routeMapDataEl.textContent = JSON.stringify(config);
-      if (!routeMapInstance) {
+      if (!routeSurface) {
         initRouteMap();
         return;
       }

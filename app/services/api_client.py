@@ -706,8 +706,26 @@ def cancel_ride(token, ride_id, reason=None, reason_code=None):
     )
 
 
-def estimate_delivery(token, pickup, dropoff):
-    coords = _ride_coords(pickup, dropoff)
+def estimate_delivery(
+    token,
+    pickup,
+    dropoff,
+    pickup_lat=None,
+    pickup_lng=None,
+    dest_lat=None,
+    dest_lng=None,
+):
+    if None not in (pickup_lat, pickup_lng, dest_lat, dest_lng):
+        from app.rider_api_transforms import infer_city
+        coords = {
+            "pickup_lat": pickup_lat,
+            "pickup_lng": pickup_lng,
+            "destination_lat": dest_lat,
+            "destination_lng": dest_lng,
+            "city": infer_city(pickup or dropoff),
+        }
+    else:
+        coords = _ride_coords(pickup, dropoff)
     return _request(
         "POST",
         f"{API_PREFIX}/deliveries/estimate",
@@ -720,8 +738,29 @@ def estimate_delivery(token, pickup, dropoff):
     )
 
 
-def request_delivery(token, pickup, dropoff, package_details, recipient_name, recipient_phone):
-    coords = _ride_coords(pickup, dropoff)
+def request_delivery(
+    token,
+    pickup,
+    dropoff,
+    package_details,
+    recipient_name,
+    recipient_phone,
+    pickup_lat=None,
+    pickup_lng=None,
+    dest_lat=None,
+    dest_lng=None,
+):
+    if None not in (pickup_lat, pickup_lng, dest_lat, dest_lng):
+        from app.rider_api_transforms import infer_city
+        coords = {
+            "pickup_lat": pickup_lat,
+            "pickup_lng": pickup_lng,
+            "destination_lat": dest_lat,
+            "destination_lng": dest_lng,
+            "city": infer_city(pickup or dropoff),
+        }
+    else:
+        coords = _ride_coords(pickup, dropoff)
     return _request(
         "POST",
         f"{API_PREFIX}/deliveries/request",
@@ -778,6 +817,54 @@ def cancel_scheduled_ride(token, scheduled_id, reason=None):
     return _request(
         "POST",
         f"{API_PREFIX}/scheduled-rides/{scheduled_id}/cancel",
+        token=token,
+        json=payload,
+    )
+
+
+def update_scheduled_ride(token, scheduled_id, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/scheduled-rides/{scheduled_id}",
+        token=token,
+        json=payload,
+    )
+
+
+def report_accident(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/safety/accidents",
+        token=token,
+        json=payload,
+    )
+
+
+def get_admin_accident_reports(token):
+    return _request("GET", f"{API_PREFIX}/admin/accidents", token=token)
+
+
+def acknowledge_admin_accident(token, report_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/accidents/{report_id}/acknowledge",
+        token=token,
+    )
+
+
+def resolve_admin_accident(token, report_id, status_value="resolved"):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/accidents/{report_id}/resolve",
+        token=token,
+        json={"status": status_value},
+    )
+
+
+def change_password(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/auth/change-password",
         token=token,
         json=payload,
     )
@@ -1159,6 +1246,23 @@ def set_availability(token, online, current_lat=None, current_lng=None):
     return _request(
         "POST",
         f"{API_PREFIX}/drivers/availability",
+        token=token,
+        json=payload,
+    )
+
+
+def update_driver_location(token, lat, lng, accuracy=None, heading=None, speed=None):
+    """Push live GPS to JCRide-back while the driver is online."""
+    payload = {"lat": float(lat), "lng": float(lng)}
+    if accuracy is not None:
+        payload["accuracy"] = float(accuracy)
+    if heading is not None:
+        payload["heading"] = float(heading)
+    if speed is not None:
+        payload["speed"] = float(speed)
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/location",
         token=token,
         json=payload,
     )

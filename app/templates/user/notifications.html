@@ -27,6 +27,7 @@
         class="rider-notification-item{% if item.unread %} is-unread{% endif %}"
         data-id="{{ item.id }}"
         data-unread="{{ 'true' if item.unread else 'false' }}"
+        {% if item.href %}data-href="{{ item.href }}"{% endif %}
       >
         <span class="rider-notification-item__icon rider-notification-item__icon--{{ item.kind }}" aria-hidden="true">
           {% if item.kind == 'ride' %}

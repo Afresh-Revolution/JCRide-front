@@ -383,6 +383,15 @@ def notification_kind(n_type: str | None) -> str:
 def notifications_to_ui(notifications: list[dict]) -> list[dict]:
     rows = []
     for item in notifications:
+        n_type = (item.get("type") or "").lower()
+        data = item.get("data") if isinstance(item.get("data"), dict) else {}
+        href = None
+        if n_type == "scheduled_ride_dispatched":
+            ride_id = data.get("ride_id") or data.get("created_ride_id")
+            href = "/user/live-tracking" + (f"?ride_id={ride_id}" if ride_id else "")
+        elif n_type in {"ride_created", "ride_accepted", "driver_arrived", "ride_started"}:
+            ride_id = data.get("ride_id")
+            href = "/user/live-tracking" + (f"?ride_id={ride_id}" if ride_id else "")
         rows.append(
             {
                 "id": item.get("id"),
@@ -391,6 +400,7 @@ def notifications_to_ui(notifications: list[dict]) -> list[dict]:
                 "body": item.get("body") or "",
                 "time": format_relative_time(item.get("created_at")),
                 "unread": not bool(item.get("read_at")),
+                "href": href,
             }
         )
     return rows
@@ -446,7 +456,8 @@ def prefs_update_from_ui(group: str, pref_id: str, enabled: bool) -> dict[str, b
 
 def scheduled_ride_to_ui(item: dict) -> dict:
     scheduled_for = _parse_dt(item.get("scheduled_for"))
-    when = scheduled_for.astimezone().strftime("%a, %d %b · %I:%M %p") if scheduled_for else "-"
+    local = scheduled_for.astimezone() if scheduled_for else None
+    when = local.strftime("%a, %d %b · %I:%M %p") if local else "-"
     tier = (item.get("service_tier") or "comfort").capitalize()
     fare = item.get("estimated_fare_ngn") or 0
     return {
@@ -454,8 +465,9 @@ def scheduled_ride_to_ui(item: dict) -> dict:
         "pickup": item.get("pickup_address") or "-",
         "destination": item.get("destination_address") or "-",
         "datetime": when,
+        "edit_date": local.strftime("%m/%d/%Y") if local else "",
+        "edit_time": local.strftime("%I:%M %p") if local else "",
         "class": tier,
-        "repeat": "Once",
         "reminder": f"{item.get('reminder_minutes_before', 30)} min before",
         "fare": format_ngn(fare),
     }
@@ -525,15 +537,20 @@ def delivery_estimate_to_defaults(estimate: dict, pickup: str, dropoff: str) -> 
 
 def ride_to_active_trip(ride: dict) -> dict:
     fare = ride.get("estimated_fare_ngn") or ride.get("final_fare_ngn") or 0
+    is_bike = (
+        ride.get("vehicle_category") == "bike"
+        or ride.get("request_type") == "delivery"
+    )
     return {
         "ride_id": ride.get("id"),
         "booking_id": ride.get("booking_id"),
         "pickup": ride.get("pickup_address") or "",
         "dropoff": ride.get("destination_address") or "",
-        "tier": ride.get("service_tier") or "economy",
+        # Delivery bikes have no service tier.
+        "tier": "" if is_bike else (ride.get("service_tier") or "economy"),
         "fare": format_ngn(fare),
-        "vehicle_type": "bike" if ride.get("vehicle_category") == "bike" else "car",
-        "request_type": ride.get("request_type") or "ride",
+        "vehicle_type": "bike" if is_bike else "car",
+        "request_type": ride.get("request_type") or ("delivery" if is_bike else "ride"),
         "status": ride.get("status"),
         "stops": normalize_ride_stops(ride),
     }
@@ -583,6 +600,10 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
         "in_progress": "Trip in progress",
         "completed": "Trip completed",
     }
+    is_bike = (
+        ride.get("vehicle_category") == "bike"
+        or ride.get("request_type") == "delivery"
+    )
     tracking.update(
         {
             "status_label": status_labels.get(status, status.replace("_", " ").title()),
@@ -590,7 +611,9 @@ def ride_to_tracking(ride: dict | None) -> tuple[dict, dict]:
             "destination": ride.get("destination_address") or tracking["destination"],
             "stops": normalize_ride_stops(ride),
             "booking_id": ride.get("booking_id") or tracking["booking_id"],
-            "tier": (ride.get("service_tier") or "economy").capitalize(),
+            # Delivery bikes have no economy/comfort/premium type.
+            "tier": "" if is_bike else (ride.get("service_tier") or "economy").capitalize(),
+            "is_delivery": is_bike,
             "fare_estimate": format_ngn(fare),
             "driver": {
                 "initials": initials,

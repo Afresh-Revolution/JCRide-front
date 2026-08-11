@@ -50,9 +50,14 @@
           {% endif %}
         </div>
 
+        {% set bike_profile = (vehicle.vehicle_category == 'bike') or is_bike|default(false) %}
         {% if not vehicle_complete and not vehicle_change.vehicle_change_locked %}
         <div class="driver-profile-vehicle-banner driver-profile-vehicle-banner--warn" role="status">
+          {% if bike_profile %}
+          Your bike details are incomplete. Add make, model, color, and plate before you can go online for deliveries.
+          {% else %}
           Your vehicle details are incomplete. Add make, model, color, plate, type, and service tier before you can go online and receive trips.
+          {% endif %}
         </div>
         {% endif %}
 
@@ -79,10 +84,12 @@
             <dt>Vehicle type</dt>
             <dd>{{ vehicle.category }}</dd>
           </div>
+          {% if not bike_profile and vehicle.tier_label %}
           <div>
             <dt>Service tier</dt>
             <dd>{{ vehicle.tier_label }}</dd>
           </div>
+          {% endif %}
         </dl>
       </article>
 
@@ -116,13 +123,16 @@
             </label>
             <label class="driver-vehicle-field">
               <span>Vehicle type</span>
-              <select name="vehicle_category" required>
+              <select name="vehicle_category" required id="profile-vehicle-category">
                 {% for category in vehicle_categories %}
                 <option value="{{ category }}"{% if vehicle.vehicle_category == category %} selected{% endif %}>{{ category|title }}</option>
                 {% endfor %}
               </select>
             </label>
-            <label class="driver-vehicle-field">
+            {% if bike_profile %}
+            <input type="hidden" name="service_tier" value="economy">
+            {% else %}
+            <label class="driver-vehicle-field" id="profile-service-tier-field">
               <span>Service tier</span>
               <select name="service_tier" required>
                 {% for tier in service_tiers %}
@@ -130,11 +140,12 @@
                 {% endfor %}
               </select>
             </label>
+            {% endif %}
           </div>
 
           <footer class="driver-vehicle-modal__footer">
             <button type="button" class="driver-btn driver-btn--ghost" data-vehicle-modal-close>Cancel</button>
-            <button type="submit" class="driver-btn driver-btn--primary" data-vehicle-submit>Save vehicle</button>
+            <button type="submit" class="driver-btn driver-btn--primary" data-vehicle-submit>Save {% if bike_profile %}bike{% else %}vehicle{% endif %}</button>
           </footer>
         </form>
         {% else %}
@@ -172,6 +183,9 @@
                 {% endfor %}
               </select>
             </label>
+            {% if bike_profile %}
+            <input type="hidden" name="service_tier" value="economy">
+            {% else %}
             <label class="driver-vehicle-field">
               <span>Service tier</span>
               <select name="service_tier" required>
@@ -180,13 +194,14 @@
                 {% endfor %}
               </select>
             </label>
+            {% endif %}
           </div>
 
           <div class="driver-vehicle-modal__photos">
             <h3>Verification photos</h3>
             <p>Upload all three clear photos. JPEG, PNG, or WEBP only.</p>
             <label class="driver-vehicle-photo">
-              <span class="driver-vehicle-photo__label">1. Plate number on the car (taken at a distance)</span>
+              <span class="driver-vehicle-photo__label">1. Plate number on the {% if bike_profile %}bike{% else %}car{% endif %} (taken at a distance)</span>
               <span class="driver-vehicle-photo__control">
                 <span class="driver-vehicle-photo__browse">Choose file</span>
                 <input type="file" name="photo_plate_distance" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" required data-vehicle-photo>
