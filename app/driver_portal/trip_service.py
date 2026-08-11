@@ -5,7 +5,12 @@ from __future__ import annotations
 import math
 from datetime import UTC, datetime
 
-from app.services.api_client import ApiError, get_driver_active_ride, get_driver_profile
+from app.services.api_client import (
+    ApiError,
+    get_driver_active_delivery,
+    get_driver_active_ride,
+    get_driver_profile,
+)
 
 DESTINATION_RADIUS_KM = 0.15
 ARRIVAL_READY_STATUSES = frozenset({"accepted", "driver_assigned", "assigned"})
@@ -208,6 +213,14 @@ def api_ride_to_active_trip(ride: dict, token: str | None = None) -> dict:
     status = payload.get("status", "in_progress")
     status_label = str(status).replace("_", " ").upper()
     distance_left = _distance_left_km(payload, vehicle, start, end)
+    is_delivery = (
+        str(payload.get("request_type") or "").lower() == "delivery"
+        or str(payload.get("vehicle_category") or "").lower() == "bike"
+    )
+    # Delivery bikes have no service tier / type label.
+    rider_tier = "" if is_delivery else (
+        str(payload.get("service_tier") or "economy").replace("_", " ").title() + " rider"
+    )
 
     return enrich_trip_actions({
         "id": str(payload.get("id") or payload.get("ride_id") or ""),
@@ -215,7 +228,8 @@ def api_ride_to_active_trip(ride: dict, token: str | None = None) -> dict:
         "status_label": status_label,
         "rider_name": rider_name,
         "rider_initials": _initials(rider_name),
-        "rider_tier": str(payload.get("service_tier") or "economy").replace("_", " ").title() + " rider",
+        "rider_tier": rider_tier,
+        "is_delivery": is_delivery,
         "rating": float(customer.get("rating") or payload.get("rider_rating") or 0),
         "distance_left_km": distance_left,
         "earnings_live": _fmt_ngn(fare),
@@ -281,20 +295,33 @@ def _enrich_distance_left(trip: dict) -> dict:
     return trip
 
 
-def resolve_active_trip(token: str | None, session: dict | None = None) -> dict | None:
+def resolve_active_trip(
+    token: str | None,
+    session: dict | None = None,
+    *,
+    is_bike: bool = False,
+) -> dict | None:
     if not token:
         return None
-    try:
-        api_ride = get_driver_active_ride(token)
-        if api_ride:
-            trip = api_ride_to_active_trip(api_ride, token=token)
-            if trip.get("id"):
-                trip = _apply_session_driver_location(trip, session)
-                trip = _enrich_distance_left(trip)
-                return enrich_trip_actions(trip)
-    except ApiError as exc:
-        if exc.status_code in (401, 403):
-            raise
-        if exc.status_code not in (404, 204):
-            return None
+
+    fetchers = (
+        (get_driver_active_delivery, get_driver_active_ride)
+        if is_bike
+        else (get_driver_active_ride, get_driver_active_delivery)
+    )
+
+    for fetch in fetchers:
+        try:
+            api_ride = fetch(token)
+            if api_ride:
+                trip = api_ride_to_active_trip(api_ride, token=token)
+                if trip.get("id"):
+                    trip = _apply_session_driver_location(trip, session)
+                    trip = _enrich_distance_left(trip)
+                    return enrich_trip_actions(trip)
+        except ApiError as exc:
+            if exc.status_code in (401, 403):
+                raise
+            if exc.status_code not in (404, 204):
+                continue
     return None

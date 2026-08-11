@@ -37,6 +37,7 @@ from app.driver_portal.trip_service import (
 )
 from app.services.api_client import (
     ApiError,
+    accept_driver_delivery,
     accept_driver_ride,
     cancel_driver_ride,
     clear_all_notifications,
@@ -50,7 +51,9 @@ from app.services.api_client import (
     driver_settings_go_offline,
     driver_settings_pause,
     get_driver_profile,
+    get_driver_active_delivery,
     get_driver_active_ride,
+    get_driver_delivery_requests,
     get_driver_payout_account,
     get_driver_ride_requests,
     get_ride_messages,
@@ -60,6 +63,7 @@ from app.services.api_client import (
     mark_notification_read,
     register,
     register_device,
+    reject_driver_delivery,
     reject_driver_ride,
     ride_call_accept,
     ride_call_end,
@@ -144,6 +148,34 @@ def _load_driver_profile():
         return None
 
 
+def _normalize_vehicle_category(value) -> str:
+    category = str(value or "").strip().lower()
+    return category if category in VEHICLE_CATEGORIES else ""
+
+
+def _cache_vehicle_category(category: str | None) -> str:
+    normalized = _normalize_vehicle_category(category)
+    if normalized:
+        session["vehicle_category"] = normalized
+        session.modified = True
+    return normalized
+
+
+def _driver_vehicle_category(driver: dict | None = None) -> str:
+    cached = _normalize_vehicle_category(session.get("vehicle_category"))
+    if cached:
+        return cached
+    profile = driver if driver is not None else _load_driver_profile()
+    if not profile:
+        return ""
+    row = profile.get("driver") or profile
+    return _cache_vehicle_category(row.get("vehicle_category"))
+
+
+def _is_bike_driver(driver: dict | None = None) -> bool:
+    return _driver_vehicle_category(driver) == "bike"
+
+
 def _driver_profile():
     driver = _load_driver_profile()
     name = session.get("driver_name") or "Driver"
@@ -151,6 +183,7 @@ def _driver_profile():
     plate = "-"
     approval_status = ""
     initials = "DR"
+    vehicle_category = _normalize_vehicle_category(session.get("vehicle_category"))
 
     if driver:
         name = driver.get("full_name") or name
@@ -159,6 +192,7 @@ def _driver_profile():
         approval_status = str(driver.get("status") or "").replace("_", " ").title()
         initials = "".join(part[0] for part in name.split()[:2]).upper() or "DR"
         session["driver_online"] = bool(driver.get("is_online"))
+        vehicle_category = _cache_vehicle_category(driver.get("vehicle_category")) or vehicle_category
 
     return {
         "name": name,
@@ -166,30 +200,40 @@ def _driver_profile():
         "rating": rating,
         "plate": plate,
         "approval_status": approval_status,
+        "vehicle_category": vehicle_category,
+        "is_bike": vehicle_category == "bike",
     }
 
 
-def _sync_driver_trip_state(token: str | None) -> tuple[bool, str | None]:
+def _sync_driver_trip_state(token: str | None, *, is_bike: bool = False) -> tuple[bool, str | None]:
     if not token:
         session.pop("active_trip_id", None)
         return False, None
-    try:
-        ride = get_driver_active_ride(token)
-        if ride:
-            payload = ride.get("ride") or ride.get("data") or ride
-            ride_id = str((payload or {}).get("id") or (payload or {}).get("ride_id") or "")
-            if ride_id:
-                session["active_trip_id"] = ride_id
-                return True, ride_id
-    except ApiError:
-        pass
+
+    fetchers = (
+        (get_driver_active_delivery, get_driver_active_ride)
+        if is_bike
+        else (get_driver_active_ride, get_driver_active_delivery)
+    )
+    for fetch in fetchers:
+        try:
+            ride = fetch(token)
+            if ride:
+                payload = ride.get("ride") or ride.get("delivery") or ride.get("data") or ride
+                ride_id = str((payload or {}).get("id") or (payload or {}).get("ride_id") or "")
+                if ride_id:
+                    session["active_trip_id"] = ride_id
+                    return True, ride_id
+        except ApiError:
+            continue
     session.pop("active_trip_id", None)
     return False, None
 
 
 def _portal_context(active_nav: str, **extra):
     token = _driver_token()
-    on_active_trip, active_trip_id = _sync_driver_trip_state(token)
+    is_bike = bool(extra.pop("is_bike", None)) if "is_bike" in extra else _is_bike_driver()
+    on_active_trip, active_trip_id = _sync_driver_trip_state(token, is_bike=is_bike)
     online = bool(session.get("driver_online", False))
     return {
         "profile": _driver_profile(),
@@ -201,6 +245,8 @@ def _portal_context(active_nav: str, **extra):
         "active_trip_id": active_trip_id,
         "driver_open": online and not on_active_trip,
         "online": online,
+        "is_bike": is_bike,
+        "vehicle_category": "bike" if is_bike else (_driver_vehicle_category() or "car"),
         "notifications_unread_count": resolve_notifications_unread_count(token),
         **extra,
     }
@@ -299,8 +345,9 @@ def dashboard():
         return guard
 
     token = _driver_token()
-    dashboard_data, api_connected = resolve_dashboard(token)
     driver = _load_driver_profile()
+    is_bike = _is_bike_driver(driver)
+    dashboard_data, api_connected = resolve_dashboard(token, is_bike=is_bike)
     online = bool(driver.get("is_online")) if driver else session.get("driver_online", False)
     session["driver_online"] = online
 
@@ -308,6 +355,7 @@ def dashboard():
         "pages/dashboard.html",
         **_portal_context(
             "dashboard",
+            is_bike=is_bike,
             metrics=dashboard_data["metrics"],
             weekly=dashboard_data["weekly"],
             demand=dashboard_data["demand"],
@@ -373,6 +421,8 @@ def update_vehicle_profile():
 
     try:
         update_driver_profile(token, payload)
+        if vehicle_category in VEHICLE_CATEGORIES:
+            _cache_vehicle_category(vehicle_category)
         flash("Bike profile saved." if vehicle_category == "bike" else "Vehicle profile saved.", "success")
     except ApiError as exc:
         flash(exc.message, "error")
@@ -397,6 +447,9 @@ def update_profile_vehicle():
     plate_number = request.form.get("plate_number", "").strip()
     vehicle_category = request.form.get("vehicle_category", "").strip().lower()
     service_tier = request.form.get("service_tier", "").strip().lower()
+    # Delivery bikes have no public tier; keep economy internally for the API.
+    if vehicle_category == "bike":
+        service_tier = "economy"
 
     missing = []
     if not vehicle_make:
@@ -409,7 +462,7 @@ def update_profile_vehicle():
         missing.append("plate number")
     if vehicle_category not in VEHICLE_CATEGORIES:
         missing.append("vehicle type")
-    if service_tier not in SERVICE_TIERS:
+    if vehicle_category != "bike" and service_tier not in SERVICE_TIERS:
         missing.append("service tier")
 
     if missing:
@@ -428,7 +481,13 @@ def update_profile_vehicle():
                 "service_tier": service_tier,
             },
         )
-        flash("Vehicle profile saved. You can go online and start receiving trips.", "success")
+        _cache_vehicle_category(vehicle_category)
+        flash(
+            "Bike profile saved. You can go online for deliveries."
+            if vehicle_category == "bike"
+            else "Vehicle profile saved. You can go online and start receiving trips.",
+            "success",
+        )
     except ApiError as exc:
         flash(exc.message, "error")
 
@@ -441,11 +500,17 @@ def ride_requests():
     if guard:
         return guard
 
-    requests_list, api_connected = resolve_ride_requests(_driver_token())
+    is_bike = _is_bike_driver()
+    requests_list, api_connected = resolve_ride_requests(_driver_token(), is_bike=is_bike)
 
     return render_template(
         "pages/ride_requests.html",
-        **_portal_context("requests", ride_requests=requests_list, api_connected=api_connected),
+        **_portal_context(
+            "requests",
+            is_bike=is_bike,
+            ride_requests=requests_list,
+            api_connected=api_connected,
+        ),
     )
 
 
@@ -460,12 +525,23 @@ def accept_ride(request_id):
         flash("Please sign in again.", "error")
         return redirect(url_for("driver_portal.login"))
 
+    is_bike = _is_bike_driver()
     try:
-        result = accept_driver_ride(token, request_id)
-        trip = api_ride_to_active_trip(result.get("ride") or result, token=token)
+        result = (
+            accept_driver_delivery(token, request_id)
+            if is_bike
+            else accept_driver_ride(token, request_id)
+        )
+        trip = api_ride_to_active_trip(
+            result.get("ride") or result.get("delivery") or result,
+            token=token,
+        )
         if trip.get("id"):
             session["active_trip_id"] = trip["id"]
-        flash("Ride accepted! Head to pickup.", "success")
+        flash(
+            "Delivery accepted! Head to pickup." if is_bike else "Ride accepted! Head to pickup.",
+            "success",
+        )
         return redirect(url_for("driver_portal.active_trip"))
     except ApiError as exc:
         flash(exc.message, "error")
@@ -479,14 +555,21 @@ def reject_ride(request_id):
         return guard
 
     token = _driver_token()
+    is_bike = _is_bike_driver()
     if token:
         try:
-            reject_driver_ride(token, request_id)
+            if is_bike:
+                reject_driver_delivery(token, request_id)
+            else:
+                reject_driver_ride(token, request_id)
         except ApiError as exc:
             flash(exc.message, "error")
             return redirect(url_for("driver_portal.ride_requests"))
 
-    flash("Ride request declined.", "success")
+    flash(
+        "Delivery request declined." if is_bike else "Ride request declined.",
+        "success",
+    )
     return redirect(url_for("driver_portal.ride_requests"))
 
 
@@ -496,8 +579,9 @@ def active_trip():
     if guard:
         return guard
 
+    is_bike = _is_bike_driver()
     try:
-        trip = resolve_active_trip(_driver_token(), session)
+        trip = resolve_active_trip(_driver_token(), session, is_bike=is_bike)
     except ApiError as exc:
         if exc.status_code in (401, 403):
             session.pop("driver_token", None)
@@ -509,10 +593,19 @@ def active_trip():
         return redirect(url_for("driver_portal.ride_requests"))
 
     if not trip:
-        flash("No active trip. You are open for new requests.", "info")
+        flash(
+            "No active delivery. You are open for new requests."
+            if is_bike
+            else "No active trip. You are open for new requests.",
+            "info",
+        )
         return redirect(url_for("driver_portal.ride_requests"))
 
-    context = _portal_context("active_trip", api_connected=bool(_driver_token()))
+    context = _portal_context(
+        "active_trip",
+        is_bike=is_bike,
+        api_connected=bool(_driver_token()),
+    )
     context["trip"] = trip
     context["map_data"] = trip_map_payload(trip)
 
@@ -526,7 +619,7 @@ def api_active_trip_map():
         return guard
 
     try:
-        trip = resolve_active_trip(_driver_token(), session)
+        trip = resolve_active_trip(_driver_token(), session, is_bike=_is_bike_driver())
     except ApiError as exc:
         return _driver_api_error(exc)
 
@@ -573,7 +666,7 @@ def active_trip_arrived():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token(), session)
+    trip = resolve_active_trip(_driver_token(), session, is_bike=_is_bike_driver())
     if not trip:
         flash("No active trip.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
@@ -599,7 +692,7 @@ def active_trip_start():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token(), session)
+    trip = resolve_active_trip(_driver_token(), session, is_bike=_is_bike_driver())
     if not trip:
         flash("No active trip.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
@@ -625,7 +718,7 @@ def complete_trip():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token(), session)
+    trip = resolve_active_trip(_driver_token(), session, is_bike=_is_bike_driver())
     if not trip:
         flash("No active trip to complete.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
@@ -661,7 +754,7 @@ def cancel_trip():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token(), session)
+    trip = resolve_active_trip(_driver_token(), session, is_bike=_is_bike_driver())
     if not trip:
         flash("No active trip to cancel.", "error")
         return redirect(url_for("driver_portal.ride_requests"))
@@ -836,7 +929,7 @@ def driver_api_active_navigation():
     if guard:
         return guard
 
-    trip = resolve_active_trip(_driver_token(), session)
+    trip = resolve_active_trip(_driver_token(), session, is_bike=_is_bike_driver())
     if not trip:
         return jsonify({})
 
@@ -1085,7 +1178,9 @@ def submit_vehicle_change():
         missing.append("plate number")
     if vehicle_category not in VEHICLE_CATEGORIES:
         missing.append("vehicle category")
-    if service_tier not in SERVICE_TIERS:
+    if vehicle_category == "bike":
+        service_tier = "economy"
+    elif service_tier not in SERVICE_TIERS:
         missing.append("service tier")
     if not photo_plate_distance or not photo_plate_distance.filename:
         missing.append("plate distance photo")
@@ -1418,7 +1513,9 @@ def driver_api_dashboard():
     guard = _require_driver_api()
     if guard:
         return guard
-    data, _ = resolve_dashboard(_driver_token())
+    is_bike = _is_bike_driver()
+    data, _ = resolve_dashboard(_driver_token(), is_bike=is_bike)
+    data["is_bike"] = is_bike
     return jsonify(data)
 
 
@@ -1427,10 +1524,25 @@ def driver_api_ride_requests():
     guard = _require_driver_api()
     if guard:
         return guard
+    is_bike = _is_bike_driver()
     try:
-        data = get_driver_ride_requests(_driver_token())
-        items = data if isinstance(data, list) else data.get("requests") or data.get("rides") or []
-        return jsonify({"requests": items, "ui": ride_requests_from_api(items)})
+        data = (
+            get_driver_delivery_requests(_driver_token())
+            if is_bike
+            else get_driver_ride_requests(_driver_token())
+        )
+        items = (
+            data
+            if isinstance(data, list)
+            else data.get("requests") or data.get("rides") or data.get("deliveries") or []
+        )
+        return jsonify(
+            {
+                "requests": items,
+                "ui": ride_requests_from_api(items, is_bike=is_bike),
+                "is_bike": is_bike,
+            }
+        )
     except ApiError as exc:
         return _driver_api_error(exc)
 
@@ -1441,6 +1553,8 @@ def driver_api_accept_ride(ride_id):
     if guard:
         return guard
     try:
+        if _is_bike_driver():
+            return jsonify(accept_driver_delivery(_driver_token(), ride_id))
         return jsonify(accept_driver_ride(_driver_token(), ride_id))
     except ApiError as exc:
         return _driver_api_error(exc)
@@ -1452,6 +1566,8 @@ def driver_api_reject_ride(ride_id):
     if guard:
         return guard
     try:
+        if _is_bike_driver():
+            return jsonify(reject_driver_delivery(_driver_token(), ride_id))
         return jsonify(reject_driver_ride(_driver_token(), ride_id))
     except ApiError as exc:
         return _driver_api_error(exc)

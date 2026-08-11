@@ -1,17 +1,17 @@
 {% set category = (driver.get('vehicle_category') or '') if driver else '' %}
-{% set is_bike = category == 'bike' %}
-{% set tier = (driver.get('service_tier') or ('economy' if is_bike else '')) if driver else '' %}
-{% set make_ph = 'Bajaj' if is_bike else 'Toyota' %}
-{% set model_ph = 'Boxer' if is_bike else 'Corolla' %}
-{% set color_ph = 'Black' if is_bike else 'Blue' %}
-{% set plate_ph = 'BIK-123-XY' if is_bike else 'ABC-123-XY' %}
-{% set vehicle_complete = driver and driver.get('service_tier') and driver.get('vehicle_category') and driver.get('plate_number') and driver.get('vehicle_make') %}
+{% set bike_vehicle = category == 'bike' %}
+{% set tier = (driver.get('service_tier') or '') if driver else '' %}
+{% set make_ph = 'Bajaj' if bike_vehicle else 'Toyota' %}
+{% set model_ph = 'Boxer' if bike_vehicle else 'Corolla' %}
+{% set color_ph = 'Black' if bike_vehicle else 'Blue' %}
+{% set plate_ph = 'BIK-123-XY' if bike_vehicle else 'ABC-123-XY' %}
+{% set vehicle_complete = driver and driver.get('vehicle_category') and driver.get('plate_number') and driver.get('vehicle_make') and driver.get('vehicle_model') and driver.get('vehicle_color') and (bike_vehicle or driver.get('service_tier')) %}
 <section class="driver-vehicle-card{% if not vehicle_complete %} driver-vehicle-card--incomplete{% endif %}">
   <div class="driver-vehicle-card__header">
     <div>
-      <h2 class="driver-vehicle-card__title">{% if is_bike %}Bike &amp; delivery tier{% else %}Vehicle &amp; service tier{% endif %}</h2>
+      <h2 class="driver-vehicle-card__title">{% if bike_vehicle %}Bike details{% else %}Vehicle &amp; service tier{% endif %}</h2>
       <p class="driver-vehicle-card__sub">
-        {% if is_bike %}
+        {% if bike_vehicle %}
         Confirm your bike details. Required before you can go online for deliveries.
         {% else %}
         Set your service tier and vehicle details. Required before you can go online.
@@ -27,22 +27,20 @@
 
   <form method="post" action="{{ url_for('driver_portal.update_vehicle_profile') }}" class="driver-vehicle-card__form">
     <div class="driver-vehicle-card__grid">
+      {% if not bike_vehicle %}
       <label class="driver-vehicle-card__field">
         <span>Service tier</span>
-        {% if is_bike %}
-        <input type="hidden" name="service_tier" value="economy">
-        <select class="driver-vehicle-card__select" disabled aria-label="Service tier">
-          <option value="economy" selected>Economy · Delivery</option>
-        </select>
-        {% else %}
         <select name="service_tier" class="driver-vehicle-card__select" required>
           <option value="" disabled{% if not tier %} selected{% endif %}>Choose tier</option>
           {% for t in service_tiers %}
           <option value="{{ t }}"{% if tier == t %} selected{% endif %}>{{ t|capitalize }}</option>
           {% endfor %}
         </select>
-        {% endif %}
       </label>
+      {% else %}
+      {# Bikes have no service tier — set silently for backend compatibility. #}
+      <input type="hidden" name="service_tier" value="economy">
+      {% endif %}
 
       <label class="driver-vehicle-card__field">
         <span>Vehicle type</span>
@@ -55,17 +53,17 @@
       </label>
 
       <label class="driver-vehicle-card__field">
-        <span>{% if is_bike %}Bike make{% else %}Vehicle make{% endif %}</span>
+        <span>{% if bike_vehicle %}Bike make{% else %}Vehicle make{% endif %}</span>
         <input type="text" name="vehicle_make" placeholder="{{ make_ph }}" value="{{ (driver.get('vehicle_make') or '') if driver else '' }}" required>
       </label>
 
       <label class="driver-vehicle-card__field">
-        <span>{% if is_bike %}Bike model{% else %}Vehicle model{% endif %}</span>
+        <span>{% if bike_vehicle %}Bike model{% else %}Vehicle model{% endif %}</span>
         <input type="text" name="vehicle_model" placeholder="{{ model_ph }}" value="{{ (driver.get('vehicle_model') or '') if driver else '' }}" required>
       </label>
 
       <label class="driver-vehicle-card__field">
-        <span>{% if is_bike %}Bike colour{% else %}Vehicle colour{% endif %}</span>
+        <span>{% if bike_vehicle %}Bike colour{% else %}Vehicle colour{% endif %}</span>
         <input type="text" name="vehicle_color" placeholder="{{ color_ph }}" value="{{ (driver.get('vehicle_color') or '') if driver else '' }}" required>
       </label>
 
@@ -75,6 +73,6 @@
       </label>
     </div>
 
-    <button type="submit" class="driver-vehicle-card__submit">{% if is_bike %}Save bike profile{% else %}Save vehicle profile{% endif %}</button>
+    <button type="submit" class="driver-vehicle-card__submit">{% if bike_vehicle %}Save bike profile{% else %}Save vehicle profile{% endif %}</button>
   </form>
 </section>

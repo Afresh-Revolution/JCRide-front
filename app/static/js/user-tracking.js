@@ -60,6 +60,17 @@
   var loadChatMessages = null;
   var appendChatMessage = null;
   var tripHasStarted = TRIP_LIVE_STATUSES.indexOf(currentRideStatus) >= 0;
+  var skipDriverMatch = !!config.skipDriverMatch;
+  var isDeliveryRide = !!config.isDelivery;
+  var previewStatusOverride = skipDriverMatch && !isDriverMatched(currentRideStatus) ? "accepted" : null;
+
+  function isDeliveryJob(ride) {
+    if (isDeliveryRide) return true;
+    if (!ride) return false;
+    var requestType = String(ride.request_type || ride.requestType || "").toLowerCase();
+    var vehicle = String(ride.vehicle_category || ride.vehicle_type || ride.vehicleType || "").toLowerCase();
+    return requestType === "delivery" || vehicle === "bike";
+  }
 
   function isDriverMatched(status) {
     if (window.RideRealtimeEvents) {
@@ -430,15 +441,58 @@
     } else {
       activeRideState = Object.assign({}, activeRideState || {}, incoming);
     }
+    if (previewStatusOverride) {
+      activeRideState.status = previewStatusOverride;
+    }
     return activeRideState;
+  }
+
+  function syncSimControls(status) {
+    var wrap = document.getElementById("tracking-sim-actions");
+    if (!wrap || !skipDriverMatch) return;
+    status = normalizeRideStatus(status);
+    var arrivedBtn = document.getElementById("tracking-sim-arrived");
+    var startedBtn = document.getElementById("tracking-sim-started");
+    var completedBtn = document.getElementById("tracking-sim-completed");
+    var showArrived = status === "accepted" || status === "driver_assigned";
+    var showStarted = isDeliveryJob(activeRideState) && status === "driver_arrived";
+    var showCompleted = status === "in_progress";
+    if (arrivedBtn) arrivedBtn.hidden = !showArrived;
+    if (startedBtn) startedBtn.hidden = !showStarted;
+    if (completedBtn) completedBtn.hidden = !showCompleted;
+    wrap.hidden = !(showArrived || showStarted || showCompleted);
+  }
+
+  function setPreviewStatus(status) {
+    previewStatusOverride = normalizeRideStatus(status);
+    updateRideUi({
+      id: activeRideId() || config.rideId || "preview-ride",
+      status: previewStatusOverride,
+      request_type: isDeliveryJob(activeRideState) ? "delivery" : "ride",
+      vehicle_category: isDeliveryJob(activeRideState) ? "bike" : "car",
+      driver: (activeRideState && activeRideState.driver) || {
+        full_name: isDeliveryJob(null) ? "Preview biker" : "Preview driver",
+        name: isDeliveryJob(null) ? "Preview biker" : "Preview driver",
+        rating_avg: 4.9,
+        completed_trips: 12,
+        vehicle_plate: isDeliveryJob(null) ? "BIK-123-XY" : "ABC-123-XY",
+        vehicle_model: isDeliveryJob(null) ? "Bike" : "Sedan",
+      },
+    });
   }
 
   function updateRideUi(ride) {
     if (!ride) return;
     ride = mergeRideState(ride);
     var status = normalizeRideStatus(ride.status);
+    if (previewStatusOverride === "completed") {
+      status = "completed";
+    } else if (previewStatusOverride && status !== "cancelled") {
+      status = previewStatusOverride;
+    }
     currentRideStatus = status || currentRideStatus;
     if (isTripLiveStatus(status)) tripHasStarted = true;
+    if (isDeliveryJob(ride)) isDeliveryRide = true;
 
     if (ride.id) config.rideId = ride.id;
 
@@ -452,7 +506,7 @@
       return;
     }
 
-    if (isDriverMatched(status)) {
+    if (isDriverMatched(status) || skipDriverMatch) {
       showActiveTracking();
     }
 
@@ -481,6 +535,7 @@
     updateTripRoute(ride);
     updateCancelButtonVisibility();
     updateStartTripButton(status);
+    syncSimControls(status);
     if (window.RideVoiceCall) {
       if (ride.id) window.RideVoiceCall.setRideId(ride.id);
       window.RideVoiceCall.setRideStatus(status);
@@ -900,8 +955,18 @@
       }
     }
 
-    if (!config.showFinding || sessionStorage.getItem(STORAGE_KEY) === "1" || isDriverMatched(currentRideStatus)) {
-      showActiveTracking();
+    if (
+      skipDriverMatch ||
+      !config.showFinding ||
+      sessionStorage.getItem(STORAGE_KEY) === "1" ||
+      isDriverMatched(currentRideStatus)
+    ) {
+      if (skipDriverMatch && !isDriverMatched(currentRideStatus)) {
+        setPreviewStatus("accepted");
+      } else {
+        showActiveTracking();
+        syncSimControls(currentRideStatus);
+      }
     } else {
       startFindingPoll();
     }
@@ -1409,15 +1474,44 @@
     }
   }
 
+  function initDeliverySimulation() {
+    if (!skipDriverMatch) return;
+    var arrivedBtn = document.getElementById("tracking-sim-arrived");
+    var startedBtn = document.getElementById("tracking-sim-started");
+    var completedBtn = document.getElementById("tracking-sim-completed");
+    if (arrivedBtn) {
+      arrivedBtn.addEventListener("click", function () {
+        setPreviewStatus("driver_arrived");
+      });
+    }
+    if (startedBtn) {
+      startedBtn.addEventListener("click", function () {
+        setPreviewStatus("in_progress");
+      });
+    }
+    if (completedBtn) {
+      completedBtn.addEventListener("click", function () {
+        previewStatusOverride = "completed";
+        updateRideUi({
+          id: activeRideId() || config.rideId || "preview-ride",
+          status: "completed",
+        });
+      });
+    }
+    syncSimControls(currentRideStatus);
+  }
+
   function boot() {
-    if (!window.UserApi || !window.RideVoiceCall) return;
+    if (!window.UserApi) return;
     initFindingDriver();
     initTrackingActions();
+    initDeliverySimulation();
     initShareRide();
   }
 
   function waitForUserApi(attempt) {
-    if (window.UserApi && window.RideVoiceCall) {
+    // Simulation + tracking must not wait on voice-call script.
+    if (window.UserApi) {
       boot();
       return;
     }

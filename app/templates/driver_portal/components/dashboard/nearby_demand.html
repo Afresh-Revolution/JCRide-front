@@ -1,12 +1,21 @@
-{# Nearby demand map card - requires backend demand/surge API #}
+{# Nearby demand / pending requests card #}
+{% set bike_mode = is_bike|default(false) %}
+{% set pending = (demand.new_requests if demand else 0) or 0 %}
 <article class="panel panel--map">
   <div class="panel__header">
     <div>
-      <h3 class="panel__title">Nearby demand</h3>
-      {% if demand %}
-        <p class="panel__subtitle">High demand in {{ demand.zone }}</p>
+      <h3 class="panel__title">{% if bike_mode %}Nearby deliveries{% else %}Nearby demand{% endif %}</h3>
+      {% if demand and pending %}
+        <p class="panel__subtitle">
+          {{ pending }} open {% if bike_mode %}delivery{% else %}ride{% endif %} request{% if pending != 1 %}s{% endif %}
+          {% if demand.zone %} in {{ demand.zone }}{% endif %}
+        </p>
+      {% elif demand %}
+        <p class="panel__subtitle">
+          {% if bike_mode %}No delivery requests nearby right now{% else %}Watching for surge in your area{% endif %}
+        </p>
       {% else %}
-        <p class="panel__subtitle">Demand map unavailable</p>
+        <p class="panel__subtitle">{% if bike_mode %}Go online to receive delivery jobs{% else %}Demand map unavailable{% endif %}</p>
       {% endif %}
     </div>
   </div>
@@ -14,20 +23,20 @@
   <div class="map-preview">
     <div class="map-preview__grid"></div>
     <div class="map-preview__water"></div>
-    <span class="map-preview__badge">Surge zones</span>
+    <span class="map-preview__badge">{% if bike_mode %}Bike zone{% else %}Surge zones{% endif %}</span>
     <div class="map-preview__zoom">
       <button type="button">+</button>
       <button type="button">−</button>
     </div>
   </div>
 
-  {% if demand and demand.new_requests %}
+  {% if pending %}
     <a href="{{ url_for('driver_portal.ride_requests') }}" class="driver-btn driver-btn--primary driver-btn--block map-preview__cta">
-      View {{ demand.new_requests }} new requests
+      View {{ pending }} {% if bike_mode %}delivery{% else %}ride{% endif %} request{% if pending != 1 %}s{% endif %}
     </a>
   {% else %}
     <a href="{{ url_for('driver_portal.ride_requests') }}" class="driver-btn driver-btn--primary driver-btn--block map-preview__cta">
-      View ride requests
+      {% if bike_mode %}View delivery requests{% else %}View ride requests{% endif %}
     </a>
   {% endif %}
 </article>

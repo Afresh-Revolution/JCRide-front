@@ -140,6 +140,32 @@ def get_google_maps_api_key() -> str:
     ).strip()
 
 
+def _env_flag_on(*names: str, fresh: bool = False) -> bool:
+    file_env = dotenv_values(ENV_PATH) if fresh and ENV_PATH.exists() else _FILE_ENV
+    for name in names:
+        raw = (file_env.get(name) or os.getenv(name) or "").strip().lower()
+        if raw in {"1", "true", "yes", "on"}:
+            return True
+    return False
+
+
+def get_skip_driver_match() -> bool:
+    """
+    Dev preview for the website (and mobile parity): skip finding-driver wait
+    and show Simulate delivery completed controls on /user/live-tracking.
+
+    Read from JCRide-front/.env — not JCRide-back/.env.
+    Re-reads the file each call so toggling 0/1 applies without a full restart.
+    """
+    return _env_flag_on(
+        "SIMULATE_DELIVERY_COMPLETED",
+        "EXPO_PUBLIC_SIMULATE_DELIVERY_COMPLETED",
+        "EXPO_PUBLIC_SKIP_DRIVER_MATCH",
+        "SKIP_DRIVER_MATCH",
+        fresh=True,
+    )
+
+
 def format_support_phone_display(phone: str | None) -> str:
     raw = "".join(ch for ch in str(phone or "") if ch.isdigit() or ch == "+")
     if raw in {"0700527433", "+234700527433", "234700527433"}:
