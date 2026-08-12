@@ -2488,6 +2488,35 @@ body.rider-trip-chat-open {
   grid-column: 1 / -1;
 }
 
+#tracking-emergency-stop.is-hidden,
+#tracking-emergency-stop[hidden] {
+  display: none !important;
+}
+
+.emergency-stop-quote__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.55rem;
+}
+
+.emergency-stop-quote__row:last-child {
+  margin-bottom: 0;
+}
+
+.emergency-stop-quote__row--price {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(154, 52, 18, 0.2);
+  font-size: 1rem;
+}
+
+.emergency-stop-quote__row--price strong {
+  color: #047857;
+  font-size: 1.15rem;
+}
+
 .rider-btn--danger-outline {
   color: #b91c1c;
   border-color: rgba(185, 28, 28, 0.35);

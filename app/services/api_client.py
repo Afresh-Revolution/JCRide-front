@@ -1077,6 +1077,16 @@ def trigger_ride_sos(token, ride_id, lat=None, lng=None, message=None):
     )
 
 
+def emergency_stop_ride(token, ride_id, payload=None):
+    """Rider ends an in-progress trip at the current location."""
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/emergency-stop",
+        token=token,
+        json=payload or {},
+    )
+
+
 def ride_call_intent(token, ride_id, target="driver"):
     return _request(
         "POST",

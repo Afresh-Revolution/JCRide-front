@@ -177,7 +177,9 @@
   function updateCancelButtonVisibility() {
     var activeCancel = document.getElementById("tracking-cancel-ride");
     var findingCancel = document.getElementById("tracking-cancel-request");
+    var emergencyBtn = document.getElementById("tracking-emergency-stop");
     var show = canCancelStatus(currentRideStatus);
+    var showEmergency = isTripLiveStatus(currentRideStatus);
     if (activeCancel) {
       activeCancel.hidden = !show;
       activeCancel.classList.toggle("is-hidden", !show);
@@ -186,6 +188,11 @@
     if (findingCancel) {
       findingCancel.hidden = !show;
       findingCancel.classList.toggle("is-hidden", !show);
+    }
+    if (emergencyBtn) {
+      emergencyBtn.hidden = !showEmergency;
+      emergencyBtn.classList.toggle("is-hidden", !showEmergency);
+      emergencyBtn.setAttribute("aria-hidden", showEmergency ? "false" : "true");
     }
   }
 
@@ -1220,6 +1227,236 @@
           if (window.ButtonLoading) window.ButtonLoading.stop(sosBtn);
           alert(err.message || "SOS failed.");
         });
+    }
+
+    var emergencyBtn = document.getElementById("tracking-emergency-stop");
+    var emergencyModal = document.getElementById("emergency-stop-modal");
+    var emergencyClose = document.getElementById("emergency-stop-close");
+    var emergencyBack = document.getElementById("emergency-stop-back");
+    var emergencyConfirm = document.getElementById("emergency-stop-confirm");
+    var emergencyError = document.getElementById("emergency-stop-error");
+    var emergencyDistance = document.getElementById("emergency-stop-distance");
+    var emergencyOriginal = document.getElementById("emergency-stop-original");
+    var emergencyFare = document.getElementById("emergency-stop-fare");
+    var pendingEmergencyStop = null;
+
+    function formatEmergencyNgn(amount) {
+      var value = Number(amount || 0);
+      if (!Number.isFinite(value)) value = 0;
+      return "₦" + Math.round(value).toLocaleString("en-NG");
+    }
+
+    function closeEmergencyModal() {
+      pendingEmergencyStop = null;
+      if (emergencyError) {
+        emergencyError.hidden = true;
+        emergencyError.classList.add("is-hidden");
+        emergencyError.textContent = "";
+      }
+      if (emergencyModal && emergencyModal.open) emergencyModal.close();
+    }
+
+    function showEmergencyError(message) {
+      if (!emergencyError) {
+        alert(message);
+        return;
+      }
+      emergencyError.textContent = message || "Could not complete emergency stop.";
+      emergencyError.hidden = false;
+      emergencyError.classList.remove("is-hidden");
+    }
+
+    function openEmergencyQuote(quote) {
+      pendingEmergencyStop = quote;
+      if (emergencyDistance) {
+        emergencyDistance.textContent =
+          quote.distanceKm < 10
+            ? quote.distanceKm.toFixed(1) + " km"
+            : Math.round(quote.distanceKm) + " km";
+      }
+      if (emergencyOriginal) {
+        emergencyOriginal.textContent =
+          quote.originalFareNgn != null && quote.originalFareNgn > 0
+            ? formatEmergencyNgn(quote.originalFareNgn)
+            : "—";
+      }
+      if (emergencyFare) {
+        emergencyFare.textContent = formatEmergencyNgn(quote.fareNgn);
+      }
+      if (emergencyError) {
+        emergencyError.hidden = true;
+        emergencyError.classList.add("is-hidden");
+        emergencyError.textContent = "";
+      }
+      if (emergencyModal && !emergencyModal.open) emergencyModal.showModal();
+    }
+
+    function requestEmergencyPosition() {
+      return new Promise(function (resolve, reject) {
+        if (window.RiderGeolocation && typeof window.RiderGeolocation.requestPosition === "function") {
+          window.RiderGeolocation.requestPosition()
+            .then(function (pos) {
+              if (pos && pos.lat != null && pos.lng != null) {
+                resolve({ lat: Number(pos.lat), lng: Number(pos.lng) });
+                return;
+              }
+              reject(new Error("Location unavailable"));
+            })
+            .catch(function () {
+              reject(new Error("Location unavailable"));
+            });
+          return;
+        }
+        if (!navigator.geolocation) {
+          reject(new Error("Location unavailable"));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            resolve({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+            });
+          },
+          function () {
+            reject(new Error("Location unavailable"));
+          },
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+        );
+      });
+    }
+
+    if (emergencyBtn) {
+      emergencyBtn.addEventListener("click", function () {
+        var rideId = activeRideId();
+        var ride = activeRideState || {};
+        if (!rideId || !isTripLiveStatus(currentRideStatus)) return;
+        if (
+          !window.confirm(
+            "Emergency stop?\n\nEnd the trip at your current location. You will be charged for the distance covered so far."
+          )
+        ) {
+          return;
+        }
+        if (window.ButtonLoading) {
+          window.ButtonLoading.start(emergencyBtn, { text: "Calculating…" });
+        } else {
+          emergencyBtn.disabled = true;
+        }
+
+        requestEmergencyPosition()
+          .then(function (coords) {
+            var pickupLat = Number(
+              ride.pickup_lat != null ? ride.pickup_lat : ride.pickupLat
+            );
+            var pickupLng = Number(
+              ride.pickup_lng != null ? ride.pickup_lng : ride.pickupLng
+            );
+            if (!Number.isFinite(pickupLat) || !Number.isFinite(pickupLng)) {
+              throw new Error("Pickup location is missing for this trip.");
+            }
+            var estimatePayload = {
+              pickup_address: ride.pickup_address || ride.pickup || "Pickup",
+              destination_address: "Emergency stop",
+              pickup_lat: pickupLat,
+              pickup_lng: pickupLng,
+              destination_lat: coords.lat,
+              destination_lng: coords.lng,
+              service_tier: ride.service_tier || "economy",
+              vehicle_category:
+                ride.vehicle_category ||
+                (isDeliveryJob(ride) ? "bike" : "car"),
+            };
+            var estimateUrl = isDeliveryJob(ride)
+              ? "/user/api/delivery/estimate"
+              : "/user/api/rides/estimate";
+            return UserApi.post(estimateUrl, estimatePayload).then(function (estimate) {
+              var distanceKm = Number(estimate && estimate.distance_km);
+              var fareNgn = Number(estimate && estimate.estimated_fare_ngn);
+              if (!Number.isFinite(distanceKm) || distanceKm < 0) {
+                throw new Error("Could not calculate distance covered.");
+              }
+              if (!Number.isFinite(fareNgn) || fareNgn <= 0) {
+                throw new Error("Could not calculate the updated fare.");
+              }
+              var original =
+                ride.estimated_fare_ngn != null
+                  ? Number(ride.estimated_fare_ngn)
+                  : ride.final_fare_ngn != null
+                    ? Number(ride.final_fare_ngn)
+                    : null;
+              openEmergencyQuote({
+                rideId: rideId,
+                lat: coords.lat,
+                lng: coords.lng,
+                distanceKm: distanceKm,
+                fareNgn: fareNgn,
+                originalFareNgn: Number.isFinite(original) ? original : null,
+                durationMinutes: estimate.estimated_duration_minutes || null,
+              });
+            });
+          })
+          .catch(function (err) {
+            alert((err && err.message) || "Could not calculate the stop fare.");
+          })
+          .finally(function () {
+            if (window.ButtonLoading) window.ButtonLoading.stop(emergencyBtn);
+            else emergencyBtn.disabled = false;
+          });
+      });
+    }
+
+    if (emergencyClose) emergencyClose.addEventListener("click", closeEmergencyModal);
+    if (emergencyBack) emergencyBack.addEventListener("click", closeEmergencyModal);
+    if (emergencyModal) {
+      emergencyModal.addEventListener("cancel", function (event) {
+        event.preventDefault();
+        closeEmergencyModal();
+      });
+    }
+    if (emergencyConfirm) {
+      emergencyConfirm.addEventListener("click", function () {
+        if (!pendingEmergencyStop) return;
+        var quote = pendingEmergencyStop;
+        if (window.ButtonLoading) {
+          window.ButtonLoading.start(emergencyConfirm, { text: "Ending…" });
+        } else {
+          emergencyConfirm.disabled = true;
+        }
+        UserApi.post(
+          "/user/api/rides/" + encodeURIComponent(quote.rideId) + "/emergency-stop",
+          {
+            lat: quote.lat,
+            lng: quote.lng,
+            actual_distance_km: quote.distanceKm,
+            actual_duration_minutes: quote.durationMinutes || undefined,
+            estimated_fare_ngn: quote.fareNgn,
+            reason: "Emergency stop by rider",
+          }
+        )
+          .then(function (result) {
+            closeEmergencyModal();
+            var completed = normalizeRideResponse(result) || result || {};
+            completed.status = "completed";
+            completed.id = completed.id || quote.rideId;
+            completed.actual_distance_km =
+              completed.actual_distance_km != null
+                ? completed.actual_distance_km
+                : quote.distanceKm;
+            completed.final_fare_ngn =
+              completed.final_fare_ngn != null && Number(completed.final_fare_ngn) > 0
+                ? completed.final_fare_ngn
+                : quote.fareNgn;
+            updateRideUi(mergeRideState(completed));
+          })
+          .catch(function (err) {
+            showEmergencyError((err && err.message) || "Could not end the trip.");
+          })
+          .finally(function () {
+            if (window.ButtonLoading) window.ButtonLoading.stop(emergencyConfirm);
+            else emergencyConfirm.disabled = false;
+          });
+      });
     }
 
     var chatBtn = document.getElementById("tracking-chat-btn");

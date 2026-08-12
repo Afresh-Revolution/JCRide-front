@@ -17,6 +17,7 @@ from app.services.api_client import (
     estimate_delivery,
     estimate_ride,
     estimate_ride_coords,
+    emergency_stop_ride,
     get_current_delivery,
     get_current_ride,
     get_driver_profile,
@@ -2448,6 +2449,20 @@ def user_api_ride_sos(ride_id):
                 payload.get("message"),
             )
         )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/rides/<ride_id>/emergency-stop", methods=["POST"])
+def user_api_ride_emergency_stop(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        result = emergency_stop_ride(_rider_token(), ride_id, payload)
+        session.pop("active_trip", None)
+        return jsonify(result)
     except ApiError as exc:
         return _user_api_error(exc)
 

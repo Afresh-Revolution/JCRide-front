@@ -139,6 +139,9 @@
     <div class="tracking-bottom-actions">
       <a href="{{ url_for('main.user_share_ride') }}" class="rider-btn rider-btn--outline-sm tracking-share">↗ Share ride</a>
       <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--danger-outline" id="tracking-cancel-ride"{% if ride_status in ['in_progress', 'started', 'on_trip', 'completed', 'cancelled'] %} hidden{% endif %}>Cancel ride</button>
+      <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--danger-outline is-hidden" id="tracking-emergency-stop" hidden aria-hidden="true">
+        Emergency stop
+      </button>
       <button type="button" class="rider-btn rider-btn--sos rider-btn--icon" id="tracking-sos-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         SOS
@@ -168,6 +171,35 @@
       <button type="button" class="rider-btn rider-btn--outline" id="cancel-request-back">Keep looking</button>
       <button type="button" class="rider-btn rider-btn--danger" id="cancel-request-confirm">Cancel request</button>
     </div>
+  </div>
+</dialog>
+
+<dialog class="cancel-ride-modal" id="emergency-stop-modal" aria-labelledby="emergency-stop-title">
+  <div class="cancel-ride-modal__panel rider-panel">
+    <button type="button" class="cancel-ride-modal__close" id="emergency-stop-close" aria-label="Close">&times;</button>
+    <h2 class="rider-panel__title" id="emergency-stop-title">Emergency stop</h2>
+    <p class="cancel-ride-modal__lead">
+      Fare is based on distance covered. Review the updated price from pickup to your current location.
+    </p>
+    <div class="cancel-ride-modal__fee" id="emergency-stop-quote">
+      <div class="emergency-stop-quote__row">
+        <span>Distance covered</span>
+        <strong id="emergency-stop-distance">—</strong>
+      </div>
+      <div class="emergency-stop-quote__row">
+        <span>Original fare</span>
+        <strong id="emergency-stop-original">—</strong>
+      </div>
+      <div class="emergency-stop-quote__row emergency-stop-quote__row--price">
+        <span>New price</span>
+        <strong id="emergency-stop-fare">—</strong>
+      </div>
+    </div>
+    <div class="cancel-ride-modal__actions">
+      <button type="button" class="rider-btn rider-btn--outline" id="emergency-stop-back">Keep riding</button>
+      <button type="button" class="rider-btn rider-btn--danger" id="emergency-stop-confirm" data-loading-text="Ending…">End trip here</button>
+    </div>
+    <p class="cancel-ride-modal__error is-hidden" id="emergency-stop-error" hidden></p>
   </div>
 </dialog>
 
