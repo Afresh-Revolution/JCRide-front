@@ -171,7 +171,8 @@ def get_google_maps_api_key() -> str:
     then JCRide-front/.env as override.
     """
     names = ("EXPO_PUBLIC_GOOGLE_MAPS_API_KEY", "GOOGLE_MAPS_API_KEY")
-    return _env_value(*names, paths=(*BACKEND_ENV_PATHS, ENV_PATH))
+    # Front .env first (website process), then nested/sibling backend .env.
+    return _env_value(*names, paths=(ENV_PATH, *BACKEND_ENV_PATHS))
 
 
 def _env_flag_on(*names: str, fresh: bool = False) -> bool:
