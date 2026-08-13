@@ -10,6 +10,11 @@
 
   <section class="rider-panel bike-delivery-panel">
     <form method="post" class="bike-delivery-form" id="bike-delivery-form">
+      <input type="hidden" name="pickup_lat" id="delivery-pickup-lat">
+      <input type="hidden" name="pickup_lng" id="delivery-pickup-lng">
+      <input type="hidden" name="dropoff_lat" id="delivery-dropoff-lat">
+      <input type="hidden" name="dropoff_lng" id="delivery-dropoff-lng">
+
       <article class="bike-delivery-hero">
         <span class="bike-delivery-hero__icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M15 6a1 1 0 0 0-1-1H9l-2 4h11l-2-5Z"/><path d="M8 17.5h8"/></svg>
@@ -25,11 +30,11 @@
         <div class="route-inputs">
           <label class="route-input">
             <span class="route-input__dot route-input__dot--pickup" aria-hidden="true"></span>
-            <input type="text" name="pickup" value="{{ delivery.pickup }}" placeholder="Pickup location" required>
+            <input type="text" name="pickup" id="delivery-pickup-input" value="{{ delivery.pickup }}" placeholder="Pickup location" autocomplete="off" required>
           </label>
           <label class="route-input">
             <span class="route-input__dot route-input__dot--dropoff" aria-hidden="true"></span>
-            <input type="text" name="dropoff" value="{{ delivery.dropoff }}" placeholder="Drop-off location" required>
+            <input type="text" name="dropoff" id="delivery-dropoff-input" value="{{ delivery.dropoff }}" placeholder="Drop-off location" autocomplete="off" required>
           </label>
         </div>
       </div>
@@ -89,5 +94,6 @@
 {% block page_scripts %}
 <script type="application/json" id="rider-route-map-data">{{ route_map | tojson }}</script>
 <script src="{{ url_for('static', filename='js/user-route-map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-location-search.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-bike-delivery.js') }}"></script>
 {% endblock %}

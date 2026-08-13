@@ -3,15 +3,15 @@
 
   var mapEl = document.getElementById("driver-active-trip-map");
   var mapDataEl = document.getElementById("driver-active-trip-map-data");
-  var mapGreen = "#0a4f2a";
-  var liveMap = null;
-  var liveMapTileLayer = null;
-  var mapLayers = [];
+  var mapGreen = "#22c55e";
+  var mapSurface = null;
+  var mapInitPromise = null;
   var pollTimer = null;
   var geoWatchId = null;
   var navRequestId = 0;
   var currentTripData = null;
   var cachedNav = null;
+  var cachedTripRoute = null;
   var lastRouteFrom = null;
   var lastRouteFetchTime = 0;
   var lastRouteMode = "";
@@ -28,7 +28,8 @@
   var pollStarted = false;
 
   var layerRefs = {
-    polyline: null,
+    navLine: null,
+    tripLine: null,
     vehicle: null,
     start: null,
     end: null,
@@ -36,8 +37,8 @@
 
   var PRE_PICKUP_STATUSES = ["accepted", "driver_assigned", "assigned", "driver_arrived"];
   var TRIP_STARTED_STATUSES = ["in_progress", "started", "on_trip"];
-  var ROUTE_COLOR_PICKUP = "#2563eb";
-  var ROUTE_COLOR_TRIP = "#0a4f2a";
+  var ROUTE_COLOR_PICKUP = "#3b82f6";
+  var ROUTE_COLOR_TRIP = "#22c55e";
   var MIN_MOVE_M = 30;
   var PAN_MIN_MOVE_M = 120;
   var MAX_JUMP_M = 250;
@@ -57,35 +58,97 @@
     }
   }
 
-  function tileLayerUrl() {
-    var isDark =
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-    return isDark
-      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-      : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+  function vehicleHtml() {
+    return (
+      '<div class="map-marker-vehicle">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">' +
+      '<path d="M7 17h10M5 11l1.5-4h11L19 11"/>' +
+      '<circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>' +
+      "</svg></div>"
+    );
   }
 
-  function bindThemeListener() {
-    if (!window.matchMedia) return;
-    var mq = window.matchMedia("(prefers-color-scheme: dark)");
-    var onChange = function () {
-      if (liveMapTileLayer) liveMapTileLayer.setUrl(tileLayerUrl());
-    };
-    if (mq.addEventListener) {
-      mq.addEventListener("change", onChange);
-    } else if (mq.addListener) {
-      mq.addListener(onChange);
+  function removeOverlay(overlay) {
+    if (!overlay) return;
+    if (typeof overlay.setMap === "function") {
+      overlay.setMap(null);
+    } else if (mapSurface && mapSurface.map && typeof mapSurface.map.removeLayer === "function") {
+      try {
+        mapSurface.map.removeLayer(overlay);
+      } catch (err) {
+        /* already removed */
+      }
     }
   }
 
-  function createMapIcon(html, size, anchor) {
-    return L.divIcon({
-      className: "",
-      html: html,
-      iconSize: size,
-      iconAnchor: anchor,
+  function setOverlayPosition(overlay, lat, lng) {
+    if (!overlay) return;
+    if (typeof overlay.setLatLng === "function") {
+      overlay.setLatLng([lat, lng]);
+      return;
+    }
+    if (typeof overlay.setPosition === "function") {
+      overlay.setPosition({ lat: lat, lng: lng });
+      return;
+    }
+    if (overlay.position != null && typeof overlay.draw === "function") {
+      if (window.google && google.maps && google.maps.LatLng) {
+        overlay.position = new google.maps.LatLng(lat, lng);
+      } else {
+        overlay.position = { lat: lat, lng: lng };
+      }
+      overlay.draw();
+    }
+  }
+
+  function setPolylineCoords(poly, coords) {
+    if (!poly || !coords || coords.length < 2) return;
+    if (typeof poly.setLatLngs === "function") {
+      poly.setLatLngs(
+        coords.map(function (p) {
+          return [p.lat, p.lng];
+        })
+      );
+      return;
+    }
+    if (typeof poly.setPath === "function") {
+      poly.setPath(
+        coords.map(function (p) {
+          return { lat: Number(p.lat), lng: Number(p.lng) };
+        })
+      );
+    }
+  }
+
+  function ensureMapSurface() {
+    if (mapSurface) return Promise.resolve(mapSurface);
+    if (mapInitPromise) return mapInitPromise;
+    if (!mapEl || !window.JosRideMaps) {
+      return Promise.reject(new Error("Map bootstrap missing"));
+    }
+    var tripData = readMapData() || {};
+    var center = tripData.map_center || tripData.vehicle_position || { lat: 9.8965, lng: 8.8583 };
+    var zoom = tripData.map_zoom || 14;
+    mapInitPromise = window.JosRideMaps.createSurface(mapEl, {
+      center: center,
+      zoom: zoom,
+      zoomControl: true,
+      preferGoogle: true,
+    }).then(function (surface) {
+      mapSurface = surface;
+      mapInitPromise = null;
+      if (surface.map && typeof surface.map.addListener === "function") {
+        surface.map.addListener("dragstart", function () {
+          followDriver = false;
+        });
+      } else if (surface.map && typeof surface.map.on === "function") {
+        surface.map.on("dragstart", function () {
+          followDriver = false;
+        });
+      }
+      return surface;
     });
+    return mapInitPromise;
   }
 
   function distanceM(a, b) {
@@ -129,7 +192,7 @@
 
   function shouldRefetchRoute(from, to, tripData) {
     if (!from || !to) return false;
-    if (!cachedNav || !layerRefs.polyline) return true;
+    if (!cachedNav || !layerRefs.navLine) return true;
     var mode = tripData.route_mode || (isPrePickup(tripData) ? "to_pickup" : "to_destination");
     if (mode !== lastRouteMode) return true;
     if (Date.now() - lastRouteFetchTime > ROUTE_REFETCH_MS) return true;
@@ -137,105 +200,117 @@
     return false;
   }
 
-  function vehicleIcon() {
-    var carSvg =
-      '<div class="map-marker-vehicle">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">' +
-      '<path d="M7 17h10M5 11l1.5-4h11L19 11"/>' +
-      '<circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/>' +
-      "</svg></div>";
-    return createMapIcon(carSvg, [36, 36], [18, 18]);
+  function normalizeRoutePoints(coords) {
+    if (!coords || !coords.length) return [];
+    return coords
+      .map(function (p) {
+        if (Array.isArray(p)) {
+          return { lat: Number(p[0]), lng: Number(p[1]) };
+        }
+        return { lat: Number(p.lat), lng: Number(p.lng) };
+      })
+      .filter(function (p) {
+        return !Number.isNaN(p.lat) && !Number.isNaN(p.lng);
+      });
   }
 
   function drawOrUpdateRoute(coords, prePickup) {
-    if (!liveMap || !coords || coords.length < 2) return;
-    var latlngs = coords.map(function (p) {
-      return [p.lat, p.lng];
-    });
+    if (!mapSurface) return;
+    var points = normalizeRoutePoints(coords);
+    if (points.length < 2) return;
     var style = {
-      color: prePickup ? ROUTE_COLOR_PICKUP : mapGreen,
-      weight: 5,
-      opacity: 0.92,
+      color: prePickup ? ROUTE_COLOR_PICKUP : ROUTE_COLOR_TRIP,
+      weight: 6,
+      opacity: 0.98,
       dashArray: prePickup ? "10, 8" : null,
-      lineCap: "round",
+      zIndex: 3,
     };
-    if (!layerRefs.polyline) {
-      layerRefs.polyline = L.polyline(latlngs, style).addTo(liveMap);
-      mapLayers.push(layerRefs.polyline);
+    if (!layerRefs.navLine) {
+      layerRefs.navLine = mapSurface.addPolyline(points, style);
     } else {
-      layerRefs.polyline.setLatLngs(latlngs);
-      layerRefs.polyline.setStyle(style);
+      setPolylineCoords(layerRefs.navLine, points);
+      if (typeof layerRefs.navLine.setStyle === "function") {
+        layerRefs.navLine.setStyle(style);
+      } else if (typeof layerRefs.navLine.setOptions === "function") {
+        layerRefs.navLine.setOptions({
+          strokeColor: style.color,
+          strokeWeight: style.weight,
+          strokeOpacity: style.dashArray ? 0 : style.opacity,
+        });
+      }
+    }
+  }
+
+  function drawTripOverview(tripData) {
+    if (!mapSurface || !tripData || !tripData.start || !tripData.end) return;
+    var overview = normalizeRoutePoints(cachedTripRoute || tripData.route || []);
+    if (overview.length < 2) {
+      overview = [tripData.start, tripData.end];
+    }
+    var style = { color: "#86efac", weight: 4, opacity: 0.55, zIndex: 2 };
+    if (!layerRefs.tripLine) {
+      layerRefs.tripLine = mapSurface.addPolyline(overview, style);
+    } else {
+      setPolylineCoords(layerRefs.tripLine, overview);
     }
   }
 
   function ensureStaticMarkers(tripData) {
-    if (!liveMap || !tripData) return;
+    if (!mapSurface || !tripData) return;
     var prePickup = isPrePickup(tripData);
 
     if (tripData.start && !layerRefs.start) {
-      layerRefs.start = L.marker([tripData.start.lat, tripData.start.lng], {
-        icon: createMapIcon(
-          prePickup
-            ? '<div class="map-marker-start map-marker-start--pickup"></div>'
-            : '<div class="map-marker-start"></div>',
-          [14, 14],
-          [7, 7]
-        ),
-        zIndexOffset: 100,
-      }).addTo(liveMap);
-      mapLayers.push(layerRefs.start);
+      layerRefs.start = mapSurface.addDomMarker(
+        tripData.start.lat,
+        tripData.start.lng,
+        prePickup
+          ? '<div class="map-marker-start map-marker-start--pickup"></div>'
+          : '<div class="map-marker-start"></div>',
+        { size: [14, 14], anchor: [7, 7], zIndex: 100, title: "Pickup" }
+      );
     }
 
     if (tripData.end && !layerRefs.end) {
-      layerRefs.end = L.marker([tripData.end.lat, tripData.end.lng], {
-        icon: createMapIcon('<div class="map-marker-end"></div>', [16, 16], [8, 8]),
-        zIndexOffset: 100,
-      }).addTo(liveMap);
-      mapLayers.push(layerRefs.end);
+      layerRefs.end = mapSurface.addDomMarker(
+        tripData.end.lat,
+        tripData.end.lng,
+        '<div class="map-marker-end"></div>',
+        { size: [16, 16], anchor: [8, 8], zIndex: 100, title: "Destination" }
+      );
     }
 
     if (tripData.vehicle_position && !layerRefs.vehicle) {
-      layerRefs.vehicle = L.marker(
-        [tripData.vehicle_position.lat, tripData.vehicle_position.lng],
-        { icon: vehicleIcon(), zIndexOffset: 200 }
-      ).addTo(liveMap);
-      mapLayers.push(layerRefs.vehicle);
+      layerRefs.vehicle = mapSurface.addDomMarker(
+        tripData.vehicle_position.lat,
+        tripData.vehicle_position.lng,
+        vehicleHtml(),
+        { size: [36, 36], anchor: [18, 18], zIndex: 200, title: "You" }
+      );
     }
   }
 
   function updateVehicleMarker(pos) {
-    if (!pos || !liveMap) return;
+    if (!pos || !mapSurface) return;
     if (!layerRefs.vehicle) {
-      layerRefs.vehicle = L.marker([pos.lat, pos.lng], {
-        icon: vehicleIcon(),
-        zIndexOffset: 200,
-      }).addTo(liveMap);
-      mapLayers.push(layerRefs.vehicle);
+      layerRefs.vehicle = mapSurface.addDomMarker(pos.lat, pos.lng, vehicleHtml(), {
+        size: [36, 36],
+        anchor: [18, 18],
+        zIndex: 200,
+        title: "You",
+      });
       return;
     }
-    layerRefs.vehicle.setLatLng([pos.lat, pos.lng]);
+    setOverlayPosition(layerRefs.vehicle, pos.lat, pos.lng);
   }
 
   function fitToRouteOnce(coords, tripData) {
-    if (!liveMap || !followDriver || mapInitialized) return;
-    var boundsPoints = (coords || []).map(function (p) {
-      return [p.lat, p.lng];
-    });
-    if (tripData && tripData.start) {
-      boundsPoints.push([tripData.start.lat, tripData.start.lng]);
-    }
-    if (tripData && tripData.end) {
-      boundsPoints.push([tripData.end.lat, tripData.end.lng]);
-    }
-    if (tripData && tripData.vehicle_position) {
-      boundsPoints.push([tripData.vehicle_position.lat, tripData.vehicle_position.lng]);
-    }
+    if (!mapSurface || !followDriver || mapInitialized) return;
+    var boundsPoints = normalizeRoutePoints(coords);
+    if (tripData && tripData.start) boundsPoints.push(tripData.start);
+    if (tripData && tripData.end) boundsPoints.push(tripData.end);
+    if (tripData && tripData.vehicle_position) boundsPoints.push(tripData.vehicle_position);
     if (boundsPoints.length > 1) {
-      liveMap.fitBounds(L.latLngBounds(boundsPoints), {
-        padding: [56, 56],
-        maxZoom: 15,
-        animate: false,
-      });
+      mapSurface.fitBounds(boundsPoints, { padding: 56, maxZoom: 15 });
       mapInitialized = true;
     }
   }
@@ -317,15 +392,13 @@
       updateVehicleMarker(stable);
       updateManeuverFromPosition(stable);
 
-      if (followDriver && liveMap) {
+      if (followDriver && mapSurface) {
         if (!mapInitialized) {
-          liveMap.setView([stable.lat, stable.lng], Math.max(liveMap.getZoom(), 15), {
-            animate: false,
-          });
+          mapSurface.setView(stable.lat, stable.lng, 15);
           mapInitialized = true;
           lastPanPos = { lat: stable.lat, lng: stable.lng };
         } else if (movedEnough(stable, lastPanPos, PAN_MIN_MOVE_M)) {
-          liveMap.panTo([stable.lat, stable.lng], { animate: true, duration: 1.2 });
+          mapSurface.setView(stable.lat, stable.lng);
           lastPanPos = { lat: stable.lat, lng: stable.lng };
         }
       }
@@ -392,6 +465,83 @@
     return isPrePickup(tripData) ? tripData.start : tripData.end;
   }
 
+  function fetchGoogleRoute(from, to) {
+    if (!from || !to) return Promise.resolve(null);
+    if (!window.JosRideMaps || !window.JosRideMaps.hasGoogle) {
+      return Promise.resolve(null);
+    }
+
+    return window.JosRideMaps.loadGoogle()
+      .then(function () {
+        return new Promise(function (resolve) {
+          var service = new google.maps.DirectionsService();
+          service.route(
+            {
+              origin: { lat: Number(from.lat), lng: Number(from.lng) },
+              destination: { lat: Number(to.lat), lng: Number(to.lng) },
+              travelMode: google.maps.TravelMode.DRIVING,
+              drivingOptions: {
+                departureTime: new Date(),
+                trafficModel: google.maps.TrafficModel.BEST_GUESS,
+              },
+              provideRouteAlternatives: false,
+            },
+            function (result, status) {
+              if (status !== "OK" || !result || !result.routes || !result.routes.length) {
+                resolve(null);
+                return;
+              }
+              var route = result.routes[0];
+              var path = [];
+              if (route.overview_path && route.overview_path.length) {
+                route.overview_path.forEach(function (point) {
+                  path.push({ lat: point.lat(), lng: point.lng() });
+                });
+              } else {
+                (route.legs || []).forEach(function (legItem) {
+                  (legItem.steps || []).forEach(function (stepItem) {
+                    (stepItem.path || []).forEach(function (point) {
+                      path.push({ lat: point.lat(), lng: point.lng() });
+                    });
+                  });
+                });
+              }
+              var leg = route.legs && route.legs[0];
+              var distanceM = leg && leg.distance ? leg.distance.value : 0;
+              var durationSec =
+                leg && leg.duration_in_traffic
+                  ? leg.duration_in_traffic.value
+                  : leg && leg.duration
+                    ? leg.duration.value
+                    : 0;
+              var steps = leg && leg.steps ? leg.steps : [];
+              resolve({
+                route: path,
+                distance_km: distanceM / 1000,
+                duration_min: Math.max(1, Math.round(durationSec / 60)),
+                steps: steps.map(function (step) {
+                  return {
+                    name: step.instructions
+                      ? String(step.instructions).replace(/<[^>]+>/g, "")
+                      : "",
+                    distance: step.distance ? step.distance.value : 0,
+                    maneuver: {
+                      type: step.maneuver || "straight",
+                      modifier: "",
+                    },
+                  };
+                }),
+                provider: "google",
+              });
+            }
+          );
+        });
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
   function fetchOsrmRoute(from, to) {
     if (!from || !to) return Promise.resolve(null);
     var url =
@@ -421,11 +571,19 @@
           distance_km: route.distance / 1000,
           duration_min: Math.max(1, Math.round(route.duration / 60)),
           steps: steps,
+          provider: "osrm",
         };
       })
       .catch(function () {
         return null;
       });
+  }
+
+  function fetchDrivingRoute(from, to) {
+    return fetchGoogleRoute(from, to).then(function (googleRoute) {
+      if (googleRoute) return googleRoute;
+      return fetchOsrmRoute(from, to);
+    });
   }
 
   function stepInstruction(step) {
@@ -510,11 +668,16 @@
   }
 
   function resetMapLayers() {
-    mapLayers.forEach(function (layer) {
-      if (liveMap) liveMap.removeLayer(layer);
-    });
-    mapLayers = [];
-    layerRefs.polyline = null;
+    removeOverlay(layerRefs.navLine);
+    removeOverlay(layerRefs.tripLine);
+    removeOverlay(layerRefs.vehicle);
+    removeOverlay(layerRefs.start);
+    removeOverlay(layerRefs.end);
+    if (mapSurface && typeof mapSurface.clearOverlays === "function") {
+      mapSurface.clearOverlays();
+    }
+    layerRefs.navLine = null;
+    layerRefs.tripLine = null;
     layerRefs.vehicle = null;
     layerRefs.start = null;
     layerRefs.end = null;
@@ -525,93 +688,108 @@
     mapInitialized = false;
   }
 
+  function ensureTripOverviewRoute(tripData) {
+    if (!tripData || !tripData.start || !tripData.end) return Promise.resolve(null);
+    if (cachedTripRoute && cachedTripRoute.length >= 2) {
+      drawTripOverview(tripData);
+      return Promise.resolve(cachedTripRoute);
+    }
+    return fetchDrivingRoute(tripData.start, tripData.end).then(function (nav) {
+      if (nav && nav.route && nav.route.length >= 2) {
+        cachedTripRoute = nav.route;
+      } else {
+        cachedTripRoute = [tripData.start, tripData.end];
+      }
+      drawTripOverview(tripData);
+      return cachedTripRoute;
+    });
+  }
+
   function refreshNavigation(tripData, forceRoute) {
     if (!tripData) return Promise.resolve();
-    currentTripData = tripData;
-    tripData = enrichTripMap(tripData);
+    return ensureMapSurface().then(function () {
+      currentTripData = tripData;
+      tripData = enrichTripMap(tripData);
 
-    var from = resolveDriverPosition(tripData);
-    var to = navTarget(tripData);
-    var prePickup = isPrePickup(tripData);
-    var mode = tripData.route_mode || (prePickup ? "to_pickup" : "to_destination");
+      var from = resolveDriverPosition(tripData);
+      var to = navTarget(tripData);
+      var prePickup = isPrePickup(tripData);
+      var mode = tripData.route_mode || (prePickup ? "to_pickup" : "to_destination");
 
-    ensureStaticMarkers(tripData);
-    if (from) updateVehicleMarker(from);
-
-    if (!from || !to) {
-      return Promise.resolve();
-    }
-
-    if (!forceRoute && !shouldRefetchRoute(from, to, tripData)) {
-      return Promise.resolve();
-    }
-
-    var requestId = ++navRequestId;
-    return fetchOsrmRoute(from, to).then(function (nav) {
-      if (requestId !== navRequestId) return;
-      if (nav && nav.route && nav.route.length >= 2) {
-        cachedNav = nav;
-        tripData.route = nav.route;
-        lastRouteFrom = { lat: from.lat, lng: from.lng };
-        lastRouteFetchTime = Date.now();
-        lastRouteMode = mode;
-        drawOrUpdateRoute(nav.route, prePickup);
-        updateManeuverCard(tripData, nav);
-        updateMetricsDistance(nav.distance_km);
-        if (!mapInitialized) {
-          fitToRouteOnce(nav.route, tripData);
-        }
-      } else if (!cachedNav) {
-        updateManeuverCard(tripData, null);
-      }
       ensureStaticMarkers(tripData);
       if (from) updateVehicleMarker(from);
+      ensureTripOverviewRoute(tripData);
+
+      var seedRoute = normalizeRoutePoints(tripData.route || []);
+      if (seedRoute.length >= 2) {
+        drawOrUpdateRoute(seedRoute, prePickup);
+      } else if (from && to) {
+        drawOrUpdateRoute([from, to], prePickup);
+      }
+
+      if (!from || !to) {
+        return null;
+      }
+
+      if (!forceRoute && !shouldRefetchRoute(from, to, tripData)) {
+        return null;
+      }
+
+      var requestId = ++navRequestId;
+      return fetchDrivingRoute(from, to).then(function (nav) {
+        if (requestId !== navRequestId) return;
+        if (nav && nav.route && nav.route.length >= 2) {
+          cachedNav = nav;
+          tripData.route = nav.route;
+          lastRouteFrom = { lat: from.lat, lng: from.lng };
+          lastRouteFetchTime = Date.now();
+          lastRouteMode = mode;
+          drawOrUpdateRoute(nav.route, prePickup);
+          updateManeuverCard(tripData, nav);
+          updateMetricsDistance(nav.distance_km);
+          if (!mapInitialized) {
+            var fitPoints = (cachedTripRoute || []).concat(nav.route);
+            fitToRouteOnce(fitPoints.length >= 2 ? fitPoints : nav.route, tripData);
+          }
+        } else if (!cachedNav) {
+          updateManeuverCard(tripData, null);
+        }
+        ensureStaticMarkers(tripData);
+        if (from) updateVehicleMarker(from);
+      });
     });
   }
 
   function initMap() {
-    if (!mapEl || typeof L === "undefined") return;
+    if (!mapEl) return;
 
     var tripData = readMapData();
     if (!tripData) return;
 
-    if (liveMap) {
-      liveMap.remove();
-      liveMap = null;
-    }
     resetMapLayers();
-
-    var center = tripData.map_center || { lat: 6.435, lng: 3.432 };
-    var zoom = tripData.map_zoom || 14;
-
-    liveMap = L.map(mapEl, {
-      zoomControl: false,
-      attributionControl: false,
-    }).setView([center.lat, center.lng], zoom);
-
-    liveMapTileLayer = L.tileLayer(tileLayerUrl(), { maxZoom: 19 }).addTo(liveMap);
-    bindThemeListener();
-    L.control.zoom({ position: "topright" }).addTo(liveMap);
-
-    liveMap.on("dragstart", function () {
-      followDriver = false;
-    });
-
-    var initial = enrichTripMap(readMapData());
-    if (initial) {
-      currentTripData = initial;
-      if (initial.vehicle_position) {
-        lastRenderedPos = {
-          lat: initial.vehicle_position.lat,
-          lng: initial.vehicle_position.lng,
-        };
-      }
-      refreshNavigation(initial, true);
-    }
-
-    window.setTimeout(function () {
-      if (liveMap) liveMap.invalidateSize();
-    }, 150);
+    ensureMapSurface()
+      .then(function () {
+        var initial = enrichTripMap(readMapData());
+        if (initial) {
+          currentTripData = initial;
+          if (initial.vehicle_position) {
+            lastRenderedPos = {
+              lat: initial.vehicle_position.lat,
+              lng: initial.vehicle_position.lng,
+            };
+          }
+          return refreshNavigation(initial, true);
+        }
+        return null;
+      })
+      .then(function () {
+        window.setTimeout(function () {
+          if (mapSurface) mapSurface.invalidateSize();
+        }, 150);
+      })
+      .catch(function () {
+        window.setTimeout(initMap, 250);
+      });
   }
 
   function updateMetrics(metrics) {
@@ -939,7 +1117,7 @@
   }
 
   function onResize() {
-    if (liveMap) liveMap.invalidateSize();
+    if (mapSurface) mapSurface.invalidateSize();
   }
 
   function acquireInitialPosition() {

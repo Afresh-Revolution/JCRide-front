@@ -133,6 +133,7 @@ def normalize_accident_list(reports) -> dict:
                 "injuries": bool(row.get("injuries")),
                 "lat": row.get("lat"),
                 "lng": row.get("lng"),
+                "contact_phone": row.get("contact_phone"),
                 "created_at": row.get("created_at"),
                 "acknowledged_at": row.get("acknowledged_at"),
                 "resolved_at": row.get("resolved_at"),

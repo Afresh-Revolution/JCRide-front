@@ -10,7 +10,15 @@
 {% block portal_content %}
   {% include "components/dashboard/status_banner.html" %}
   {% include "components/dashboard/active_ride_card.html" %}
-  {% if not driver or not driver.get('service_tier') %}
+  {% set bike_driver = is_bike|default(false) or ((driver.get('vehicle_category') if driver else '') == 'bike') %}
+  {% set vehicle_incomplete = (not driver)
+    or (not driver.get('vehicle_category'))
+    or (not bike_driver and not driver.get('service_tier'))
+    or (not driver.get('vehicle_make'))
+    or (not driver.get('vehicle_model'))
+    or (not driver.get('vehicle_color'))
+    or (not driver.get('plate_number')) %}
+  {% if vehicle_incomplete %}
     {% include "components/dashboard/vehicle_profile.html" %}
   {% endif %}
 

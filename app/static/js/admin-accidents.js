@@ -69,27 +69,67 @@
     }
     listEl.innerHTML = items
       .map(function (item) {
+        const cardClass = item.status === "received" ? " sos-card--triggered" : "";
+        const rideLabel = item.ride_short && item.ride_short !== "-" ? "Ride " + item.ride_short : "No ride linked";
         const coords =
           item.lat != null && item.lng != null
-            ? '<p class="sos-card__coords">' + escapeHtml(item.lat) + ", " + escapeHtml(item.lng) + " · " + mapsLink(item.lat, item.lng) + "</p>"
+            ? '<p class="sos-card__coords">' +
+              escapeHtml(item.lat) +
+              ", " +
+              escapeHtml(item.lng) +
+              " · " +
+              mapsLink(item.lat, item.lng) +
+              "</p>"
             : "";
-        const injuries = item.injuries ? '<span class="queue-status queue-status--triggered">Injuries reported</span>' : "";
+        const phone = item.contact_phone
+          ? '<p class="sos-card__coords">Contact: ' + escapeHtml(item.contact_phone) + "</p>"
+          : "";
         return (
-          '<article class="sos-card" data-accident-id="' + escapeHtml(item.id) + '">' +
+          '<article class="sos-card' +
+          cardClass +
+          '" data-accident-id="' +
+          escapeHtml(item.id) +
+          '">' +
           '<div class="sos-card__main">' +
           '<div class="sos-card__meta">' +
-          '<span class="sos-card__ride">' + (item.ride_id ? "Ride " + escapeHtml(item.ride_short) : "No ride") + "</span>" +
-          '<span class="' + queueStatusClass(item.status) + '">' + escapeHtml(String(item.status).replace("_", " ")) + "</span>" +
-          '<span class="sos-card__time">' + escapeHtml(formatDate(item.created_at)) + "</span>" +
-          injuries +
+          '<span class="sos-card__ride">' +
+          escapeHtml(rideLabel) +
+          "</span>" +
+          '<span class="' +
+          queueStatusClass(item.status) +
+          '">' +
+          escapeHtml(String(item.status).replace("_", " ")) +
+          "</span>" +
+          '<span class="sos-card__time">' +
+          escapeHtml(formatDate(item.created_at)) +
+          "</span>" +
           "</div>" +
-          '<p class="sos-card__message"><strong>' + escapeHtml(item.severity) + ":</strong> " + escapeHtml(item.description) + "</p>" +
+          '<p class="sos-card__message"><strong>' +
+          escapeHtml((item.severity || "moderate").toUpperCase()) +
+          (item.injuries ? " · Injuries reported" : "") +
+          "</strong></p>" +
+          '<p class="sos-card__message">' +
+          escapeHtml(item.description) +
+          "</p>" +
           coords +
+          phone +
           "</div>" +
           '<div class="sos-card__actions">' +
-          '<button type="button" class="queue-btn queue-btn--neutral" data-accident-ack="' + escapeHtml(item.id) + '"' + (item.can_acknowledge ? "" : " disabled") + ">Acknowledge</button>" +
-          '<button type="button" class="queue-btn queue-btn--approve" data-accident-resolve="' + escapeHtml(item.id) + '" data-resolve-status="resolved"' + (item.can_resolve ? "" : " disabled") + ">Resolve</button>" +
-          '<button type="button" class="queue-btn queue-btn--reject" data-accident-resolve="' + escapeHtml(item.id) + '" data-resolve-status="false_alarm"' + (item.can_resolve ? "" : " disabled") + ">False alarm</button>" +
+          '<button type="button" class="queue-btn queue-btn--neutral" data-accident-ack="' +
+          escapeHtml(item.id) +
+          '"' +
+          (item.can_acknowledge ? "" : " disabled") +
+          ">Acknowledge</button>" +
+          '<button type="button" class="queue-btn queue-btn--approve" data-accident-resolve="' +
+          escapeHtml(item.id) +
+          '" data-resolve-status="resolved"' +
+          (item.can_resolve ? "" : " disabled") +
+          ">Resolve</button>" +
+          '<button type="button" class="queue-btn queue-btn--reject" data-accident-resolve="' +
+          escapeHtml(item.id) +
+          '" data-resolve-status="false_alarm"' +
+          (item.can_resolve ? "" : " disabled") +
+          ">False alarm</button>" +
           "</div></article>"
         );
       })
@@ -113,7 +153,9 @@
 
   function acknowledgeReport(id, button) {
     if (button && window.ButtonLoading) window.ButtonLoading.start(button);
-    return apiRequest("/admin/api/accidents/" + encodeURIComponent(id) + "/acknowledge", { method: "POST" })
+    return apiRequest("/admin/api/accidents/" + encodeURIComponent(id) + "/acknowledge", {
+      method: "POST",
+    })
       .then(function () {
         showToast("Accident report acknowledged");
         return loadReports();
@@ -136,7 +178,7 @@
             defaultValue: 1000,
           })
         : window.AdminConfirm.show({
-            title: "Resolve accident",
+            title: "Resolve accident report",
             message: "Mark this report as " + label + "?",
             confirmLabel: "Confirm",
           }).then(function (confirmed) {
@@ -167,7 +209,7 @@
           } else if (data && data.wallet_charged) {
             showToast("False alarm recorded. Violation fee charged to wallet.");
           } else {
-            showToast("Accident marked " + label);
+            showToast("Report marked " + label);
           }
           return loadReports();
         })

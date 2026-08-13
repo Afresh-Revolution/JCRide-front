@@ -109,6 +109,7 @@
 
 {% block page_scripts %}
 {% if trip %}
+{% include "includes/maps_config.html" %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.9.9/dist/livekit-client.umd.min.js" defer></script>
 <script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}" defer></script>

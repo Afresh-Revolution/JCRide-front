@@ -22,7 +22,10 @@
   </span>
   <div class="schedule-success__copy">
     <p class="schedule-success__title">Ride scheduled · {{ schedule_success.when }}</p>
-    <p class="schedule-success__text">We&rsquo;ll dispatch a {{ schedule_success.class }} driver and remind you {{ schedule_success.reminder }}.</p>
+    <p class="schedule-success__text">
+      We&rsquo;ll dispatch a {{ schedule_success.class }} driver ~5 minutes before pickup and send an in-app reminder {{ schedule_success.reminder }}.
+      {% if schedule_success.fare %} Estimated fare: <strong>{{ schedule_success.fare }}</strong>.{% endif %}
+    </p>
   </div>
   <a href="{{ url_for('main.user_schedule_ride', dismiss=1) }}" class="schedule-success__dismiss">Dismiss</a>
 </article>
@@ -30,19 +33,24 @@
 
 <div class="schedule-layout">
   <form class="rider-panel schedule-form" id="schedule-ride-form" method="post" action="{{ url_for('main.user_schedule_ride') }}">
+    <input type="hidden" name="pickup_lat" id="schedule-pickup-lat">
+    <input type="hidden" name="pickup_lng" id="schedule-pickup-lng">
+    <input type="hidden" name="destination_lat" id="schedule-destination-lat">
+    <input type="hidden" name="destination_lng" id="schedule-destination-lng">
+
     <div class="schedule-fields-row">
       <label class="schedule-field">
         <span class="schedule-field__label">Pickup location</span>
         <span class="schedule-field__control">
           <svg class="schedule-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <input type="text" name="pickup" value="{{ schedule_form.pickup }}" placeholder="Pickup location">
+          <input type="text" name="pickup" id="schedule-pickup-input" value="{{ schedule_form.pickup }}" placeholder="Pickup location" autocomplete="off">
         </span>
       </label>
       <label class="schedule-field">
         <span class="schedule-field__label">Destination</span>
         <span class="schedule-field__control">
           <svg class="schedule-field__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          <input type="text" name="destination" value="{{ schedule_form.destination }}" placeholder="Where to?">
+          <input type="text" name="destination" id="schedule-destination-input" value="{{ schedule_form.destination }}" placeholder="Where to?" autocomplete="off">
         </span>
       </label>
     </div>
@@ -81,20 +89,7 @@
     </div>
 
     <div class="schedule-options">
-      <label class="schedule-select">
-        <span class="schedule-select__label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          Repeat
-        </span>
-        <select name="repeat">
-          <option value="Once"{% if schedule_form.get('repeat', 'Once') == 'Once' %} selected{% endif %}>Once</option>
-          <option value="Daily"{% if schedule_form.get('repeat') == 'Daily' %} selected{% endif %}>Daily</option>
-          <option value="Weekdays"{% if schedule_form.get('repeat') == 'Weekdays' %} selected{% endif %}>Weekdays</option>
-          <option value="Weekly"{% if schedule_form.get('repeat') == 'Weekly' %} selected{% endif %}>Weekly</option>
-          <option value="Custom"{% if schedule_form.get('repeat') == 'Custom' %} selected{% endif %}>Custom</option>
-        </select>
-      </label>
-      <label class="schedule-select">
+      <label class="schedule-select schedule-select--full">
         <span class="schedule-select__label">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           Reminder
@@ -127,7 +122,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       </span>
       <h2 class="schedule-promo__title">Guaranteed pickup window</h2>
-      <p class="schedule-promo__text">A driver is assigned 15 minutes before your scheduled time. You&rsquo;ll get SMS, push, and WhatsApp notifications.</p>
+      <p class="schedule-promo__text">A driver is assigned about 5 minutes before your scheduled pickup. You&rsquo;ll get an in-app reminder and can open live tracking once the ride is created.</p>
     </article>
 
     <article class="rider-panel schedule-guide">
@@ -152,7 +147,7 @@
 
   <div class="schedule-list">
     {% for ride in upcoming_rides %}
-    <article class="schedule-item">
+    <article class="schedule-item" data-schedule-id="{{ ride.id }}">
       <span class="schedule-item__calendar" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       </span>
@@ -172,10 +167,6 @@
             {{ ride.class }}
           </span>
           <span class="schedule-item__meta-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            {{ ride.repeat }}
-          </span>
-          <span class="schedule-item__meta-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             {{ ride.reminder }}
           </span>
@@ -184,25 +175,87 @@
       <div class="schedule-item__aside">
         <span class="schedule-item__fare">{{ ride.fare }} <span>est. fare</span></span>
         <div class="schedule-item__actions">
-          <button type="button" class="rider-btn rider-btn--outline-sm">
+          <button type="button" class="rider-btn rider-btn--outline-sm schedule-item__edit" data-id="{{ ride.id }}" data-pickup="{{ ride.pickup }}" data-destination="{{ ride.destination }}" data-date="{{ ride.edit_date }}" data-time="{{ ride.edit_time }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit
           </button>
-          <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--danger-text">
+          <button type="button" class="rider-btn rider-btn--outline-sm rider-btn--danger-text schedule-item__cancel" data-id="{{ ride.id }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             Cancel
-          </button>
-          <button type="button" class="schedule-item__delete" aria-label="Delete ride">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           </button>
         </div>
       </div>
     </article>
+    {% else %}
+    <p class="schedule-list__empty">No upcoming scheduled rides.</p>
     {% endfor %}
   </div>
 </section>
+
+<dialog class="schedule-edit-dialog" id="schedule-edit-dialog">
+  <form method="dialog" class="schedule-edit-dialog__panel" id="schedule-edit-form">
+    <h3>Edit scheduled ride</h3>
+    <input type="hidden" name="scheduled_id" id="schedule-edit-id">
+    <label>
+      <span>Pickup</span>
+      <input type="text" name="pickup" id="schedule-edit-pickup" required>
+    </label>
+    <label>
+      <span>Destination</span>
+      <input type="text" name="destination" id="schedule-edit-destination" required>
+    </label>
+    <label>
+      <span>Date (MM/DD/YYYY)</span>
+      <input type="text" name="date" id="schedule-edit-date" required>
+    </label>
+    <label>
+      <span>Time (e.g. 08:30 AM)</span>
+      <input type="text" name="time" id="schedule-edit-time" required>
+    </label>
+    <div class="schedule-edit-dialog__actions">
+      <button type="submit" class="rider-btn rider-btn--dark" value="save">Save changes</button>
+      <button type="submit" class="rider-btn rider-btn--outline-sm" value="cancel">Close</button>
+    </div>
+    <p class="schedule-edit-dialog__error" id="schedule-edit-error" hidden></p>
+  </form>
+</dialog>
 {% endblock %}
 
 {% block page_scripts %}
+<script src="{{ url_for('static', filename='js/user-location-search.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
+<script>
+(function () {
+  if (!window.RiderLocationSearch) return;
+  var pickup = document.getElementById("schedule-pickup-input");
+  var dest = document.getElementById("schedule-destination-input");
+  var form = document.getElementById("schedule-ride-form");
+  if (pickup) {
+    RiderLocationSearch.attach(pickup, function (item) {
+      document.getElementById("schedule-pickup-lat").value = item.lat;
+      document.getElementById("schedule-pickup-lng").value = item.lng;
+    });
+  }
+  if (dest) {
+    RiderLocationSearch.attach(dest, function (item) {
+      document.getElementById("schedule-destination-lat").value = item.lat;
+      document.getElementById("schedule-destination-lng").value = item.lng;
+    });
+  }
+  if (form) {
+    form.addEventListener("submit", function () {
+      var p = RiderLocationSearch.readCoords(pickup);
+      var d = RiderLocationSearch.readCoords(dest);
+      if (p) {
+        document.getElementById("schedule-pickup-lat").value = p.lat;
+        document.getElementById("schedule-pickup-lng").value = p.lng;
+      }
+      if (d) {
+        document.getElementById("schedule-destination-lat").value = d.lat;
+        document.getElementById("schedule-destination-lng").value = d.lng;
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

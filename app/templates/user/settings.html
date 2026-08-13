@@ -47,35 +47,68 @@
   </article>
 
   <article class="rider-panel settings-card">
-    <h2 class="settings-card__title">Language &amp; region</h2>
-    <label class="settings-field">
-      <span>LANGUAGE</span>
-      <select>
-        <option selected>{{ settings.language }}</option>
-        <option>Yoruba</option>
-        <option>Igbo</option>
-        <option>Hausa</option>
-      </select>
-    </label>
-    <label class="settings-field">
-      <span>CURRENCY</span>
-      <select>
-        <option selected>{{ settings.currency }}</option>
-      </select>
-    </label>
-    <label class="settings-field">
-      <span>DISTANCE UNITS</span>
-      <select>
-        <option selected>{{ settings.distance_units }}</option>
-        <option>Miles (mi)</option>
-      </select>
-    </label>
-    <label class="settings-field settings-field--last">
-      <span>TIME ZONE</span>
-      <select>
-        <option selected>{{ settings.timezone }}</option>
-      </select>
-    </label>
+    <h2 class="settings-card__title">Security</h2>
+    {% if joscity_only %}
+    <p class="settings-security-note">
+      This account uses JosCity login. Change your password on
+      <a href="https://joscity.com" target="_blank" rel="noopener">joscity.com</a>.
+    </p>
+    {% else %}
+    <form class="settings-password-form" id="settings-password-form">
+      <label class="settings-field">
+        <span>CURRENT PASSWORD</span>
+        <input type="password" name="current_password" required autocomplete="current-password">
+      </label>
+      <label class="settings-field">
+        <span>NEW PASSWORD</span>
+        <input type="password" name="new_password" minlength="8" required autocomplete="new-password">
+      </label>
+      <label class="settings-field settings-field--last">
+        <span>CONFIRM NEW PASSWORD</span>
+        <input type="password" name="confirm_password" minlength="8" required autocomplete="new-password">
+      </label>
+      <button type="submit" class="rider-btn rider-btn--dark-sm" id="settings-password-btn">Update password</button>
+      <p class="settings-password-status" id="settings-password-status" hidden></p>
+    </form>
+    {% endif %}
+  </article>
+
+  <article class="rider-panel settings-card">
+    <h2 class="settings-card__title">Notifications</h2>
+    {% for channel in notification_channels %}
+    <div class="settings-toggle settings-toggle--compact">
+      <div class="settings-toggle__body">
+        <strong>{{ channel.label }}</strong>
+      </div>
+      <label class="user-toggle">
+        <input
+          type="checkbox"
+          class="settings-notif-toggle"
+          data-group="channels"
+          data-id="{{ channel.id }}"
+          {% if channel.enabled %} checked{% endif %}
+        >
+        <span class="user-toggle__slider"></span>
+      </label>
+    </div>
+    {% endfor %}
+    {% for topic in notification_topics %}
+    <div class="settings-toggle settings-toggle--compact">
+      <div class="settings-toggle__body">
+        <strong>{{ topic.label }}</strong>
+      </div>
+      <label class="user-toggle">
+        <input
+          type="checkbox"
+          class="settings-notif-toggle"
+          data-group="topics"
+          data-id="{{ topic.id }}"
+          {% if topic.enabled %} checked{% endif %}
+        >
+        <span class="user-toggle__slider"></span>
+      </label>
+    </div>
+    {% endfor %}
   </article>
 
   <article class="rider-panel settings-card">
@@ -92,16 +125,6 @@
     </div>
     <div class="settings-toggle settings-toggle--compact">
       <div class="settings-toggle__body">
-        <strong>Personalised offers</strong>
-        <span>Recommendations based on history</span>
-      </div>
-      <label class="user-toggle">
-        <input type="checkbox"{% if settings.personalised_offers %} checked{% endif %}>
-        <span class="user-toggle__slider"></span>
-      </label>
-    </div>
-    <div class="settings-toggle settings-toggle--compact">
-      <div class="settings-toggle__body">
         <strong>Allow driver to see saved name</strong>
         <span>First name only</span>
       </div>
@@ -110,6 +133,16 @@
         <span class="user-toggle__slider"></span>
       </label>
     </div>
+    <div class="settings-action-row">
+      <div>
+        <strong>Legal</strong>
+        <span>Privacy policy and terms of service</span>
+      </div>
+      <div class="settings-legal-links">
+        <a href="{{ url_for('main.privacy_policy') }}" class="rider-btn rider-btn--outline-sm">Privacy</a>
+        <a href="{{ url_for('main.terms_of_service') }}" class="rider-btn rider-btn--outline-sm">Terms</a>
+      </div>
+    </div>
   </article>
 
   <article class="rider-panel settings-card">
@@ -117,9 +150,9 @@
     <div class="settings-action-row">
       <div>
         <strong>Download my data</strong>
-        <span>Receive a copy by email within 24 h</span>
+        <span>Download a JSON copy of your account data</span>
       </div>
-      <button type="button" class="rider-btn rider-btn--outline-sm" id="settings-export-btn">Request</button>
+      <button type="button" class="rider-btn rider-btn--outline-sm" id="settings-export-btn">Download</button>
     </div>
     <div class="settings-action-row">
       <div>
@@ -134,7 +167,6 @@
         <span>{% if has_active_trip %}Finish your active trip first{% else %}Stops bookings — contact support to restore{% endif %}</span>
       </div>
       <button type="button" class="rider-btn rider-btn--danger-sm" id="settings-deactivate-btn"{% if has_active_trip %} disabled aria-disabled="true"{% endif %}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
         Deactivate
       </button>
     </div>
@@ -144,7 +176,6 @@
         <span>{% if has_active_trip %}Finish your active trip first{% else %}Permanent · erases all your data{% endif %}</span>
       </div>
       <button type="button" class="rider-btn rider-btn--danger-sm" id="settings-delete-btn"{% if has_active_trip %} disabled aria-disabled="true"{% endif %}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         Delete
       </button>
     </div>

@@ -1,0 +1,73 @@
+{% extends "landing_base.html" %}
+{% block title %}Track shared JosRide trip{% endblock %}
+{% block content %}
+<section class="landing-container" style="padding:48px 20px 72px;max-width:640px;margin:0 auto;">
+  <p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Shared trip</p>
+  <h1 style="margin:0 0 20px;font-size:28px;line-height:1.2;color:#0f172a;">{{ status_label }}</h1>
+
+  {% if error and not trip %}
+  <article style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:20px;margin-bottom:20px;">
+    <h2 style="margin:0 0 8px;font-size:18px;color:#0f172a;">Link unavailable</h2>
+    <p style="margin:0;color:#64748b;line-height:1.5;">{{ error }}</p>
+  </article>
+  {% elif trip %}
+  <article style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:20px;margin-bottom:16px;">
+    <p style="margin:0 0 14px;font-size:18px;font-weight:800;color:#0f172a;">{{ trip.booking_id or booking_id }}</p>
+    <p style="margin:0 0 4px;font-size:12px;color:#64748b;font-weight:600;">From</p>
+    <p style="margin:0 0 12px;color:#0f172a;font-weight:600;line-height:1.45;">{{ trip.pickup_address }}</p>
+    <p style="margin:0 0 4px;font-size:12px;color:#64748b;font-weight:600;">To</p>
+    <p style="margin:0;color:#0f172a;font-weight:600;line-height:1.45;">{{ trip.destination_address }}</p>
+  </article>
+
+  <article style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:20px;margin-bottom:16px;">
+    <p style="margin:0 0 6px;font-size:12px;color:#64748b;font-weight:600;">Driver</p>
+    <p style="margin:0 0 4px;font-size:20px;font-weight:800;color:#0f172a;">{{ trip.driver_name or "Assigned soon" }}</p>
+    <p style="margin:0;color:#64748b;">
+      {% if trip.vehicle and trip.plate_number %}
+        {{ trip.vehicle }} · {{ trip.plate_number }}
+      {% elif trip.vehicle %}
+        {{ trip.vehicle }}
+      {% elif trip.plate_number %}
+        {{ trip.plate_number }}
+      {% else %}
+        Vehicle details pending
+      {% endif %}
+    </p>
+  </article>
+  {% endif %}
+
+  <article style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:20px;padding:20px;">
+    <h2 style="margin:0 0 8px;font-size:18px;color:#0f172a;">Track in the JosRide app</h2>
+    <p style="margin:0 0 16px;color:#64748b;line-height:1.5;">
+      Already have JosRide? Open this trip in the app. New here? Download JosRide to follow shared rides live.
+    </p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      {% if share_token %}
+      <a href="{{ app_scheme_url }}" class="landing-btn landing-btn--primary" style="text-decoration:none;">Open in app</a>
+      {% endif %}
+      <a href="{{ app_download_url }}" class="landing-btn landing-btn--ghost" style="text-decoration:none;">Get JosRide</a>
+    </div>
+  </article>
+
+  {% if share_token %}
+  <script>
+    (function () {
+      // Soft-refresh trip status for recipients watching on the web.
+      var token = {{ share_token|tojson }};
+      if (!token) return;
+      window.setInterval(function () {
+        fetch("/api/public/trips/share?s=" + encodeURIComponent(token), { credentials: "same-origin" })
+          .then(function (res) { return res.ok ? res.json() : null; })
+          .then(function (data) {
+            if (!data || !data.status) return;
+            // Reload when status changes so labels/addresses stay current.
+            var current = {{ (trip.status if trip else "")|tojson }};
+            if (data.status !== current) window.location.reload();
+          })
+          .catch(function () {});
+      }, 12000);
+    })();
+  </script>
+  {% endif %}
+</section>
+{% endblock %}

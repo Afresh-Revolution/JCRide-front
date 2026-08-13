@@ -30,16 +30,29 @@
     return config.rideRequestsUrl || config.dashboardUrl || "/driver-portal/ride-requests";
   }
 
+  function isBikeMode() {
+    var banner = document.getElementById("driver-status-banner");
+    if (banner && banner.getAttribute("data-bike-mode") === "true") return true;
+    return Boolean(window.JosRideDriver && window.JosRideDriver.isBike);
+  }
+
   function setDriverOpenUi() {
+    var bike = isBikeMode();
     document.querySelectorAll(".status-banner").forEach(function (banner) {
       banner.classList.add("status-banner--online");
       banner.classList.remove("status-banner--on-trip");
       var title = banner.querySelector(".status-banner__title");
       if (title) {
-        title.innerHTML = 'YOU ARE <strong>Open</strong> · accepting rides';
+        title.innerHTML =
+          "YOU ARE <strong>Open</strong> · accepting " +
+          (bike ? "deliveries" : "rides");
       }
       var sub = banner.querySelector(".status-banner__sub");
-      if (sub) sub.textContent = "Ready for new ride requests";
+      if (sub) {
+        sub.textContent = bike
+          ? "Ready for new delivery requests"
+          : "Ready for new ride requests";
+      }
     });
     document.body.classList.remove("driver-on-active-trip");
     document.body.classList.add("driver-open");
@@ -83,7 +96,9 @@
     }
     if (statusEl) {
       statusEl.innerHTML =
-        'Your status is now <strong>Open</strong> - you can accept new ride requests.';
+        "Your status is now <strong>Open</strong> - you can accept new " +
+        (isBikeMode() ? "delivery" : "ride") +
+        " requests.";
     }
     overlay.hidden = false;
     overlay.classList.remove("is-hidden");

@@ -1,5 +1,6 @@
 {# Online / offline / on-trip status banner #}
-<section class="status-banner{% if on_active_trip %} status-banner--on-trip{% elif online %} status-banner--online{% endif %}" id="driver-status-banner">
+{% set bike_mode = is_bike|default(false) %}
+<section class="status-banner{% if on_active_trip %} status-banner--on-trip{% elif online %} status-banner--online{% endif %}" id="driver-status-banner" data-bike-mode="{{ 'true' if bike_mode else 'false' }}">
   <div class="status-banner__left">
     <span class="status-banner__power" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
@@ -7,19 +8,19 @@
     <div>
       <div class="status-banner__title">
         {% if on_active_trip %}
-          YOU ARE <strong>On trip</strong>
+          YOU ARE <strong>{% if bike_mode %}On delivery{% else %}On trip{% endif %}</strong>
         {% elif online %}
-          YOU ARE <strong>Open</strong> · accepting rides
+          YOU ARE <strong>Open</strong> · accepting {% if bike_mode %}deliveries{% else %}rides{% endif %}
         {% else %}
           YOU ARE <strong>Offline</strong>
         {% endif %}
       </div>
       {% if on_active_trip %}
-        <div class="status-banner__sub">Finish or cancel this trip before accepting new requests</div>
+        <div class="status-banner__sub">Finish or cancel this {% if bike_mode %}delivery{% else %}trip{% endif %} before accepting new requests</div>
       {% elif online and zone and surge %}
         <div class="status-banner__sub">{{ zone }} · surge {{ surge }}</div>
       {% elif online %}
-        <div class="status-banner__sub">Ready for new ride requests</div>
+        <div class="status-banner__sub">Ready for new {% if bike_mode %}delivery{% else %}ride{% endif %} requests</div>
       {% endif %}
     </div>
   </div>
