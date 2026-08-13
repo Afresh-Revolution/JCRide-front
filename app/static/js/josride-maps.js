@@ -13,15 +13,11 @@
 
   var apiKey = String(cfg.googleMapsApiKey || "").trim();
   var googleLoadPromise = null;
+  var googleLoadFailed = false;
 
-  var DARK_STYLES = [
-    { elementType: "geometry", stylers: [{ color: "#1d2c3d" }] },
-    { elementType: "labels.text.fill", stylers: [{ color: "#8ec3b9" }] },
-    { elementType: "labels.text.stroke", stylers: [{ color: "#1a3646" }] },
-    { featureType: "road", elementType: "geometry", stylers: [{ color: "#304a62" }] },
-    { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] },
-    { featureType: "poi", stylers: [{ visibility: "off" }] },
-  ];
+  // Keep Google looking like Google (standard tiles). Avoid heavy custom styles
+  // that make it indistinguishable from Leaflet/CARTO dark basemaps.
+  var DARK_STYLES = [];
 
   function isDark() {
     var root = document.documentElement;
@@ -44,6 +40,7 @@
       return Promise.reject(new Error("Google Maps API key missing"));
     }
     if (window.google && window.google.maps) {
+      googleLoadFailed = false;
       return Promise.resolve(window.google.maps);
     }
     if (googleLoadPromise) {
@@ -51,34 +48,52 @@
     }
 
     googleLoadPromise = new Promise(function (resolve, reject) {
+      var settled = false;
       var callbackName = "__josrideGoogleMapsInit";
+
+      function fail(err) {
+        if (settled) return;
+        settled = true;
+        googleLoadFailed = true;
+        googleLoadPromise = null; // allow retry on next createSurface()
+        reject(err instanceof Error ? err : new Error(String(err || "Google Maps failed")));
+      }
+
+      function ok() {
+        if (settled) return;
+        settled = true;
+        googleLoadFailed = false;
+        if (window.google && window.google.maps) {
+          resolve(window.google.maps);
+        } else {
+          fail(new Error("Google Maps failed to initialize"));
+        }
+      }
+
       window[callbackName] = function () {
         try {
           delete window[callbackName];
         } catch (err) {
           window[callbackName] = undefined;
         }
-        if (window.google && window.google.maps) {
-          resolve(window.google.maps);
-        } else {
-          reject(new Error("Google Maps failed to initialize"));
-        }
+        ok();
       };
 
       window.gm_authFailure = function () {
-        reject(new Error("Google Maps authentication failed"));
+        fail(new Error("Google Maps authentication failed (check API key / HTTP referrer restrictions)"));
       };
 
+      // Drop libraries=geometry — not required for Map/Directions and can block load.
       var script = document.createElement("script");
       script.async = true;
       script.defer = true;
       script.src =
         "https://maps.googleapis.com/maps/api/js?key=" +
         encodeURIComponent(apiKey) +
-        "&libraries=geometry&callback=" +
+        "&v=weekly&callback=" +
         callbackName;
       script.onerror = function () {
-        reject(new Error("Google Maps script failed to load"));
+        fail(new Error("Google Maps script failed to load"));
       };
       document.head.appendChild(script);
     });
@@ -99,7 +114,7 @@
     var center = latLngLiteral(opts.center) || { lat: 6.5244, lng: 3.3792 };
     var zoom = opts.zoom || 13;
     var overlays = [];
-    var map = new google.maps.Map(el, {
+    var mapOptions = {
       center: center,
       zoom: zoom,
       disableDefaultUI: true,
@@ -110,8 +125,18 @@
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
-      styles: isDark() ? DARK_STYLES : [],
-    });
+      mapTypeId: "roadmap",
+    };
+    // Prefer native Google dark color scheme when available (still clearly Google Maps).
+    if (isDark() && google.maps.ColorScheme) {
+      mapOptions.colorScheme = google.maps.ColorScheme.DARK;
+    }
+    var map = new google.maps.Map(el, mapOptions);
+    try {
+      el.setAttribute("data-map-provider", "google");
+    } catch (err) {
+      /* ignore */
+    }
 
     function track(overlay) {
       overlays.push(overlay);
@@ -432,6 +457,16 @@
     };
   }
 
+  function createLeafletSurfaceSafe(el, options) {
+    var surface = createLeafletSurface(el, options);
+    try {
+      el.setAttribute("data-map-provider", "leaflet");
+    } catch (err) {
+      /* ignore */
+    }
+    return surface;
+  }
+
   function createSurface(el, options) {
     var opts = options || {};
     // Google is the default whenever EXPO_PUBLIC_GOOGLE_MAPS_API_KEY is present.
@@ -446,21 +481,22 @@
         })
         .catch(function (err) {
           if (typeof console !== "undefined" && console.warn) {
-            console.warn("[JosRideMaps] Google Maps failed; Leaflet fallback.", err);
+            console.warn("[JosRideMaps] Google Maps failed; Leaflet fallback.", err && err.message ? err.message : err);
           }
           if (opts.allowLeafletFallback === false) {
             throw err;
           }
           if (typeof L === "undefined") {
+            // Leaflet may still be loading (defer). Let caller retry.
             throw err;
           }
-          return createLeafletSurface(el, opts);
+          return createLeafletSurfaceSafe(el, opts);
         });
     }
     if (typeof L === "undefined") {
       return Promise.reject(new Error("No map provider available (missing Google key and Leaflet)"));
     }
-    return Promise.resolve(createLeafletSurface(el, opts));
+    return Promise.resolve(createLeafletSurfaceSafe(el, opts));
   }
 
   window.JosRideMaps = {
@@ -468,6 +504,9 @@
     hasGoogle: Boolean(apiKey),
     preferGoogle: Boolean(apiKey),
     providerDefault: apiKey ? "google" : "leaflet",
+    loadFailed: function () {
+      return googleLoadFailed;
+    },
     isDark: isDark,
     cartoUrl: cartoUrl,
     tileLayerUrl: cartoUrl,
