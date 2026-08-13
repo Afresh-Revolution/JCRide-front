@@ -706,8 +706,27 @@ def cancel_ride(token, ride_id, reason=None, reason_code=None):
     )
 
 
-def estimate_delivery(token, pickup, dropoff):
-    coords = _ride_coords(pickup, dropoff)
+def estimate_delivery(
+    token,
+    pickup,
+    dropoff,
+    pickup_lat=None,
+    pickup_lng=None,
+    dest_lat=None,
+    dest_lng=None,
+    package_size="medium",
+):
+    if None not in (pickup_lat, pickup_lng, dest_lat, dest_lng):
+        from app.rider_api_transforms import infer_city
+        coords = {
+            "pickup_lat": pickup_lat,
+            "pickup_lng": pickup_lng,
+            "destination_lat": dest_lat,
+            "destination_lng": dest_lng,
+            "city": infer_city(pickup or dropoff),
+        }
+    else:
+        coords = _ride_coords(pickup, dropoff)
     return _request(
         "POST",
         f"{API_PREFIX}/deliveries/estimate",
@@ -716,12 +735,39 @@ def estimate_delivery(token, pickup, dropoff):
             **coords,
             "pickup_address": pickup,
             "destination_address": dropoff,
+            "package_size": package_size or "medium",
         },
     )
 
 
-def request_delivery(token, pickup, dropoff, package_details, recipient_name, recipient_phone):
-    coords = _ride_coords(pickup, dropoff)
+def get_delivery_pricing(token):
+    return _request("GET", f"{API_PREFIX}/deliveries/pricing", token=token)
+
+
+def request_delivery(
+    token,
+    pickup,
+    dropoff,
+    package_details,
+    recipient_name,
+    recipient_phone,
+    pickup_lat=None,
+    pickup_lng=None,
+    dest_lat=None,
+    dest_lng=None,
+    package_size="medium",
+):
+    if None not in (pickup_lat, pickup_lng, dest_lat, dest_lng):
+        from app.rider_api_transforms import infer_city
+        coords = {
+            "pickup_lat": pickup_lat,
+            "pickup_lng": pickup_lng,
+            "destination_lat": dest_lat,
+            "destination_lng": dest_lng,
+            "city": infer_city(pickup or dropoff),
+        }
+    else:
+        coords = _ride_coords(pickup, dropoff)
     return _request(
         "POST",
         f"{API_PREFIX}/deliveries/request",
@@ -731,6 +777,7 @@ def request_delivery(token, pickup, dropoff, package_details, recipient_name, re
             "pickup_address": pickup,
             "destination_address": dropoff,
             "package_details": package_details,
+            "package_size": package_size or "medium",
             "recipient_name": recipient_name,
             "recipient_phone": recipient_phone,
         },
@@ -783,6 +830,57 @@ def cancel_scheduled_ride(token, scheduled_id, reason=None):
     )
 
 
+def update_scheduled_ride(token, scheduled_id, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/scheduled-rides/{scheduled_id}",
+        token=token,
+        json=payload,
+    )
+
+
+def report_accident(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/safety/accidents",
+        token=token,
+        json=payload,
+    )
+
+
+def get_admin_accident_reports(token):
+    return _request("GET", f"{API_PREFIX}/admin/accidents", token=token)
+
+
+def acknowledge_admin_accident(token, report_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/accidents/{report_id}/acknowledge",
+        token=token,
+    )
+
+
+def resolve_admin_accident(token, report_id, status_value="resolved", violation_fee_ngn=None):
+    payload = {"status": status_value}
+    if violation_fee_ngn is not None:
+        payload["violation_fee_ngn"] = violation_fee_ngn
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/accidents/{report_id}/resolve",
+        token=token,
+        json=payload,
+    )
+
+
+def change_password(token, payload):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/auth/change-password",
+        token=token,
+        json=payload,
+    )
+
+
 def get_wallet(token):
     return _request("GET", f"{API_PREFIX}/wallet", token=token)
 
@@ -804,6 +902,29 @@ def unlock_account(token):
     return _request(
         "POST",
         f"{API_PREFIX}/wallet/unlock-account",
+        token=token,
+        json={},
+    )
+
+
+def initialize_false_alarm_paystack(token, email=None, callback_url=None):
+    payload = {}
+    if email:
+        payload["email"] = email
+    if callback_url:
+        payload["callback_url"] = callback_url
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/false-alarm/paystack/initialize",
+        token=token,
+        json=payload,
+    )
+
+
+def pay_false_alarm_fee(token):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/pay-false-alarm-fee",
         token=token,
         json={},
     )
@@ -912,15 +1033,65 @@ def start_ride(token, ride_id):
     return _request("POST", f"{API_PREFIX}/rides/{ride_id}/start", token=token)
 
 
-def rate_driver(token, ride_id, rating, comment=None):
-    payload = {"rating": rating}
+def rate_driver(token, ride_id, rating, comment=None, **extra):
+    """Legacy-compatible wrapper; prefers the two-sided ratings API."""
+    payload = {
+        "overall_stars": int(rating),
+        **{k: v for k, v in (extra or {}).items() if v is not None},
+    }
     if comment:
         payload["comment"] = comment
+    try:
+        return _request(
+            "POST",
+            f"{API_PREFIX}/ratings/rides/{ride_id}",
+            token=token,
+            json=payload,
+        )
+    except ApiError as exc:
+        if getattr(exc, "status_code", None) not in (404, 405):
+            raise
+        legacy = {"rating": int(rating)}
+        if comment:
+            legacy["comment"] = comment
+        return _request(
+            "POST",
+            f"{API_PREFIX}/rides/{ride_id}/rate-driver",
+            token=token,
+            json=legacy,
+        )
+
+
+def submit_trip_rating(token, ride_id, payload):
+    """POST /api/v1/ratings/rides/{ride_id} — rider or driver rating."""
+    body = dict(payload or {})
+    if "overall_stars" not in body and body.get("rating") is not None:
+        body["overall_stars"] = int(body.pop("rating"))
     return _request(
         "POST",
-        f"{API_PREFIX}/rides/{ride_id}/rate-driver",
+        f"{API_PREFIX}/ratings/rides/{ride_id}",
         token=token,
-        json=payload,
+        json=body,
+    )
+
+
+def get_rating_eligibility(token, ride_id):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/ratings/rides/{ride_id}/eligibility",
+        token=token,
+    )
+
+
+def get_my_rating_summary(token):
+    return _request("GET", f"{API_PREFIX}/ratings/me", token=token)
+
+
+def get_public_rating_summary(token, user_id):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/ratings/users/{user_id}/public",
+        token=token,
     )
 
 
@@ -937,6 +1108,16 @@ def trigger_ride_sos(token, ride_id, lat=None, lng=None, message=None):
         f"{API_PREFIX}/rides/{ride_id}/sos",
         token=token,
         json=payload,
+    )
+
+
+def emergency_stop_ride(token, ride_id, payload=None):
+    """Rider ends an in-progress trip at the current location."""
+    return _request(
+        "POST",
+        f"{API_PREFIX}/rides/{ride_id}/emergency-stop",
+        token=token,
+        json=payload or {},
     )
 
 
@@ -1109,6 +1290,23 @@ def set_availability(token, online, current_lat=None, current_lng=None):
     return _request(
         "POST",
         f"{API_PREFIX}/drivers/availability",
+        token=token,
+        json=payload,
+    )
+
+
+def update_driver_location(token, lat, lng, accuracy=None, heading=None, speed=None):
+    """Push live GPS to JCRide-back while the driver is online."""
+    payload = {"lat": float(lat), "lng": float(lng)}
+    if accuracy is not None:
+        payload["accuracy"] = float(accuracy)
+    if heading is not None:
+        payload["heading"] = float(heading)
+    if speed is not None:
+        payload["speed"] = float(speed)
+    return _request(
+        "POST",
+        f"{API_PREFIX}/drivers/location",
         token=token,
         json=payload,
     )
@@ -1441,6 +1639,10 @@ def get_public_landing_page():
     return _request("GET", f"{API_PREFIX}/public/landing-page")
 
 
+def get_public_trip_share(share_token: str):
+    return _request("GET", f"{API_PREFIX}/public/trips/share", params={"s": share_token})
+
+
 def get_admin_landing_page(token):
     return _request("GET", f"{API_PREFIX}/admin/settings/landing-page", token=token)
 
@@ -1546,12 +1748,15 @@ def acknowledge_admin_sos(token, sos_id):
     return _request("POST", f"{API_PREFIX}/admin/sos/{sos_id}/acknowledge", token=token)
 
 
-def resolve_admin_sos(token, sos_id, status="resolved"):
+def resolve_admin_sos(token, sos_id, status="resolved", violation_fee_ngn=None):
+    payload = {"status": status}
+    if violation_fee_ngn is not None:
+        payload["violation_fee_ngn"] = violation_fee_ngn
     return _request(
         "POST",
         f"{API_PREFIX}/admin/sos/{sos_id}/resolve",
         token=token,
-        json={"status": status},
+        json=payload,
     )
 
 

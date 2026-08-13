@@ -6,9 +6,9 @@
     items: [],
   };
 
-  const listEl = document.getElementById("sos-list");
-  const refreshBtn = document.getElementById("sos-refresh-btn");
-  const toast = document.getElementById("sos-toast");
+  const listEl = document.getElementById("accident-list");
+  const refreshBtn = document.getElementById("accident-refresh-btn");
+  const toast = document.getElementById("accident-toast");
 
   function showToast(message, isError) {
     if (!toast) return;
@@ -44,7 +44,7 @@
   }
 
   function queueStatusClass(status) {
-    return "queue-status queue-status--" + String(status || "triggered").replace(/\s+/g, "_");
+    return "queue-status queue-status--" + String(status || "received").replace(/\s+/g, "_");
   }
 
   function filteredItems() {
@@ -64,40 +64,41 @@
     if (!listEl) return;
     const items = filteredItems();
     if (!items.length) {
-      listEl.innerHTML = '<p class="sos-list__empty">No SOS alerts in this view.</p>';
+      listEl.innerHTML = '<p class="sos-list__empty">No accident reports in this view.</p>';
       return;
     }
     listEl.innerHTML = items
       .map(function (item) {
-        const cardClass = item.status === "triggered" ? " sos-card--triggered" : "";
         const coords =
           item.lat != null && item.lng != null
             ? '<p class="sos-card__coords">' + escapeHtml(item.lat) + ", " + escapeHtml(item.lng) + " · " + mapsLink(item.lat, item.lng) + "</p>"
             : "";
+        const injuries = item.injuries ? '<span class="queue-status queue-status--triggered">Injuries reported</span>' : "";
         return (
-          '<article class="sos-card' + cardClass + '" data-sos-id="' + escapeHtml(item.id) + '">' +
+          '<article class="sos-card" data-accident-id="' + escapeHtml(item.id) + '">' +
           '<div class="sos-card__main">' +
           '<div class="sos-card__meta">' +
-          '<span class="sos-card__ride">Ride ' + escapeHtml(item.ride_short) + "</span>" +
-          '<span class="' + queueStatusClass(item.status) + '">' + escapeHtml(item.status.replace("_", " ")) + "</span>" +
-          '<span class="sos-card__time">' + escapeHtml(formatDate(item.triggered_at)) + "</span>" +
+          '<span class="sos-card__ride">' + (item.ride_id ? "Ride " + escapeHtml(item.ride_short) : "No ride") + "</span>" +
+          '<span class="' + queueStatusClass(item.status) + '">' + escapeHtml(String(item.status).replace("_", " ")) + "</span>" +
+          '<span class="sos-card__time">' + escapeHtml(formatDate(item.created_at)) + "</span>" +
+          injuries +
           "</div>" +
-          '<p class="sos-card__message">' + escapeHtml(item.message) + "</p>" +
+          '<p class="sos-card__message"><strong>' + escapeHtml(item.severity) + ":</strong> " + escapeHtml(item.description) + "</p>" +
           coords +
           "</div>" +
           '<div class="sos-card__actions">' +
-          '<button type="button" class="queue-btn queue-btn--neutral" data-sos-ack="' + escapeHtml(item.id) + '"' + (item.can_acknowledge ? "" : " disabled") + ">Acknowledge</button>" +
-          '<button type="button" class="queue-btn queue-btn--approve" data-sos-resolve="' + escapeHtml(item.id) + '" data-resolve-status="resolved"' + (item.can_resolve ? "" : " disabled") + ">Resolve</button>" +
-          '<button type="button" class="queue-btn queue-btn--reject" data-sos-resolve="' + escapeHtml(item.id) + '" data-resolve-status="false_alarm"' + (item.can_resolve ? "" : " disabled") + ">False alarm</button>" +
+          '<button type="button" class="queue-btn queue-btn--neutral" data-accident-ack="' + escapeHtml(item.id) + '"' + (item.can_acknowledge ? "" : " disabled") + ">Acknowledge</button>" +
+          '<button type="button" class="queue-btn queue-btn--approve" data-accident-resolve="' + escapeHtml(item.id) + '" data-resolve-status="resolved"' + (item.can_resolve ? "" : " disabled") + ">Resolve</button>" +
+          '<button type="button" class="queue-btn queue-btn--reject" data-accident-resolve="' + escapeHtml(item.id) + '" data-resolve-status="false_alarm"' + (item.can_resolve ? "" : " disabled") + ">False alarm</button>" +
           "</div></article>"
         );
       })
       .join("");
   }
 
-  function loadAlerts() {
-    if (listEl) listEl.innerHTML = '<p class="sos-list__loading">Loading SOS alerts…</p>';
-    return apiRequest("/admin/api/sos")
+  function loadReports() {
+    if (listEl) listEl.innerHTML = '<p class="sos-list__loading">Loading accident reports…</p>';
+    return apiRequest("/admin/api/accidents")
       .then(function (data) {
         state.items = data.items || [];
         renderList();
@@ -110,12 +111,12 @@
       });
   }
 
-  function acknowledgeAlert(id, button) {
+  function acknowledgeReport(id, button) {
     if (button && window.ButtonLoading) window.ButtonLoading.start(button);
-    return apiRequest("/admin/api/sos/" + encodeURIComponent(id) + "/acknowledge", { method: "POST" })
+    return apiRequest("/admin/api/accidents/" + encodeURIComponent(id) + "/acknowledge", { method: "POST" })
       .then(function () {
-        showToast("SOS acknowledged");
-        return loadAlerts();
+        showToast("Accident report acknowledged");
+        return loadReports();
       })
       .catch(function (err) {
         if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
@@ -123,7 +124,7 @@
       });
   }
 
-  function resolveAlert(id, status, button) {
+  function resolveReport(id, status, button) {
     const label = status === "false_alarm" ? "false alarm" : "resolved";
     const confirmPromise =
       status === "false_alarm" && window.AdminConfirm.promptFee
@@ -135,8 +136,8 @@
             defaultValue: 1000,
           })
         : window.AdminConfirm.show({
-            title: "Resolve SOS",
-            message: "Mark this alert as " + label + "?",
+            title: "Resolve accident",
+            message: "Mark this report as " + label + "?",
             confirmLabel: "Confirm",
           }).then(function (confirmed) {
             return { confirmed: confirmed };
@@ -155,7 +156,7 @@
         body.violation_fee_ngn = fee;
       }
       if (button && window.ButtonLoading) window.ButtonLoading.start(button);
-      return apiRequest("/admin/api/sos/" + encodeURIComponent(id) + "/resolve", {
+      return apiRequest("/admin/api/accidents/" + encodeURIComponent(id) + "/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -166,9 +167,9 @@
           } else if (data && data.wallet_charged) {
             showToast("False alarm recorded. Violation fee charged to wallet.");
           } else {
-            showToast("SOS marked " + label);
+            showToast("Accident marked " + label);
           }
-          return loadAlerts();
+          return loadReports();
         })
         .catch(function (err) {
           if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
@@ -178,10 +179,10 @@
   }
 
   function initFilters() {
-    document.querySelectorAll("[data-sos-filter]").forEach(function (btn) {
+    document.querySelectorAll("[data-accident-filter]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        state.filter = btn.getAttribute("data-sos-filter") || "all";
-        document.querySelectorAll("[data-sos-filter]").forEach(function (tab) {
+        state.filter = btn.getAttribute("data-accident-filter") || "all";
+        document.querySelectorAll("[data-accident-filter]").forEach(function (tab) {
           tab.classList.toggle("is-active", tab === btn);
         });
         renderList();
@@ -194,16 +195,16 @@
       listEl.addEventListener("click", function (event) {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;
-        const ackId = target.getAttribute("data-sos-ack");
-        const resolveId = target.getAttribute("data-sos-resolve");
+        const ackId = target.getAttribute("data-accident-ack");
+        const resolveId = target.getAttribute("data-accident-resolve");
         const resolveStatus = target.getAttribute("data-resolve-status") || "resolved";
-        if (ackId && !target.disabled) acknowledgeAlert(ackId, target);
-        if (resolveId && !target.disabled) resolveAlert(resolveId, resolveStatus, target);
+        if (ackId && !target.disabled) acknowledgeReport(ackId, target);
+        if (resolveId && !target.disabled) resolveReport(resolveId, resolveStatus, target);
       });
     }
     if (refreshBtn) {
       refreshBtn.addEventListener("click", function () {
-        var p = loadAlerts();
+        var p = loadReports();
         if (window.ButtonLoading) window.ButtonLoading.wrap(refreshBtn, p);
       });
     }
@@ -212,8 +213,8 @@
   function init() {
     initFilters();
     initActions();
-    loadAlerts();
-    setInterval(loadAlerts, 60000);
+    loadReports();
+    setInterval(loadReports, 60000);
   }
 
   if (document.readyState === "loading") {

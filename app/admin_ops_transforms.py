@@ -106,8 +106,40 @@ def normalize_sos_list(alerts) -> dict:
                 "triggered_at": row.get("triggered_at"),
                 "acknowledged_at": row.get("acknowledged_at"),
                 "resolved_at": row.get("resolved_at"),
+                "false_alarm_fee_ngn": row.get("false_alarm_fee_ngn"),
+                "false_alarm_outcome": row.get("false_alarm_outcome"),
                 "can_acknowledge": status == "triggered",
                 "can_resolve": status in {"triggered", "acknowledged"},
+            }
+        )
+    return {"items": items, "total": len(items)}
+
+
+def normalize_accident_list(reports) -> dict:
+    items = []
+    for row in reports if isinstance(reports, list) else (reports.get("items") or []):
+        if not isinstance(row, dict):
+            continue
+        status = str(row.get("status") or "received")
+        items.append(
+            {
+                "id": row.get("id"),
+                "ride_id": row.get("ride_id"),
+                "ride_short": _short_id(row.get("ride_id")),
+                "customer_id": row.get("customer_id"),
+                "status": status,
+                "severity": row.get("severity") or "moderate",
+                "description": row.get("description") or "No description",
+                "injuries": bool(row.get("injuries")),
+                "lat": row.get("lat"),
+                "lng": row.get("lng"),
+                "created_at": row.get("created_at"),
+                "acknowledged_at": row.get("acknowledged_at"),
+                "resolved_at": row.get("resolved_at"),
+                "false_alarm_fee_ngn": row.get("false_alarm_fee_ngn"),
+                "false_alarm_outcome": row.get("false_alarm_outcome"),
+                "can_acknowledge": status == "received",
+                "can_resolve": status in {"received", "acknowledged"},
             }
         )
     return {"items": items, "total": len(items)}

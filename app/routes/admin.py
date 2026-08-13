@@ -74,6 +74,9 @@ from app.services.api_client import (
     get_admin_sos_alerts,
     acknowledge_admin_sos,
     resolve_admin_sos,
+    get_admin_accident_reports,
+    acknowledge_admin_accident,
+    resolve_admin_accident,
     get_admin_report_trips,
     get_admin_report_drivers,
     get_admin_report_users,
@@ -92,6 +95,7 @@ from app.admin_api_transforms import (
     normalize_success_rate,
 )
 from app.admin_ops_transforms import (
+    normalize_accident_list,
     normalize_funding_list,
     normalize_report_list,
     normalize_sos_list,
@@ -428,6 +432,12 @@ def sos_page():
     return render_template("admin/sos.html", active_page="sos")
 
 
+@admin_bp.route("/accidents")
+@admin_required
+def accidents_page():
+    return render_template("admin/accidents.html", active_page="accidents")
+
+
 @admin_bp.route("/reports")
 @admin_required
 def reports_page():
@@ -680,6 +690,42 @@ def api_sos_resolve(sos_id):
                 _admin_token(),
                 sos_id,
                 status=payload.get("status", "resolved"),
+                violation_fee_ngn=payload.get("violation_fee_ngn"),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/accidents")
+@admin_required
+def api_accidents_list():
+    try:
+        return jsonify(normalize_accident_list(get_admin_accident_reports(_admin_token())))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/accidents/<report_id>/acknowledge", methods=["POST"])
+@admin_required
+def api_accident_acknowledge(report_id):
+    try:
+        return jsonify(acknowledge_admin_accident(_admin_token(), report_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/accidents/<report_id>/resolve", methods=["POST"])
+@admin_required
+def api_accident_resolve(report_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            resolve_admin_accident(
+                _admin_token(),
+                report_id,
+                status_value=payload.get("status", "resolved"),
+                violation_fee_ngn=payload.get("violation_fee_ngn"),
             )
         )
     except ApiError as exc:
