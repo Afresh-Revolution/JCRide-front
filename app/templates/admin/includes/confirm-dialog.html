@@ -6,6 +6,11 @@
     </div>
     <div class="admin-confirm__body">
       <p class="admin-confirm__message" id="admin-confirm-message"></p>
+      <label class="admin-confirm__field" id="admin-confirm-field" hidden>
+        <span id="admin-confirm-input-label">Violation fee (₦)</span>
+        <input type="number" id="admin-confirm-input" min="1000" step="100" inputmode="numeric">
+        <span class="admin-confirm__hint" id="admin-confirm-hint"></span>
+      </label>
     </div>
     <div class="admin-confirm__footer">
       <button type="button" class="admin-confirm__btn admin-confirm__btn--ghost" data-admin-confirm-cancel id="admin-confirm-cancel">Cancel</button>

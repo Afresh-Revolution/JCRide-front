@@ -1,0 +1,55 @@
+{% extends "user/base.html" %}
+{% block title %}Unlock account - JosRide NAIJA{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-unlock.css') }}">
+{% endblock %}
+
+{% block body %}
+{% set policy = account_policy or {} %}
+{% set due = policy.get('false_alarm_fee_due_ngn') or 0 %}
+{% set pay = policy.get('false_alarm_pay_ngn') or due %}
+{% set balance = policy.get('wallet_balance_ngn') or 0 %}
+<div class="unlock-page">
+  <div class="unlock-card">
+    <p class="unlock-card__brand">JosRide NAIJA</p>
+    <h1 class="unlock-card__title">Account locked</h1>
+    <p class="unlock-card__lead">
+      Hi {{ user_name }}, a false SOS or accident report was marked against your account.
+      Pay the violation fee to unlock JosRide. This is the only action available until payment clears.
+    </p>
+    <dl class="unlock-card__stats">
+      <div>
+        <dt>Fee due</dt>
+        <dd>₦{{ '{:,.0f}'.format(due) }}</dd>
+      </div>
+      <div>
+        <dt>Wallet balance</dt>
+        <dd>₦{{ '{:,.0f}'.format(balance) }}</dd>
+      </div>
+      <div>
+        <dt>Pay now</dt>
+        <dd>₦{{ '{:,.0f}'.format(pay) }}</dd>
+      </div>
+    </dl>
+    <p class="unlock-card__note">Minimum violation fee is ₦1,000. Paystack confirms instantly.</p>
+    <div class="unlock-card__actions">
+      {% if policy.get('can_pay_false_alarm_from_wallet') %}
+      <button type="button" class="unlock-btn unlock-btn--secondary" id="unlock-wallet-btn">Pay from wallet</button>
+      {% endif %}
+      <button type="button" class="unlock-btn" id="unlock-paystack-btn">Pay ₦{{ '{:,.0f}'.format(pay) }} with Paystack</button>
+    </div>
+    <a class="unlock-card__logout" href="{{ url_for('main.logout') }}">Log out</a>
+  </div>
+</div>
+<script type="application/json" id="unlock-api-config">{{ {
+  "email": user_email,
+  "callbackUrl": url_for('main.user_unlock_account', _external=True)
+} | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/user-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-unlock.js') }}"></script>
+{% endblock %}

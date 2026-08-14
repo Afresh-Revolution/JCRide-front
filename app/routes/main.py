@@ -20,6 +20,7 @@ from app.services.api_client import (
     emergency_stop_ride,
     get_current_delivery,
     get_current_ride,
+    get_delivery_pricing,
     get_driver_profile,
     get_notification_preferences,
     get_profile,
@@ -30,6 +31,8 @@ from app.services.api_client import (
     get_wallet,
     get_account_policy,
     pay_cancellation_fee,
+    pay_false_alarm_fee,
+    initialize_false_alarm_paystack,
     unlock_account,
     get_wallet_transactions,
     initialize_paystack,
@@ -540,16 +543,58 @@ def _notifications_inbox_meta(notifications: list[dict]) -> dict:
     return {"unread_count": unread_count}
 
 
-def _require_rider():
+UNLOCK_PAGE_ENDPOINTS = frozenset(
+    {
+        "main.user_unlock_account",
+        "main.logout",
+    }
+)
+UNLOCK_API_ENDPOINTS = frozenset(
+    {
+        "main.user_api_account_policy",
+        "main.user_api_paystack_verify",
+        "main.user_api_false_alarm_paystack_initialize",
+        "main.user_api_pay_false_alarm_fee",
+    }
+)
+
+
+def _false_alarm_locked(policy) -> bool:
+    if not isinstance(policy, dict):
+        return False
+    return bool(policy.get("can_pay_false_alarm")) or (
+        policy.get("status") == "suspended"
+        and policy.get("suspension_reason") == "unpaid_false_alarm_fee"
+    )
+
+
+def _require_rider(*, allow_locked: bool = False):
     if not session.get("token"):
         flash("Please sign in to access your rider dashboard.", "error")
         return redirect(url_for("main.rider_login_page"))
+    if allow_locked or request.endpoint in UNLOCK_PAGE_ENDPOINTS:
+        return None
+    policy, ok = _safe_rider_api(get_account_policy)
+    if ok and _false_alarm_locked(policy):
+        return redirect(url_for("main.user_unlock_account"))
     return None
 
 
 def _require_rider_api():
     if not session.get("token"):
         return jsonify({"error": "unauthorized"}), 401
+    if request.endpoint in UNLOCK_API_ENDPOINTS:
+        return None
+    policy, ok = _safe_rider_api(get_account_policy)
+    if ok and _false_alarm_locked(policy):
+        return jsonify(
+            {
+                "error": "account_locked",
+                "message": policy.get("lock_message")
+                or "Pay the false-alarm fee to unlock your account.",
+                "account_policy": policy,
+            }
+        ), 403
     return None
 
 
@@ -690,6 +735,9 @@ def _handle_login(portal: str):
                         session["wallet_balance_ngn"] = wallet.get("balance_ngn")
                     session.permanent = remember
                     grant_rider_entry()
+                    if user.get("status") == "suspended" and user.get("suspension_reason") == "unpaid_false_alarm_fee":
+                        flash("Your account is locked for a false-alarm fee. Pay with Paystack to continue.", "error")
+                        return redirect(url_for("main.user_unlock_account"))
                     flash(
                         "Signed in with JosCity."
                         if portal == "rider" and user.get("joscity_user_id")
@@ -1584,6 +1632,7 @@ def user_bike_delivery():
         "pickup": "",
         "dropoff": "",
         "package_notes": "",
+        "package_size": "medium",
         "recipient_name": "",
         "recipient_phone": "",
         "distance": "-",
@@ -1593,12 +1642,32 @@ def user_bike_delivery():
         "insurance_cap": "-",
         "pickup_eta": "-",
     }
+    pricing = {
+        "base_bike_fare_ngn": 0,
+        "per_km_bike_ngn": 0,
+        "small_package_ngn": 0,
+        "medium_package_ngn": 0,
+        "large_package_ngn": 0,
+        "bike_insurance_cover_ngn": 0,
+    }
     token = _rider_token()
+    if token:
+        try:
+            pricing = get_delivery_pricing(token) or pricing
+            insurance = pricing.get("bike_insurance_cover_ngn") or 0
+            if insurance:
+                from app.rider_api_transforms import format_ngn
+                delivery["insurance_cap"] = format_ngn(insurance)
+        except ApiError:
+            pass
 
     if request.method == "POST":
         pickup = request.form.get("pickup", "").strip()
         dropoff = request.form.get("dropoff", "").strip()
         package_notes = request.form.get("package_notes", "").strip()
+        package_size = (request.form.get("package_size") or "medium").strip().lower()
+        if package_size not in {"small", "medium", "large"}:
+            package_size = "medium"
         recipient_name = request.form.get("recipient_name", "").strip()
         recipient_phone = request.form.get("recipient_phone", "").strip()
         pickup_lat = request.form.get("pickup_lat", type=float)
@@ -1609,6 +1678,7 @@ def user_bike_delivery():
             "pickup": pickup,
             "dropoff": dropoff,
             "package_notes": package_notes,
+            "package_size": package_size,
             "recipient_name": recipient_name,
             "recipient_phone": recipient_phone,
         })
@@ -1630,6 +1700,7 @@ def user_bike_delivery():
                     pickup_lng=pickup_lng,
                     dest_lat=dropoff_lat,
                     dest_lng=dropoff_lng,
+                    package_size=package_size,
                 )
                 ride = (result or {}).get("delivery") or result or {}
                 session["active_trip"] = ride_to_active_trip(ride)
@@ -1662,7 +1733,12 @@ def user_bike_delivery():
 
     if token and delivery["pickup"] and delivery["dropoff"]:
         try:
-            estimate = estimate_delivery(token, delivery["pickup"], delivery["dropoff"])
+            estimate = estimate_delivery(
+                token,
+                delivery["pickup"],
+                delivery["dropoff"],
+                package_size=delivery.get("package_size") or "medium",
+            )
             delivery.update(
                 delivery_estimate_to_defaults(estimate, delivery["pickup"], delivery["dropoff"])
             )
@@ -1673,6 +1749,7 @@ def user_bike_delivery():
         "user/bike_delivery.html",
         active_page="bike_delivery",
         delivery=delivery,
+        pricing=pricing,
         route_map=build_route_map(
             delivery["pickup"],
             delivery["dropoff"],
@@ -2098,6 +2175,23 @@ def user_wallet():
     )
 
 
+@main_bp.route("/user/unlock-account")
+def user_unlock_account():
+    guard = _require_rider(allow_locked=True)
+    if guard:
+        return guard
+    policy_data, policy_ok = _safe_rider_api(get_account_policy)
+    policy = policy_data if policy_ok else {}
+    if not _false_alarm_locked(policy):
+        return redirect(url_for("main.user_dashboard"))
+    return render_template(
+        "user/unlock_account.html",
+        account_policy=policy,
+        user_email=session.get("email") or "",
+        user_name=session.get("name") or "Rider",
+    )
+
+
 @main_bp.route("/user/profile", methods=["GET", "POST"])
 def user_profile():
     guard = _require_rider()
@@ -2322,6 +2416,9 @@ def user_api_delivery_estimate():
     payload = request.get_json(silent=True) or {}
     pickup = payload.get("pickup_address", "").strip()
     dropoff = payload.get("destination_address", "").strip()
+    package_size = (payload.get("package_size") or "medium").strip().lower()
+    if package_size not in {"small", "medium", "large"}:
+        package_size = "medium"
     if not pickup or not dropoff:
         return jsonify({"message": "pickup_address and destination_address are required"}), 400
     try:
@@ -2333,8 +2430,20 @@ def user_api_delivery_estimate():
             pickup_lng=payload.get("pickup_lng"),
             dest_lat=payload.get("destination_lat"),
             dest_lng=payload.get("destination_lng"),
+            package_size=package_size,
         )
         return jsonify(result)
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@main_bp.route("/user/api/delivery/pricing", methods=["GET"])
+def user_api_delivery_pricing():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(get_delivery_pricing(_rider_token()))
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
@@ -2666,6 +2775,36 @@ def user_api_unlock_account():
         return guard
     try:
         return jsonify(unlock_account(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/false-alarm/paystack/initialize", methods=["POST"])
+def user_api_false_alarm_paystack_initialize():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            initialize_false_alarm_paystack(
+                _rider_token(),
+                email=payload.get("email") or session.get("email"),
+                callback_url=payload.get("callback_url")
+                or url_for("main.user_unlock_account", _external=True),
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/pay-false-alarm-fee", methods=["POST"])
+def user_api_pay_false_alarm_fee():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(pay_false_alarm_fee(_rider_token()))
     except ApiError as exc:
         return _user_api_error(exc)
 
