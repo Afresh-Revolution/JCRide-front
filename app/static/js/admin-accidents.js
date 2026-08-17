@@ -141,12 +141,25 @@
       .join("");
   }
 
+  function notifySafetyNav(pendingCount) {
+    if (window.AdminSafetyNav && typeof window.AdminSafetyNav.refresh === "function") {
+      window.AdminSafetyNav.refresh();
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent("admin-safety-alerts-changed", {
+        detail: { accident_pending: pendingCount },
+      })
+    );
+  }
+
   function loadReports() {
     if (listEl) listEl.innerHTML = '<p class="sos-list__loading">Loading accident reports…</p>';
     return apiRequest("/admin/api/accidents")
       .then(function (data) {
         state.items = data.items || [];
         renderList();
+        notifySafetyNav(data.pending_count);
       })
       .catch(function (err) {
         if (listEl) {

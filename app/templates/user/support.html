@@ -23,6 +23,16 @@
     </div>
     <span class="support-quick-card__chev" aria-hidden="true">›</span>
   </a>
+  <a href="mailto:{{ support_email }}" class="support-quick-card">
+    <span class="support-quick-card__icon support-quick-card__icon--green" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    </span>
+    <div>
+      <strong>Email</strong>
+      <span>{{ support_email }}</span>
+    </div>
+    <span class="support-quick-card__chev" aria-hidden="true">›</span>
+  </a>
   <a href="#faq-list" class="support-quick-card">
     <span class="support-quick-card__icon support-quick-card__icon--green" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -98,7 +108,7 @@
         <textarea name="description" rows="4" minlength="10" placeholder="Describe the incident (at least 10 characters)…" required></textarea>
       </label>
       <button type="submit" class="rider-btn rider-btn--dark support-submit">Submit accident report</button>
-      <p class="support-accident__hint">Or call support: <a href="tel:{{ support_phone }}">{{ support_phone_display }}</a></p>
+      <p class="support-accident__hint">Or email <a href="mailto:{{ support_email }}">{{ support_email }}</a> · call <a href="tel:{{ support_phone }}">{{ support_phone_display }}</a></p>
     </form>
   </section>
   </div>

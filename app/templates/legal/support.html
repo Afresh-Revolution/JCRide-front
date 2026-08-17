@@ -1,0 +1,18 @@
+{% extends "landing_base.html" %}
+
+{% block title %}Support · JosRide{% endblock %}
+
+{% block content %}
+<section class="legal-page">
+  <div class="legal-page__inner landing-container">
+    <p class="legal-page__eyebrow"><a href="{{ url_for('main.home') }}">JosRide</a></p>
+    <h1>Support</h1>
+    <p class="legal-page__updated">Official contact</p>
+    <p>Email JosRide at <a href="mailto:{{ support_email }}">{{ support_email }}</a>. We use this address for rider, driver, and general enquiries.</p>
+    <p>
+      <a href="{{ url_for('main.portals_page') }}">Log in</a> to open an in-app support ticket, or email us directly.
+    </p>
+    <p><a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a> · <a href="{{ url_for('main.terms_of_service') }}">Terms of Service</a></p>
+  </div>
+</section>
+{% endblock %}

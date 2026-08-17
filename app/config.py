@@ -140,6 +140,14 @@ def get_driver_support_phone() -> str:
     )
 
 
+def get_support_email() -> str:
+    return (
+        _FILE_ENV.get("SUPPORT_EMAIL")
+        or os.getenv("SUPPORT_EMAIL")
+        or "info@josride.com"
+    )
+
+
 def get_emergency_phone() -> str:
     return _FILE_ENV.get("EMERGENCY_PHONE") or os.getenv("EMERGENCY_PHONE") or "112"
 

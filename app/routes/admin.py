@@ -671,6 +671,32 @@ def api_sos_list():
         return jsonify({"message": exc.message}), exc.status_code
 
 
+@admin_bp.route("/api/safety-alerts/summary")
+@admin_required
+def api_safety_alerts_summary():
+    """Pending SOS + accident counts for sidebar alert styling."""
+    token = _admin_token()
+    sos_pending = 0
+    accident_pending = 0
+    try:
+        sos_pending = int(normalize_sos_list(get_admin_sos_alerts(token)).get("pending_count") or 0)
+    except ApiError:
+        sos_pending = 0
+    try:
+        accident_pending = int(
+            normalize_accident_list(get_admin_accident_reports(token)).get("pending_count") or 0
+        )
+    except ApiError:
+        accident_pending = 0
+    return jsonify(
+        {
+            "sos_pending": sos_pending,
+            "accident_pending": accident_pending,
+            "has_alerts": bool(sos_pending or accident_pending),
+        }
+    )
+
+
 @admin_bp.route("/api/sos/<sos_id>/acknowledge", methods=["POST"])
 @admin_required
 def api_sos_acknowledge(sos_id):

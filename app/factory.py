@@ -6,7 +6,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
 from flask import Flask
 
-from app.config import SECRET_KEY, get_api_url, get_google_maps_api_key
+from app.config import SECRET_KEY, get_api_url, get_google_maps_api_key, get_support_email
 from app.driver_portal.routes import driver_portal_bp
 from app.routes.admin import admin_bp
 from app.routes.main import main_bp
@@ -37,6 +37,7 @@ def create_app() -> Flask:
             "static_url": static_url,
             "google_maps_api_key": maps_key,
             "has_google_maps": bool(maps_key),
+            "support_email": get_support_email(),
         }
 
     @app.get("/api-config-check")
