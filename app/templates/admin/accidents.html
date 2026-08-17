@@ -13,7 +13,7 @@
 <section class="sos-page">
   <div class="sos-page__intro">
     <h2 class="sos-page__title">Accident / incident reports</h2>
-    <p class="sos-page__subtitle">Acknowledge rider reports and resolve once the situation is handled.</p>
+    <p class="sos-page__subtitle">Acknowledge rider reports. Mark false alarms with a violation fee of at least ₦1,000.</p>
     <button type="button" class="sos-refresh-btn" id="accident-refresh-btn">Refresh</button>
   </div>
 
@@ -22,6 +22,7 @@
     <button type="button" class="admin-tabs__btn" data-accident-filter="received">Received</button>
     <button type="button" class="admin-tabs__btn" data-accident-filter="acknowledged">Acknowledged</button>
     <button type="button" class="admin-tabs__btn" data-accident-filter="resolved">Resolved</button>
+    <button type="button" class="admin-tabs__btn" data-accident-filter="false_alarm">False alarm</button>
   </div>
 
   <div class="sos-list" id="accident-list" aria-live="polite">

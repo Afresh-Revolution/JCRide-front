@@ -714,6 +714,7 @@ def estimate_delivery(
     pickup_lng=None,
     dest_lat=None,
     dest_lng=None,
+    package_size="medium",
 ):
     if None not in (pickup_lat, pickup_lng, dest_lat, dest_lng):
         from app.rider_api_transforms import infer_city
@@ -734,8 +735,13 @@ def estimate_delivery(
             **coords,
             "pickup_address": pickup,
             "destination_address": dropoff,
+            "package_size": package_size or "medium",
         },
     )
+
+
+def get_delivery_pricing(token):
+    return _request("GET", f"{API_PREFIX}/deliveries/pricing", token=token)
 
 
 def request_delivery(
@@ -749,6 +755,7 @@ def request_delivery(
     pickup_lng=None,
     dest_lat=None,
     dest_lng=None,
+    package_size="medium",
 ):
     if None not in (pickup_lat, pickup_lng, dest_lat, dest_lng):
         from app.rider_api_transforms import infer_city
@@ -770,6 +777,7 @@ def request_delivery(
             "pickup_address": pickup,
             "destination_address": dropoff,
             "package_details": package_details,
+            "package_size": package_size or "medium",
             "recipient_name": recipient_name,
             "recipient_phone": recipient_phone,
         },
@@ -852,12 +860,15 @@ def acknowledge_admin_accident(token, report_id):
     )
 
 
-def resolve_admin_accident(token, report_id, status_value="resolved"):
+def resolve_admin_accident(token, report_id, status_value="resolved", violation_fee_ngn=None):
+    payload = {"status": status_value}
+    if violation_fee_ngn is not None:
+        payload["violation_fee_ngn"] = violation_fee_ngn
     return _request(
         "POST",
         f"{API_PREFIX}/admin/accidents/{report_id}/resolve",
         token=token,
-        json={"status": status_value},
+        json=payload,
     )
 
 
@@ -891,6 +902,29 @@ def unlock_account(token):
     return _request(
         "POST",
         f"{API_PREFIX}/wallet/unlock-account",
+        token=token,
+        json={},
+    )
+
+
+def initialize_false_alarm_paystack(token, email=None, callback_url=None):
+    payload = {}
+    if email:
+        payload["email"] = email
+    if callback_url:
+        payload["callback_url"] = callback_url
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/false-alarm/paystack/initialize",
+        token=token,
+        json=payload,
+    )
+
+
+def pay_false_alarm_fee(token):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/pay-false-alarm-fee",
         token=token,
         json={},
     )
@@ -1714,12 +1748,15 @@ def acknowledge_admin_sos(token, sos_id):
     return _request("POST", f"{API_PREFIX}/admin/sos/{sos_id}/acknowledge", token=token)
 
 
-def resolve_admin_sos(token, sos_id, status="resolved"):
+def resolve_admin_sos(token, sos_id, status="resolved", violation_fee_ngn=None):
+    payload = {"status": status}
+    if violation_fee_ngn is not None:
+        payload["violation_fee_ngn"] = violation_fee_ngn
     return _request(
         "POST",
         f"{API_PREFIX}/admin/sos/{sos_id}/resolve",
         token=token,
-        json={"status": status},
+        json=payload,
     )
 
 

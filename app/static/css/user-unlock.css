@@ -1,0 +1,105 @@
+.unlock-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: #0f172a;
+}
+
+.unlock-card {
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 24px;
+  padding: 2rem 1.75rem 1.5rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+.unlock-card__brand {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #0d6b38;
+}
+
+.unlock-card__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.unlock-card__lead {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.unlock-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.unlock-card__stats div {
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 0.75rem 0.6rem;
+}
+
+.unlock-card__stats dt {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.unlock-card__stats dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.unlock-card__note {
+  margin: 0 0 1.25rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.unlock-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.unlock-btn {
+  min-height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: #0d6b38;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.unlock-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.unlock-btn--secondary {
+  background: #0f172a;
+}
+
+.unlock-card__logout {
+  display: block;
+  margin-top: 1rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 600;
+}

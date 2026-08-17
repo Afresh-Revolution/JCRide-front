@@ -49,11 +49,6 @@
 
   function filteredItems() {
     if (state.filter === "all") return state.items;
-    if (state.filter === "resolved") {
-      return state.items.filter(function (item) {
-        return item.status === "resolved" || item.status === "false_alarm";
-      });
-    }
     return state.items.filter(function (item) {
       return item.status === state.filter;
     });
@@ -186,20 +181,49 @@
 
   function resolveReport(id, status, button) {
     const label = status === "false_alarm" ? "false alarm" : "resolved";
-    return window.AdminConfirm.show({
-      title: "Resolve accident report",
-      message: "Mark this report as " + label + "?",
-      confirmLabel: "Confirm",
-    }).then(function (confirmed) {
+    const confirmPromise =
+      status === "false_alarm" && window.AdminConfirm.promptFee
+        ? window.AdminConfirm.promptFee({
+            title: "Mark false alarm",
+            message: "Charge this rider a violation fee. If their wallet is below the amount (minimum ₦1,000), their account is locked until they pay with Paystack.",
+            confirmLabel: "Charge fee",
+            variant: "danger",
+            defaultValue: 1000,
+          })
+        : window.AdminConfirm.show({
+            title: "Resolve accident report",
+            message: "Mark this report as " + label + "?",
+            confirmLabel: "Confirm",
+          }).then(function (confirmed) {
+            return { confirmed: confirmed };
+          });
+
+    return confirmPromise.then(function (result) {
+      const confirmed = result && (result.confirmed === true || result === true);
       if (!confirmed) return;
+      const body = { status: status };
+      if (status === "false_alarm") {
+        const fee = Number(result.value);
+        if (!Number.isFinite(fee) || fee < 1000) {
+          showToast("Enter a violation fee of at least ₦1,000.", true);
+          return;
+        }
+        body.violation_fee_ngn = fee;
+      }
       if (button && window.ButtonLoading) window.ButtonLoading.start(button);
       return apiRequest("/admin/api/accidents/" + encodeURIComponent(id) + "/resolve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: status }),
+        body: JSON.stringify(body),
       })
-        .then(function () {
-          showToast("Report marked " + label);
+        .then(function (data) {
+          if (data && data.account_locked) {
+            showToast("False alarm recorded. Account locked until Paystack payment.");
+          } else if (data && data.wallet_charged) {
+            showToast("False alarm recorded. Violation fee charged to wallet.");
+          } else {
+            showToast("Report marked " + label);
+          }
           return loadReports();
         })
         .catch(function (err) {

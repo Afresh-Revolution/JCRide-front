@@ -716,6 +716,7 @@ def api_sos_resolve(sos_id):
                 _admin_token(),
                 sos_id,
                 status=payload.get("status", "resolved"),
+                violation_fee_ngn=payload.get("violation_fee_ngn"),
             )
         )
     except ApiError as exc:
@@ -750,6 +751,7 @@ def api_accident_resolve(report_id):
                 _admin_token(),
                 report_id,
                 status_value=payload.get("status", "resolved"),
+                violation_fee_ngn=payload.get("violation_fee_ngn"),
             )
         )
     except ApiError as exc:
