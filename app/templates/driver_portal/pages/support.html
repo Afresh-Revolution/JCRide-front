@@ -24,6 +24,16 @@
       </div>
       <span class="driver-support-quick-card__chev" aria-hidden="true">›</span>
     </a>
+    <a href="mailto:{{ support_email }}" class="driver-support-quick-card">
+      <span class="driver-support-quick-card__icon driver-support-quick-card__icon--green" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      </span>
+      <div>
+        <strong>Email</strong>
+        <span>{{ support_email }}</span>
+      </div>
+      <span class="driver-support-quick-card__chev" aria-hidden="true">›</span>
+    </a>
     <a href="#" class="driver-support-quick-card">
       <span class="driver-support-quick-card__icon driver-support-quick-card__icon--green" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -93,6 +103,7 @@
           <div>
             <h3 class="driver-support-dedicated__title">Dedicated driver support</h3>
             <p class="driver-support-dedicated__hours">Mon–Sun · 06:00 – 23:00 WAT</p>
+            <p class="driver-support-dedicated__hours"><a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
           </div>
         </div>
         <dl class="driver-support-dedicated__stats">

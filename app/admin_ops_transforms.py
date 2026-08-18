@@ -88,10 +88,13 @@ def normalize_withdrawal_list(data: dict) -> dict:
 
 def normalize_sos_list(alerts) -> dict:
     items = []
+    pending = 0
     for row in alerts if isinstance(alerts, list) else (alerts.get("items") or []):
         if not isinstance(row, dict):
             continue
-        status = str(row.get("status") or "triggered")
+        status = str(row.get("status") or "triggered").lower()
+        if status == "triggered":
+            pending += 1
         items.append(
             {
                 "id": row.get("id"),
@@ -112,15 +115,18 @@ def normalize_sos_list(alerts) -> dict:
                 "can_resolve": status in {"triggered", "acknowledged"},
             }
         )
-    return {"items": items, "total": len(items)}
+    return {"items": items, "total": len(items), "pending_count": pending}
 
 
 def normalize_accident_list(reports) -> dict:
     items = []
+    pending = 0
     for row in reports if isinstance(reports, list) else (reports.get("items") or []):
         if not isinstance(row, dict):
             continue
-        status = str(row.get("status") or "received")
+        status = str(row.get("status") or "received").lower()
+        if status == "received":
+            pending += 1
         items.append(
             {
                 "id": row.get("id"),
@@ -143,7 +149,7 @@ def normalize_accident_list(reports) -> dict:
                 "can_resolve": status in {"received", "acknowledged"},
             }
         )
-    return {"items": items, "total": len(items)}
+    return {"items": items, "total": len(items), "pending_count": pending}
 
 
 def normalize_report_list(data: dict, *, report_type: str) -> dict:

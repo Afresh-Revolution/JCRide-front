@@ -66,6 +66,7 @@
           </span>
         </a>
         <p class="landing-footer__desc">Nigeria's premium ride-hailing platform. Pay-per-km, instant payments, verified drivers - built right here in Lagos.</p>
+        <p class="landing-footer__desc"><a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
         <div class="landing-footer__cta">
           <a href="{{ url_for('main.portals_page') }}" class="landing-btn landing-btn--primary landing-btn--sm">Log in</a>
           <form method="post" action="{{ url_for('main.enter_rider_register') }}" class="landing-entry-form">
@@ -104,7 +105,7 @@
           </li>
           <li><a href="#drive-with-us">Earnings</a></li>
           <li><a href="#drive-with-us">Requirements</a></li>
-          <li><a href="#faq">Support</a></li>
+          <li><a href="{{ url_for('main.support_page') }}">Support</a></li>
         </ul>
       </div>
 
@@ -115,15 +116,15 @@
           <li><a href="#top">Careers</a></li>
           <li><a href="#top">Press</a></li>
           <li><a href="#top">Blog</a></li>
-          <li><a href="#top">Contact</a></li>
+          <li><a href="mailto:{{ support_email }}">Contact</a></li>
         </ul>
       </div>
 
       <div class="landing-footer__col">
         <h4>Legal</h4>
         <ul>
-          <li><a href="#top">Privacy</a></li>
-          <li><a href="#top">Terms</a></li>
+          <li><a href="{{ url_for('main.privacy_policy') }}">Privacy</a></li>
+          <li><a href="{{ url_for('main.terms_of_service') }}">Terms</a></li>
           <li><a href="#top">Cookies</a></li>
           <li><a href="#top">NDPR</a></li>
           <li><a href="#top">Accessibility</a></li>

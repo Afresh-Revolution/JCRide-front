@@ -773,6 +773,11 @@ def terms_of_service():
     return render_template("legal/terms.html")
 
 
+@main_bp.route("/support")
+def support_page():
+    return render_template("legal/support.html")
+
+
 @main_bp.route("/portals")
 def portals_page():
     return render_template("portals.html")

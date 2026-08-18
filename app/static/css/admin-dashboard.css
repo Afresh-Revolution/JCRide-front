@@ -317,6 +317,35 @@ body.admin-body a {
   color: #fff;
 }
 
+.admin-nav-item.is-alert {
+  color: #b91c1c;
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.admin-nav-item.is-alert:hover {
+  color: #991b1b;
+  background: rgba(220, 38, 38, 0.14);
+}
+
+.admin-nav-item.is-alert svg {
+  color: #dc2626;
+  stroke: #dc2626;
+}
+
+.admin-nav-item.is-alert.is-active {
+  background: #dc2626;
+  color: #fff;
+}
+
+.admin-nav-item.is-alert.is-active svg {
+  color: #fff;
+  stroke: #fff;
+}
+
+.admin-nav-item.is-alert .admin-nav-item__badge {
+  display: inline-flex;
+}
+
 .admin-nav-item--soon {
   opacity: 0.55;
   cursor: not-allowed;

@@ -95,12 +95,25 @@
       .join("");
   }
 
+  function notifySafetyNav(pendingCount) {
+    if (window.AdminSafetyNav && typeof window.AdminSafetyNav.refresh === "function") {
+      window.AdminSafetyNav.refresh();
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent("admin-safety-alerts-changed", {
+        detail: { sos_pending: pendingCount },
+      })
+    );
+  }
+
   function loadAlerts() {
     if (listEl) listEl.innerHTML = '<p class="sos-list__loading">Loading SOS alerts…</p>';
     return apiRequest("/admin/api/sos")
       .then(function (data) {
         state.items = data.items || [];
         renderList();
+        notifySafetyNav(data.pending_count);
       })
       .catch(function (err) {
         if (listEl) {
