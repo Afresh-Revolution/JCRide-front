@@ -31,7 +31,8 @@
     <p class="wallet-balance-card__value">{{ wallet.balance }}</p>
     <p class="wallet-balance-card__sub">{{ wallet.balance_sub }}</p>
     <div class="wallet-balance-card__actions">
-      <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost" id="wallet-manual-fund-btn">+ Fund wallet</button>
+      <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost" id="wallet-fund-btn">Fund</button>
+      <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost" id="wallet-send-btn">Send</button>
       <button type="button" class="wallet-balance-card__btn" id="wallet-withdraw-btn">Withdraw</button>
     </div>
   </article>
@@ -55,60 +56,99 @@
 
 <div class="wallet-layout">
   <section class="rider-panel wallet-fund">
-    <h2 class="rider-panel__title">Fund wallet</h2>
-    <p class="rider-panel__subtitle">Powered by Paystack · Instant credit</p>
+    <div id="wallet-fund-panel">
+      <h2 class="rider-panel__title">Fund wallet</h2>
+      <p class="rider-panel__subtitle">Powered by Paystack · Keys are stored on JosRide servers</p>
 
-    <div class="wallet-methods" id="wallet-methods">
-      <label class="wallet-method">
-        <input type="radio" name="payment_method" value="transfer">
-        <span class="wallet-method__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
-        </span>
-        <span class="wallet-method__body">
-          <strong>Paystack Bank Transfer</strong>
-          <span>0% fee · Instant</span>
-        </span>
-      </label>
-      <label class="wallet-method">
-        <input type="radio" name="payment_method" value="virtual">
-        <span class="wallet-method__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-        </span>
-        <span class="wallet-method__body">
-          <strong>Paystack USSD</strong>
-          <span>Dial code · Instant confirmation</span>
-        </span>
-      </label>
-      <label class="wallet-method is-selected">
-        <input type="radio" name="payment_method" value="card" checked>
-        <span class="wallet-method__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-        </span>
-        <span class="wallet-method__body">
-          <strong>Debit Card</strong>
-          <span>Visa · Verve · Mastercard</span>
-        </span>
-      </label>
-    </div>
-
-    <div class="wallet-amount">
-      <span class="wallet-amount__label">AMOUNT</span>
-      <p class="wallet-amount__value" id="wallet-amount-display">₦ 20,000</p>
-      <div class="wallet-amount__quick" id="wallet-quick-amounts">
-        <button type="button" data-amount="5000">₦5k</button>
-        <button type="button" data-amount="10000">₦10k</button>
-        <button type="button" data-amount="20000" class="is-active">₦20k</button>
-        <button type="button" data-amount="50000">₦50k</button>
+      <div class="wallet-methods" id="wallet-methods">
+        <label class="wallet-method">
+          <input type="radio" name="payment_method" value="transfer">
+          <span class="wallet-method__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
+          </span>
+          <span class="wallet-method__body">
+            <strong>Paystack Bank Transfer</strong>
+            <span>0% fee · Instant</span>
+          </span>
+        </label>
+        <label class="wallet-method">
+          <input type="radio" name="payment_method" value="virtual">
+          <span class="wallet-method__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+          </span>
+          <span class="wallet-method__body">
+            <strong>Paystack USSD</strong>
+            <span>Dial code · Instant confirmation</span>
+          </span>
+        </label>
+        <label class="wallet-method is-selected">
+          <input type="radio" name="payment_method" value="card" checked>
+          <span class="wallet-method__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </span>
+          <span class="wallet-method__body">
+            <strong>Debit Card</strong>
+            <span>Visa · Verve · Mastercard</span>
+          </span>
+        </label>
       </div>
+
+      <div class="wallet-amount">
+        <span class="wallet-amount__label">AMOUNT</span>
+        <p class="wallet-amount__value" id="wallet-amount-display">₦ 20,000</p>
+        <div class="wallet-amount__quick" id="wallet-quick-amounts">
+          <button type="button" data-amount="5000">₦5k</button>
+          <button type="button" data-amount="10000">₦10k</button>
+          <button type="button" data-amount="20000" class="is-active">₦20k</button>
+          <button type="button" data-amount="50000">₦50k</button>
+        </div>
+      </div>
+
+      <button type="button" class="rider-btn rider-btn--request" id="wallet-paystack-btn">Continue with Paystack</button>
+      <button type="button" class="rider-link" id="wallet-manual-fund-btn">Request manual bank credit</button>
     </div>
 
-    <button type="button" class="rider-btn rider-btn--request" id="wallet-paystack-btn">Continue with Paystack</button>
-
-    <div class="wallet-withdraw-panel" id="wallet-withdraw-panel" hidden>
-      <h3 class="rider-panel__subtitle">Withdraw to bank</h3>
+    <div class="wallet-transfer-panel" id="wallet-send-panel" hidden>
+      <h2 class="rider-panel__title">Send money</h2>
+      <p class="rider-panel__subtitle">Instant transfer to another JosRide wallet</p>
+      <div class="wallet-amount">
+        <span class="wallet-amount__label">AMOUNT (NGN)</span>
+        <div class="wallet-amount__quick" id="wallet-send-quick-amounts">
+          <button type="button" data-amount="1000">₦1,000</button>
+          <button type="button" data-amount="2000">₦2,000</button>
+          <button type="button" data-amount="5000" class="is-active">₦5,000</button>
+          <button type="button" data-amount="10000">₦10,000</button>
+          <button type="button" data-amount="20000">₦20,000</button>
+        </div>
+      </div>
       <label class="support-field">
-        <span>Amount (₦)</span>
-        <input type="number" id="wallet-withdraw-amount" min="100" step="100" placeholder="5000">
+        <span>Amount to send</span>
+        <input type="number" id="wallet-send-amount-input" min="100" step="100" value="5000" placeholder="5000">
+      </label>
+      <label class="support-field">
+        <span>Recipient phone or email</span>
+        <input type="text" id="wallet-send-phone" placeholder="Phone or email" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false">
+      </label>
+      <div class="wallet-recipient-card" id="wallet-send-recipient" hidden></div>
+      <button type="button" class="rider-btn rider-btn--request" id="wallet-send-submit">Send →</button>
+    </div>
+
+    <div class="wallet-transfer-panel" id="wallet-withdraw-panel" hidden>
+      <h2 class="rider-panel__title">Withdraw</h2>
+      <p class="rider-panel__subtitle">Minimum ₦1,000. Admin approves first, then the amount leaves your wallet</p>
+      <div class="wallet-amount">
+        <span class="wallet-amount__label">AMOUNT (NGN)</span>
+        <div class="wallet-amount__quick" id="wallet-withdraw-quick-amounts">
+          <button type="button" data-amount="1000">₦1,000</button>
+          <button type="button" data-amount="2000">₦2,000</button>
+          <button type="button" data-amount="5000" class="is-active">₦5,000</button>
+          <button type="button" data-amount="10000">₦10,000</button>
+          <button type="button" data-amount="20000">₦20,000</button>
+        </div>
+      </div>
+      <label class="support-field">
+        <span>Amount to withdraw</span>
+        <input type="number" id="wallet-withdraw-amount-input" min="1000" step="100" value="5000" placeholder="1000">
       </label>
       <label class="support-field">
         <span>Bank name</span>
@@ -122,7 +162,7 @@
         <span>Account name</span>
         <input type="text" id="wallet-withdraw-account-name" placeholder="Jane Doe">
       </label>
-      <button type="button" class="rider-btn rider-btn--dark" id="wallet-withdraw-submit">Submit withdrawal</button>
+      <button type="button" class="rider-btn rider-btn--request" id="wallet-withdraw-submit">Withdraw →</button>
     </div>
   </section>
 
@@ -153,6 +193,6 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/user-pages.js') }}"></script>
-<script src="{{ url_for('static', filename='js/user-wallet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-pages.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/user-wallet.js') }}" defer></script>
 {% endblock %}

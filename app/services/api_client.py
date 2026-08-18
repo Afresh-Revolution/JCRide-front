@@ -1254,6 +1254,29 @@ def withdraw_wallet(token, amount_ngn, bank_name, account_number, account_name):
     )
 
 
+def send_wallet_money(token, amount_ngn, recipient_phone):
+    ident = recipient_phone
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/send",
+        token=token,
+        json={
+            "amount_ngn": amount_ngn,
+            "recipient": ident,
+            "recipient_phone": ident,
+        },
+    )
+
+
+def lookup_wallet_recipient(token, phone):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/wallet/send/lookup",
+        token=token,
+        params={"q": phone, "phone": phone},
+    )
+
+
 def pause_account(token, pause_until):
     return _request(
         "POST",

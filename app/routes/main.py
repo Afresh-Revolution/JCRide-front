@@ -26,6 +26,8 @@ from app.services.api_client import (
     get_profile,
     get_ride_messages,
     send_ride_message,
+    send_wallet_money,
+    lookup_wallet_recipient,
     get_rider_data_export,
     get_user_settings,
     get_wallet,
@@ -2745,6 +2747,43 @@ def user_api_wallet_withdraw():
                 payload.get("bank_name", ""),
                 payload.get("account_number", ""),
                 payload.get("account_name", ""),
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/send", methods=["POST"])
+def user_api_wallet_send():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            send_wallet_money(
+                _rider_token(),
+                float(payload.get("amount_ngn", 0)),
+                payload.get("recipient") or payload.get("recipient_phone") or payload.get("email") or "",
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/send/lookup")
+def user_api_wallet_send_lookup():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(
+            lookup_wallet_recipient(
+                _rider_token(),
+                request.args.get("q")
+                or request.args.get("email")
+                or request.args.get("phone")
+                or "",
             )
         )
     except ApiError as exc:

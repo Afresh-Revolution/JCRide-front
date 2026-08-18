@@ -37,19 +37,27 @@
   </div>
 </section>
 {% endif %}
-<section class="rider-kpi-grid">
-  <article class="rider-kpi-card">
-    <span class="rider-kpi-card__glow" aria-hidden="true"></span>
-    <div class="rider-kpi-card__body">
-      <span class="rider-kpi-card__label">Wallet Balance</span>
-      <span class="rider-kpi-card__value" id="dashboard-wallet-value">{{ stats.wallet_balance.value }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-wallet-trend"{% if not stats.wallet_balance.trend %} hidden{% endif %}>{% if stats.wallet_balance.trend %}▲ {{ stats.wallet_balance.trend }}{% endif %}</span>
-    </div>
-    <div class="rider-kpi-card__icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-    </div>
-  </article>
+<article class="wallet-balance-card rider-home-wallet">
+  <div class="wallet-balance-card__top">
+    <span class="wallet-balance-card__label">Wallet balance</span>
+    <span class="wallet-balance-card__brand">JosRide Wallet</span>
+  </div>
+  <div class="wallet-balance-card__row">
+    <p class="wallet-balance-card__value" id="dashboard-wallet-value">{{ stats.wallet_balance.value }}</p>
+    <button type="button" class="wallet-balance-card__eye" id="dashboard-wallet-eye" aria-label="Hide wallet balance">
+      <svg class="wallet-balance-card__eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+      <svg class="wallet-balance-card__eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.77 21.77 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 0 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+    </button>
+  </div>
+  <span class="wallet-balance-card__sub rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-wallet-trend"{% if not stats.wallet_balance.trend %} hidden{% endif %}>{% if stats.wallet_balance.trend %}▲ {{ stats.wallet_balance.trend }}{% endif %}</span>
+  <div class="wallet-balance-card__actions">
+    <a class="wallet-balance-card__btn wallet-balance-card__btn--ghost" href="{{ url_for('main.user_wallet') }}">Top up</a>
+    <a class="wallet-balance-card__btn wallet-balance-card__btn--ghost" href="{{ url_for('main.user_wallet', panel='send') }}">Send</a>
+    <a class="wallet-balance-card__btn" href="{{ url_for('main.user_wallet') }}">History</a>
+  </div>
+</article>
 
+<section class="rider-kpi-grid rider-kpi-grid--three">
   <article class="rider-kpi-card">
     <span class="rider-kpi-card__glow" aria-hidden="true"></span>
     <div class="rider-kpi-card__body">
@@ -174,6 +182,12 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
           </span>
           <span>Fund Wallet</span>
+        </a>
+        <a href="{{ url_for('main.user_wallet', panel='send') }}" class="rider-quick-action">
+          <span class="rider-quick-action__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9 22 2z"/></svg>
+          </span>
+          <span>Send</span>
         </a>
       </div>
     </article>
