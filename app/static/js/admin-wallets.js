@@ -320,7 +320,7 @@
   function approveWithdrawal(id, button) {
     window.AdminConfirm.show({
       title: "Approve withdrawal",
-      message: "Approve this payout request? You will still need to mark it paid after sending funds.",
+      message: "Approve this payout? The rider's wallet will be deducted now. Mark it paid after you send the bank transfer.",
       confirmLabel: "Approve",
     }).then(function (confirmed) {
       if (!confirmed) return;

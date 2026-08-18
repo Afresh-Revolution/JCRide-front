@@ -29,8 +29,13 @@
     });
   }
 
+  function apiGet(url) {
+    return apiRequest(url);
+  }
+
   global.UserApi = {
     request: apiRequest,
+    get: apiGet,
     post: apiPost,
     patch: apiPatch,
   };

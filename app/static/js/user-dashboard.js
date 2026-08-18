@@ -22,6 +22,51 @@
     if (el) el.textContent = value;
   }
 
+  var WALLET_VISIBLE_KEY = "josride_wallet_balance_visible";
+
+  function walletBalanceVisible() {
+    try {
+      return localStorage.getItem(WALLET_VISIBLE_KEY) !== "0";
+    } catch (err) {
+      return true;
+    }
+  }
+
+  function applyWalletVisibility() {
+    var valueEl = document.getElementById("dashboard-wallet-value");
+    var eyeBtn = document.getElementById("dashboard-wallet-eye");
+    if (!valueEl) return;
+    var visible = walletBalanceVisible();
+    var raw = valueEl.getAttribute("data-raw") || valueEl.textContent || "";
+    if (!valueEl.getAttribute("data-raw") && raw && raw.indexOf("•") === -1) {
+      valueEl.setAttribute("data-raw", raw);
+    }
+    valueEl.textContent = visible ? (valueEl.getAttribute("data-raw") || raw) : "••••••";
+    if (eyeBtn) {
+      eyeBtn.setAttribute("aria-label", visible ? "Hide wallet balance" : "Show wallet balance");
+      var onIcon = eyeBtn.querySelector(".wallet-balance-card__eye-on");
+      var offIcon = eyeBtn.querySelector(".wallet-balance-card__eye-off");
+      if (onIcon) onIcon.hidden = !visible;
+      if (offIcon) offIcon.hidden = visible;
+    }
+  }
+
+  var walletEyeBtn = document.getElementById("dashboard-wallet-eye");
+  if (walletEyeBtn) {
+    var initialValue = document.getElementById("dashboard-wallet-value");
+    if (initialValue && !initialValue.getAttribute("data-raw")) {
+      initialValue.setAttribute("data-raw", initialValue.textContent || "");
+    }
+    applyWalletVisibility();
+    walletEyeBtn.addEventListener("click", function () {
+      var next = walletBalanceVisible() ? "0" : "1";
+      try {
+        localStorage.setItem(WALLET_VISIBLE_KEY, next);
+      } catch (err) {}
+      applyWalletVisibility();
+    });
+  }
+
   function escapeHtml(value) {
     return String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
@@ -95,7 +140,12 @@
 
   function applyStats(stats) {
     if (!stats) return;
-    text(document.getElementById("dashboard-wallet-value"), stats.wallet_balance && stats.wallet_balance.value);
+    var walletValueEl = document.getElementById("dashboard-wallet-value");
+    if (walletValueEl && stats.wallet_balance && stats.wallet_balance.value) {
+      walletValueEl.setAttribute("data-raw", stats.wallet_balance.value);
+    }
+    text(walletValueEl, stats.wallet_balance && stats.wallet_balance.value);
+    applyWalletVisibility();
     applyTrend(document.getElementById("dashboard-wallet-trend"), stats.wallet_balance && stats.wallet_balance.trend);
     text(document.getElementById("dashboard-trips-value"), stats.total_trips && stats.total_trips.value);
     applyTrend(document.getElementById("dashboard-trips-trend"), stats.total_trips && stats.total_trips.trend);
