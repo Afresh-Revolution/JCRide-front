@@ -18,7 +18,6 @@ from app.rider_defaults import (
     SETTINGS_DEFAULTS,
     TRACKING_FINDING,
     WALLET_SUMMARY,
-    WALLET_TRANSACTIONS,
     build_live_area_map,
     normalize_ride_stops,
 )
@@ -70,6 +69,59 @@ def format_ngn(amount: float | int | None, *, decimals: bool = False) -> str:
     if decimals:
         return f"₦{float(amount):,.2f}"
     return f"₦{float(amount):,.0f}"
+
+
+def first_amount(*sources_and_keys: Any) -> float:
+    """Return the first numeric amount found in dicts under the given keys."""
+    sources: list[dict] = []
+    keys: list[str] = []
+    for item in sources_and_keys:
+        if isinstance(item, dict):
+            sources.append(item)
+        elif isinstance(item, str):
+            keys.append(item)
+    for source in sources:
+        for key in keys:
+            value = source.get(key)
+            if value is None or value == "":
+                continue
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                continue
+    return 0.0
+
+
+def dashboard_payload_stats(summary: dict | None) -> dict:
+    if not isinstance(summary, dict):
+        return {}
+    nested = summary.get("stats")
+    if isinstance(nested, dict) and (
+        "wallet_balance_ngn" in nested
+        or "wallet_balance" in nested
+        or "total_trips" in nested
+    ):
+        return nested
+    return summary
+
+
+def dashboard_recent_rides(summary: dict | None) -> list[dict]:
+    if not isinstance(summary, dict):
+        return []
+    items = summary.get("recent_rides") or summary.get("recent_activities") or []
+    return items if isinstance(items, list) else []
+
+
+def wallet_from_dashboard_stats(summary: dict | None) -> dict:
+    stats = dashboard_payload_stats(summary)
+    wallet_obj = stats.get("wallet") if isinstance(stats.get("wallet"), dict) else {}
+    return {
+        "balance": first_amount(stats, wallet_obj, "wallet_balance_ngn", "balance_ngn", "balance"),
+        "total_funded": first_amount(stats, wallet_obj, "total_funded", "total_funded_ngn"),
+        "total_spent_on_rides": first_amount(
+            stats, wallet_obj, "total_spending_ngn", "total_spent_on_rides", "total_spent"
+        ),
+    }
 
 
 def infer_city(address: str) -> str:
@@ -182,8 +234,8 @@ def ride_to_history_trip(ride: dict) -> dict:
 def build_dashboard_stats(wallet: dict | None, rides: list[dict]) -> dict:
     stats = dict(RIDER_STATS)
     if wallet:
-        balance = wallet.get("balance") or 0
-        spent = wallet.get("total_spent_on_rides") or 0
+        balance = first_amount(wallet, "balance", "balance_ngn", "wallet_balance_ngn")
+        spent = first_amount(wallet, "total_spent_on_rides", "total_spending_ngn", "total_spent")
         stats["wallet_balance"] = {
             "value": format_ngn(balance),
             "trend": "",
@@ -203,23 +255,52 @@ def build_dashboard_stats(wallet: dict | None, rides: list[dict]) -> dict:
 
 def dashboard_stats_from_api(stats: dict | None) -> dict:
     data = dict(RIDER_STATS)
-    if not stats:
+    payload = dashboard_payload_stats(stats)
+    if not payload:
         return data
-    completed = int(stats.get("completed_trips") or stats.get("total_trips") or 0)
-    data["wallet_balance"] = {
-        "value": format_ngn(stats.get("wallet_balance_ngn", 0)),
-        "trend": stats.get("wallet_trend") or "",
-    }
-    data["total_trips"] = {
-        "value": str(completed),
-        "trend": stats.get("trips_trend") or (f"{completed} completed" if completed else ""),
-    }
-    data["total_spending"] = {
-        "value": format_ngn(stats.get("total_spending_ngn", 0)),
-        "trend": stats.get("spending_trend") or "",
-    }
-    if stats.get("location_label"):
-        data["location"] = {"value": stats["location_label"]}
+    wallet_obj = payload.get("wallet") if isinstance(payload.get("wallet"), dict) else {}
+    nested_balance = payload.get("wallet_balance")
+    if isinstance(nested_balance, dict) and nested_balance.get("value"):
+        data["wallet_balance"] = {
+            "value": nested_balance.get("value"),
+            "trend": nested_balance.get("trend") or payload.get("wallet_trend") or "",
+        }
+    else:
+        data["wallet_balance"] = {
+            "value": format_ngn(
+                first_amount(payload, wallet_obj, "wallet_balance_ngn", "balance_ngn", "balance")
+            ),
+            "trend": payload.get("wallet_trend") or "",
+        }
+    nested_trips = payload.get("total_trips")
+    if isinstance(nested_trips, dict) and nested_trips.get("value") is not None:
+        data["total_trips"] = {
+            "value": str(nested_trips.get("value")),
+            "trend": nested_trips.get("trend") or payload.get("trips_trend") or "",
+        }
+    else:
+        completed = int(payload.get("completed_trips") or payload.get("total_trips") or 0)
+        data["total_trips"] = {
+            "value": str(completed),
+            "trend": payload.get("trips_trend") or (f"{completed} completed" if completed else ""),
+        }
+    nested_spend = payload.get("total_spending")
+    if isinstance(nested_spend, dict) and nested_spend.get("value"):
+        data["total_spending"] = {
+            "value": nested_spend.get("value"),
+            "trend": nested_spend.get("trend") or payload.get("spending_trend") or "",
+        }
+    else:
+        data["total_spending"] = {
+            "value": format_ngn(
+                first_amount(payload, wallet_obj, "total_spending_ngn", "total_spent_on_rides", "total_spent")
+            ),
+            "trend": payload.get("spending_trend") or "",
+        }
+    if payload.get("location_label"):
+        data["location"] = {"value": payload["location_label"]}
+    elif isinstance(payload.get("location"), dict) and payload["location"].get("value"):
+        data["location"] = {"value": payload["location"]["value"]}
     return data
 
 
@@ -268,17 +349,18 @@ def build_wallet_summary(wallet: dict | None) -> dict:
     summary = dict(WALLET_SUMMARY)
     if not wallet:
         return summary
-    balance = wallet.get("balance") or 0
-    funded = wallet.get("total_funded") or 0
-    spent = wallet.get("total_spent_on_rides") or 0
+    inner = wallet.get("wallet") if isinstance(wallet.get("wallet"), dict) else {}
+    balance = first_amount(wallet, inner, "balance", "balance_ngn", "wallet_balance_ngn")
+    funded = first_amount(wallet, inner, "total_funded", "total_funded_ngn")
+    spent = first_amount(wallet, inner, "total_spent_on_rides", "total_spending_ngn", "total_spent")
     summary.update(
         {
             "balance": format_ngn(balance, decimals=True),
             "balance_sub": "Available balance",
             "total_deposits": format_ngn(funded),
-            "deposits_trend": "Total funded",
+            "deposits_trend": "Total funded" if funded else "",
             "total_spending": format_ngn(spent),
-            "spending_trend": "Ride payments",
+            "spending_trend": "Ride payments" if spent else "",
         }
     )
     return summary

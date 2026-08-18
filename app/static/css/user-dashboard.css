@@ -3316,6 +3316,11 @@ body.rider-trip-chat-open {
   background: rgba(255, 255, 255, 0.22);
 }
 
+.wallet-balance-card__eye svg.is-hidden,
+.wallet-balance-card__eye svg[hidden] {
+  display: none !important;
+}
+
 .rider-home-wallet #dashboard-wallet-trend {
   display: inline-block;
   color: rgba(255, 255, 255, 0.85);
@@ -3686,6 +3691,13 @@ body.rider-trip-chat-open {
   color: #0d9488;
 }
 
+.wallet-tx--empty {
+  display: block;
+  padding: 1.25rem 0.5rem;
+  color: var(--user-muted);
+  text-align: center;
+}
+
 /* Profile */
 .profile-layout {
   display: grid;
@@ -3938,7 +3950,8 @@ body.rider-trip-chat-open {
   margin-bottom: 0.5rem;
 }
 
-.settings-field select {
+.settings-field select,
+.settings-field input {
   width: 100%;
   padding: 0.75rem 1rem;
   border: 1px solid var(--user-border);

@@ -5,6 +5,7 @@
 
 {% block page_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-users.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -126,5 +127,6 @@
 {% endblock %}
 
 {% block page_scripts %}
+<script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin-users.js') }}"></script>
 {% endblock %}

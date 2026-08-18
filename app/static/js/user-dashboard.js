@@ -37,17 +37,21 @@
     var eyeBtn = document.getElementById("dashboard-wallet-eye");
     if (!valueEl) return;
     var visible = walletBalanceVisible();
-    var raw = valueEl.getAttribute("data-raw") || valueEl.textContent || "";
-    if (!valueEl.getAttribute("data-raw") && raw && raw.indexOf("•") === -1) {
-      valueEl.setAttribute("data-raw", raw);
+    var raw = valueEl.getAttribute("data-raw") || "";
+    if (!raw || raw.indexOf("•") !== -1) {
+      var current = valueEl.textContent || "";
+      if (current && current.indexOf("•") === -1) {
+        raw = current;
+        valueEl.setAttribute("data-raw", raw);
+      }
     }
-    valueEl.textContent = visible ? (valueEl.getAttribute("data-raw") || raw) : "••••••";
+    valueEl.textContent = visible ? raw : "••••••";
     if (eyeBtn) {
       eyeBtn.setAttribute("aria-label", visible ? "Hide wallet balance" : "Show wallet balance");
       var onIcon = eyeBtn.querySelector(".wallet-balance-card__eye-on");
       var offIcon = eyeBtn.querySelector(".wallet-balance-card__eye-off");
-      if (onIcon) onIcon.hidden = !visible;
-      if (offIcon) offIcon.hidden = visible;
+      if (onIcon) onIcon.classList.toggle("is-hidden", !visible);
+      if (offIcon) offIcon.classList.toggle("is-hidden", visible);
     }
   }
 
@@ -141,10 +145,11 @@
   function applyStats(stats) {
     if (!stats) return;
     var walletValueEl = document.getElementById("dashboard-wallet-value");
-    if (walletValueEl && stats.wallet_balance && stats.wallet_balance.value) {
-      walletValueEl.setAttribute("data-raw", stats.wallet_balance.value);
+    var walletValue = stats.wallet_balance && stats.wallet_balance.value;
+    if (walletValueEl && walletValue != null && walletValue !== "") {
+      walletValueEl.setAttribute("data-raw", walletValue);
+      walletValueEl.textContent = walletValue;
     }
-    text(walletValueEl, stats.wallet_balance && stats.wallet_balance.value);
     applyWalletVisibility();
     applyTrend(document.getElementById("dashboard-wallet-trend"), stats.wallet_balance && stats.wallet_balance.trend);
     text(document.getElementById("dashboard-trips-value"), stats.total_trips && stats.total_trips.value);
@@ -230,9 +235,7 @@
           applyReferralData(data.referral);
         }
       })
-      .catch(function () {
-        renderRecentTrips([]);
-      });
+      .catch(function () {});
   }
 
   function fetchReferral() {

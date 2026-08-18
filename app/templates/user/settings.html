@@ -1,6 +1,10 @@
 {% extends "user/layout.html" %}
 {% set active_page = 'settings' %}
 
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/password-toggle.css') }}">
+{% endblock %}
+
 {% block user_content %}
 <div class="settings-grid">
   <article class="rider-panel settings-card">
@@ -187,6 +191,7 @@
 {% endblock %}
 
 {% block page_scripts %}
+<script src="{{ url_for('static', filename='js/password-toggle.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-confirm.js') }}"></script>
 <script src="{{ url_for('static', filename='js/user-settings.js') }}"></script>
 {% endblock %}
