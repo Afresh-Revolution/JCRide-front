@@ -2,6 +2,8 @@
   "use strict";
 
   var deleteBtn = document.getElementById("delete-account-btn");
+  var ackBox = document.getElementById("delete-account-ack");
+  var statusEl = document.getElementById("delete-account-status");
   if (!deleteBtn) return;
 
   function confirmAction(options) {
@@ -23,19 +25,43 @@
     }
   }
 
+  function setStatus(message) {
+    if (!statusEl) return;
+    statusEl.textContent = message || "";
+    statusEl.hidden = !message;
+  }
+
+  function setEnabled(enabled) {
+    deleteBtn.disabled = !enabled;
+    deleteBtn.setAttribute("aria-disabled", enabled ? "false" : "true");
+  }
+
+  function syncAck() {
+    setEnabled(!hasActiveTrip() && !!(ackBox && ackBox.checked));
+  }
+
   function withBtn(btn, promise) {
     if (btn && window.ButtonLoading) return window.ButtonLoading.wrap(btn, promise);
     return promise;
   }
 
+  if (ackBox) {
+    ackBox.addEventListener("change", syncAck);
+  }
+  syncAck();
+
   deleteBtn.addEventListener("click", function () {
-    if (hasActiveTrip() || deleteBtn.disabled) {
+    if (hasActiveTrip()) {
       confirmAction({
         title: "Active trip in progress",
         message: "Finish your active trip or delivery before you can delete your account.",
         confirmLabel: "OK",
         variant: "primary",
       });
+      return;
+    }
+    if (!ackBox || !ackBox.checked) {
+      setStatus("Tick the confirmation box first.");
       return;
     }
 
@@ -46,7 +72,12 @@
       confirmLabel: "Delete everything",
       variant: "danger",
     }).then(function (confirmed) {
-      if (!confirmed || !window.UserApi) return;
+      if (!confirmed) return;
+      if (!window.UserApi) {
+        setStatus("Could not reach JosRide. Refresh and try again.");
+        return;
+      }
+      setStatus("");
       withBtn(
         deleteBtn,
         UserApi.post("/user/api/settings/delete-request", {})
@@ -54,7 +85,8 @@
             window.location.href = "/";
           })
           .catch(function (err) {
-            window.alert(err.message || "Could not delete account.");
+            setStatus(err.message || "Could not delete account.");
+            syncAck();
           })
       );
     });
