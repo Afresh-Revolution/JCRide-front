@@ -66,9 +66,21 @@
       </div>
       <ul class="profile-locations-list" id="profile-locations-list">
         {% for loc in profile.saved_locations %}
-        <li class="profile-location-item">
-          <strong>{{ loc.label }}</strong>
-          <span>{{ loc.address }}</span>
+        <li class="profile-location-item" data-id="{{ loc.id }}">
+          <div class="profile-location-item__copy">
+            <strong>{{ loc.label }}</strong>
+            <span>{{ loc.address }}</span>
+          </div>
+          {% if loc.id %}
+          <button
+            type="button"
+            class="rider-btn rider-btn--outline-sm profile-location-delete"
+            data-id="{{ loc.id }}"
+            data-label="{{ loc.label }}"
+          >
+            Delete
+          </button>
+          {% endif %}
         </li>
         {% else %}
         <li class="profile-location-item profile-location-item--empty">No saved locations yet.</li>
