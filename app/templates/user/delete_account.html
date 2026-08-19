@@ -5,14 +5,15 @@
 
 {% block user_content %}
 <section class="delete-account">
-  <a href="{{ url_for('main.user_settings') }}" class="delete-account__back">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    Settings
-  </a>
-
   <header class="delete-account__header">
-    <h1 class="delete-account__title">Delete account</h1>
-    <p class="delete-account__lead">Permanently erase this JosRide account and its data. This cannot be undone.</p>
+    <a href="{{ url_for('main.user_settings') }}" class="delete-account__back" aria-label="Back to settings">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
+    <div>
+      <p class="delete-account__kicker">Settings</p>
+      <h1 class="delete-account__title">Delete account</h1>
+      <p class="delete-account__lead">Permanently erase this JosRide account and its data. This cannot be undone.</p>
+    </div>
   </header>
 
   <article class="rider-panel delete-account__card">
