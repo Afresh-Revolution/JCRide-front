@@ -17,7 +17,7 @@ OUT = ROOT / "app" / "static" / "pwa" / "icons"
 SIZES = [72, 96, 128, 144, 152, 167, 180, 192, 256, 384, 512, 1024]
 MASKABLE_SIZES = [192, 512]
 MONOCHROME_SIZES = [192, 512]
-BG = (6, 95, 70, 255)  # #065f46
+BG = (1, 12, 20, 255)  # #010C14 — matches the JR glass icon fill
 
 
 def fit_on_canvas(img: Image.Image, size: int, padding_ratio: float = 0.0) -> Image.Image:

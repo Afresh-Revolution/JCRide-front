@@ -3,7 +3,7 @@
 :root {
   --pwa-nav-offset: 5px;
   --pwa-topbar-height: 4.25rem;
-  --pwa-splash-green: #065f46;
+  --pwa-splash-green: #010c14;
   --pwa-skeleton-base: #e5e7eb;
   --pwa-skeleton-highlight: #f3f4f6;
 }
@@ -77,7 +77,7 @@ html.is-pwa .landing-flashes {
   display: none;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 30%, #0d6b38 0%, var(--pwa-splash-green) 45%, #064e3b 100%);
+  background: radial-gradient(circle at 50% 28%, #12383c 0%, var(--pwa-splash-green) 52%, #00050a 100%);
   color: #fff;
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
     env(safe-area-inset-left, 0px);
