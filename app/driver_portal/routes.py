@@ -1045,7 +1045,7 @@ def withdraw_earnings():
 
     try:
         withdraw_wallet(token, amount, bank_name, account_number, account_name)
-        flash("Withdrawal request submitted.", "success")
+        flash("Paystack is sending the withdrawal to your bank.", "success")
     except ApiError as exc:
         flash(exc.message, "error")
 
@@ -1859,6 +1859,7 @@ def driver_api_wallet_withdraw():
                 payload.get("bank_name", ""),
                 payload.get("account_number", ""),
                 payload.get("account_name", ""),
+                payload.get("bank_code") or None,
             )
         )
     except (TypeError, ValueError):

@@ -214,34 +214,6 @@
     });
   }
 
-  var deleteBtn = document.getElementById("settings-delete-btn");
-  if (deleteBtn) {
-    deleteBtn.addEventListener("click", function () {
-      blockIfActiveTrip("delete").then(function (allowed) {
-        if (!allowed) return;
-        confirmAction({
-          title: "Delete account permanently?",
-          message:
-            "This permanently erases your account, trip history, wallet data, and profile. This cannot be undone.",
-          confirmLabel: "Delete everything",
-          variant: "danger",
-        }).then(function (confirmed) {
-          if (!confirmed) return;
-          withBtn(
-            deleteBtn,
-            UserApi.post("/user/api/settings/delete-request", {})
-              .then(function () {
-                window.location.href = "/";
-              })
-              .catch(function (err) {
-                window.alert(err.message || "Could not delete account.");
-              })
-          );
-        });
-      });
-    });
-  }
-
   if (window.UserApi && "serviceWorker" in navigator) {
     navigator.serviceWorker.ready
       .then(function (registration) {
@@ -257,6 +229,26 @@
         return null;
       })
       .catch(function () {});
+  }
+
+  var copyBtn = document.getElementById("referral-copy-btn");
+  var urlInput = document.getElementById("referral-invite-url");
+  if (copyBtn && urlInput) {
+    copyBtn.addEventListener("click", function () {
+      var text = urlInput.value || "";
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          var original = copyBtn.textContent;
+          copyBtn.textContent = "Copied!";
+          setTimeout(function () {
+            copyBtn.textContent = original || "Copy";
+          }, 2000);
+        });
+        return;
+      }
+      window.prompt("Copy your invite link:", text);
+    });
   }
 
   initTheme();

@@ -67,8 +67,9 @@
       <div class="settings-fields">
         <label class="settings-field"><span>Merchant code</span><input type="text" name="merchant_code" autocomplete="off"></label>
         <label class="settings-field"><span>Settlement account</span><input type="text" name="settlement_account" autocomplete="off"></label>
-        <label class="settings-field"><span>Webhook URL</span><input type="text" name="webhook_url" autocomplete="off"></label>
+        <label class="settings-field"><span>Webhook URL</span><input type="text" name="webhook_url" placeholder="https://api.josride.com/api/v1/wallet/paystack/webhook" autocomplete="off"></label>
         <label class="settings-field"><span>Auto-settlement schedule</span><input type="text" name="settlement_schedule" autocomplete="off"></label>
+        <label class="settings-field"><span>Public key</span><input type="text" name="public_key" placeholder="pk_live_••••••••••••" autocomplete="off"></label>
         <label class="settings-field"><span>API secret key</span><input type="password" name="api_secret" placeholder="sk_live_••••••••••••" autocomplete="new-password"></label>
       </div>
     </article>
@@ -81,6 +82,31 @@
         <label class="settings-field"><span>Required documents</span><input type="text" name="required_documents" placeholder="License, NIN, Vehicle papers, Insurance"></label>
         <label class="settings-field"><span>Background check provider</span><input type="text" name="background_check_provider"></label>
         <label class="settings-field"><span>Min driver rating threshold</span><div class="settings-input-suffix"><input type="number" name="min_driver_rating_threshold" min="0" max="5" step="0.01"><span>★</span></div></label>
+      </div>
+    </article>
+
+    <article class="dash-card settings-card">
+      <h2 class="settings-card__title">Referral program</h2>
+      <p class="settings-card__sub">Invite bonus shown in the rider app and website. Changes apply immediately.</p>
+      <div class="settings-fields">
+        <label class="settings-field">
+          <span>Referral bonus</span>
+          <div class="settings-input-prefix"><span>₦</span><input type="number" name="referral_bonus_ngn" min="0" step="1"></div>
+        </label>
+        <label class="settings-toggle-row">
+          <span>
+            <strong>Referral system</strong>
+            <em>Show invite links and accept referral codes</em>
+          </span>
+          <input type="checkbox" name="referral_enabled" role="switch" aria-label="Referral system" checked>
+        </label>
+        <label class="settings-toggle-row">
+          <span>
+            <strong>Require first ride</strong>
+            <em>Credit the referrer only after the new rider completes a trip</em>
+          </span>
+          <input type="checkbox" name="referral_require_first_ride" role="switch" aria-label="Require first ride" checked>
+        </label>
       </div>
     </article>
 

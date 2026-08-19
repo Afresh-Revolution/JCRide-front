@@ -110,15 +110,15 @@
   </article>
 
   <div class="rider-dashboard-side">
+    {% if referral %}
     <article class="rider-panel rider-panel--promo" id="referral-panel"
-      {% if referral %}
       data-invite-url="{{ referral.invite_url }}"
       data-share-message="{{ referral.share_message }}"
       data-credit-ngn="{{ referral.credit_ngn }}"
       data-uses-count="{{ referral.uses_count }}"
-      {% endif %}>
-      <h2 class="rider-promo__title" id="referral-title">{% if referral %}Earn ₦{{ referral.credit_ngn|int }} wallet credit{% else %}Invite a friend, earn wallet credit{% endif %}</h2>
-      <p class="rider-promo__text">Invite a friend - you get credit when they complete their first ride.</p>
+      data-condition-text="{{ referral.condition_text or '' }}">
+      <h2 class="rider-promo__title" id="referral-title">Earn ₦{{ referral.credit_ngn|int }} wallet credit</h2>
+      <p class="rider-promo__text" id="referral-condition">{{ referral.condition_text or 'Invite a friend — you get credit when they complete their first ride.' }}</p>
 
       <div class="rider-referral__share" id="referral-share" hidden>
         <label class="rider-referral__label" for="referral-invite-url">Your invite link</label>
@@ -149,6 +149,7 @@
       <button type="button" class="rider-btn rider-btn--lime" id="referral-invite-btn">Get invite link</button>
       <p class="rider-referral__error" id="referral-error" hidden></p>
     </article>
+    {% endif %}
 
     <article class="rider-panel">
       <h2 class="rider-panel__title">Quick actions</h2>
