@@ -4,54 +4,57 @@
 {% block page_title %}Delete account{% endblock %}
 
 {% block user_content %}
-<article class="rider-panel delete-account-page">
-  <a href="{{ url_for('main.user_settings') }}" class="delete-account-page__back">
+<section class="delete-account">
+  <a href="{{ url_for('main.user_settings') }}" class="delete-account__back">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    Back to settings
+    Settings
   </a>
 
-  <div class="delete-account-page__icon" aria-hidden="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-      <polyline points="3 6 5 6 21 6"/>
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-      <line x1="10" y1="11" x2="10" y2="17"/>
-      <line x1="14" y1="11" x2="14" y2="17"/>
-    </svg>
-  </div>
+  <header class="delete-account__header">
+    <h1 class="delete-account__title">Delete account</h1>
+    <p class="delete-account__lead">Permanently erase this JosRide account and its data. This cannot be undone.</p>
+  </header>
 
-  <h1 class="delete-account-page__title">Delete account</h1>
-  <p class="delete-account-page__lead">
-    This permanently erases your JosRide account. You will be signed out immediately and will not be able to recover this data.
-  </p>
+  <article class="rider-panel delete-account__card">
+    <h2 class="delete-account__card-title">This will remove</h2>
+    <ul class="delete-account__list">
+      <li>Profile, phone number, and login access</li>
+      <li>Trip history and scheduled rides</li>
+      <li>Wallet balance and transactions</li>
+      <li>Saved locations and trusted contacts</li>
+    </ul>
 
-  <ul class="delete-account-page__list">
-    <li>Profile, phone, and login access</li>
-    <li>Trip history and scheduled rides</li>
-    <li>Wallet balance and transactions</li>
-    <li>Saved locations and trusted contacts</li>
-  </ul>
+    {% if has_active_trip %}
+    <p class="delete-account__banner delete-account__banner--warn" role="status">
+      Finish or cancel your active trip before you can delete this account.
+    </p>
+    {% else %}
+    <p class="delete-account__banner">
+      Prefer to stop booking for a while? Pause or deactivate from Settings instead.
+    </p>
+    {% endif %}
 
-  {% if has_active_trip %}
-  <p class="delete-account-page__warn" role="status">
-    You have an active trip. Finish or cancel it before you can delete your account.
-  </p>
-  {% else %}
-  <p class="delete-account-page__note">This cannot be undone. If you only want to stop booking for a while, pause or deactivate from Settings instead.</p>
-  {% endif %}
+    <label class="delete-account__confirm"{% if has_active_trip %} hidden{% endif %}>
+      <input type="checkbox" id="delete-account-ack"{% if has_active_trip %} disabled{% endif %}>
+      <span>I understand this is permanent and I want to delete my account.</span>
+    </label>
 
-  <div class="delete-account-page__actions">
-    <a href="{{ url_for('main.user_settings') }}" class="rider-btn rider-btn--outline-sm">Cancel</a>
-    <button type="button" class="rider-btn rider-btn--danger" id="delete-account-btn"{% if has_active_trip %} disabled aria-disabled="true"{% endif %}>
-      Delete my account
-    </button>
-  </div>
-</article>
+    <p class="delete-account__status" id="delete-account-status" hidden></p>
+
+    <div class="delete-account__actions">
+      <a href="{{ url_for('main.user_settings') }}" class="rider-btn rider-btn--outline-sm">Keep account</a>
+      <button type="button" class="rider-btn rider-btn--danger" id="delete-account-btn" disabled aria-disabled="true">
+        Delete my account
+      </button>
+    </div>
+  </article>
+</section>
 
 {% include "user/includes/confirm_dialog.html" %}
 <script type="application/json" id="delete-account-flags">{{ {"hasActiveTrip": has_active_trip|default(false)} | tojson }}</script>
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/user-confirm.js') }}"></script>
-<script src="{{ url_for('static', filename='js/user-delete-account.js') }}"></script>
+<script src="{{ url_for('static', filename='js/user-confirm.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/user-delete-account.js') }}" defer></script>
 {% endblock %}

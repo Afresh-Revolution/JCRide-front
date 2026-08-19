@@ -2370,12 +2370,8 @@ html[data-user-theme="dark"] .wallet-policy-banner--danger {
   color: #fecaca;
 }
 
-html[data-user-theme="dark"] .delete-account-page__icon {
-  background: rgba(220, 38, 38, 0.18);
-  color: #fca5a5;
-}
-
-html[data-user-theme="dark"] .delete-account-page__warn {
+html[data-user-theme="dark"] .delete-account__banner--warn,
+html[data-user-theme="dark"] body.user-body .admin-content .delete-account__banner--warn {
   background: rgba(245, 158, 11, 0.16);
   color: #fcd34d;
 }

@@ -1,0 +1,55 @@
+{% extends "landing_base.html" %}
+
+{% block title %}Delete account · JosRide{% endblock %}
+
+{% block content %}
+<section class="legal-page">
+  <div class="legal-page__inner landing-container">
+    <p class="legal-page__eyebrow"><a href="{{ url_for('main.home') }}">JosRide</a></p>
+    <h1>Delete your account</h1>
+    <p class="legal-page__updated">How to permanently remove your JosRide data</p>
+
+    <p>
+      You can delete your JosRide rider or driver account from the website or the app.
+      Deletion is permanent. Active trips must be finished first.
+    </p>
+
+    <h2>On the website</h2>
+    <ol class="legal-page__steps">
+      <li>Sign in to the rider or driver portal.</li>
+      <li>Open <strong>Settings</strong>, then <strong>Delete account</strong>.</li>
+      <li>Confirm the warning. You will be signed out when the request is submitted.</li>
+    </ol>
+    <div class="legal-page__actions">
+      <a class="landing-btn landing-btn--primary" href="{{ url_for('main.rider_login_page') }}">Sign in as rider</a>
+      <a class="landing-btn landing-btn--ghost" href="{{ url_for('main.driver_login_page') }}">Sign in as driver</a>
+    </div>
+
+    <h2>In the app</h2>
+    <p>Open Profile or Security &amp; privacy, then choose <strong>Delete account</strong> and confirm twice.</p>
+
+    <h2>What we delete</h2>
+    <ul>
+      <li>Account profile, phone, and login access</li>
+      <li>Trip history, scheduled rides, and in-app messages</li>
+      <li>Wallet records associated with the account</li>
+      <li>Saved locations and trusted contacts</li>
+    </ul>
+    <p>
+      Payment processors such as Paystack may retain transaction records required by law.
+      We may keep limited records needed for fraud, safety, or legal obligations.
+    </p>
+
+    <h2>Need help?</h2>
+    <p>
+      Email <a href="mailto:{{ support_email }}">{{ support_email }}</a> if you cannot sign in.
+      Include the phone number or email on the account.
+    </p>
+    <p>
+      <a href="{{ url_for('main.privacy_policy') }}">Privacy Policy</a>
+      ·
+      <a href="{{ url_for('main.terms_of_service') }}">Terms of Service</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

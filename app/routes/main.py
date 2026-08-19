@@ -817,6 +817,15 @@ def support_page():
     return render_template("legal/support.html")
 
 
+@main_bp.route("/delete-account")
+def public_delete_account():
+    if is_authenticated_rider():
+        return redirect(url_for("main.user_delete_account"))
+    if is_authenticated_driver():
+        return redirect(url_for("driver_portal.settings"))
+    return render_template("legal/delete_account.html")
+
+
 @main_bp.route("/portals")
 def portals_page():
     return render_template("portals.html")
