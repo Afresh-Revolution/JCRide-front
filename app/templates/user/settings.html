@@ -50,6 +50,35 @@
     </div>
   </article>
 
+  {% if referral %}
+  <article class="rider-panel settings-card rider-panel--promo" id="referral-panel"
+    data-invite-url="{{ referral.invite_url }}"
+    data-share-message="{{ referral.share_message }}"
+    data-credit-ngn="{{ referral.credit_ngn }}"
+    data-uses-count="{{ referral.uses_count }}"
+    data-condition-text="{{ referral.condition_text or '' }}">
+    <h2 class="rider-promo__title" id="referral-title">Earn ₦{{ referral.credit_ngn|int }} wallet credit</h2>
+    <p class="rider-promo__text" id="referral-condition">{{ referral.condition_text or 'Invite a friend — you get credit when they complete their first ride.' }}</p>
+    <div class="rider-referral__share" id="referral-share">
+      <label class="rider-referral__label" for="referral-invite-url">Your invite link</label>
+      <div class="rider-referral__link-row">
+        <input type="text" class="rider-referral__input" id="referral-invite-url" readonly value="{{ referral.invite_url }}" aria-label="Invite link">
+        <button type="button" class="rider-referral__copy" id="referral-copy-btn" aria-label="Copy invite link">
+          Copy
+        </button>
+      </div>
+      <div class="rider-referral__actions">
+        <a href="https://wa.me/?text={{ referral.share_message|urlencode }}" class="rider-referral__btn rider-referral__btn--whatsapp" id="referral-whatsapp" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="sms:?body={{ referral.share_message|urlencode }}" class="rider-referral__btn" id="referral-sms">SMS</a>
+        <a href="mailto:?subject={{ 'Join me on JosRide'|urlencode }}&body={{ referral.share_message|urlencode }}" class="rider-referral__btn" id="referral-email">Email</a>
+      </div>
+      <p class="rider-referral__meta" id="referral-uses-count">
+        {% if referral.uses_count == 1 %}1 friend invited{% else %}{{ referral.uses_count }} friends invited{% endif %}
+      </p>
+    </div>
+  </article>
+  {% endif %}
+
   <article class="rider-panel settings-card">
     <h2 class="settings-card__title">Security</h2>
     {% if joscity_only %}
@@ -177,11 +206,9 @@
     <div class="settings-action-row">
       <div>
         <strong>Delete account</strong>
-        <span>{% if has_active_trip %}Finish your active trip first{% else %}Permanent · erases all your data{% endif %}</span>
+        <span>Permanent · erases all your data</span>
       </div>
-      <button type="button" class="rider-btn rider-btn--danger-sm" id="settings-delete-btn"{% if has_active_trip %} disabled aria-disabled="true"{% endif %}>
-        Delete
-      </button>
+      <a href="{{ url_for('main.user_delete_account') }}" class="rider-btn rider-btn--danger-sm">Delete</a>
     </div>
   </article>
 </div>

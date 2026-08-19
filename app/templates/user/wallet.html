@@ -141,7 +141,7 @@
 
     <div class="wallet-transfer-panel" id="wallet-withdraw-panel" hidden>
       <h2 class="rider-panel__title">Withdraw</h2>
-      <p class="rider-panel__subtitle">Minimum ₦1,000. Once approved, amount would be credited into your bank account</p>
+      <p class="rider-panel__subtitle">Minimum ₦1,000. Paystack sends the money to your bank. Your wallet is deducted now and refunded if the transfer fails.</p>
       <div class="wallet-amount">
         <span class="wallet-amount__label">AMOUNT (NGN)</span>
         <div class="wallet-amount__quick" id="wallet-withdraw-quick-amounts">
@@ -157,16 +157,18 @@
         <input type="number" id="wallet-withdraw-amount-input" min="1000" step="100" value="5000" placeholder="1000">
       </label>
       <label class="support-field">
-        <span>Bank name</span>
-        <input type="text" id="wallet-withdraw-bank" placeholder="Bank name">
+        <span>Bank</span>
+        <input type="text" id="wallet-withdraw-bank" placeholder="Search bank" autocomplete="off">
+        <input type="hidden" id="wallet-withdraw-bank-code" value="">
+        <div class="wallet-bank-choices" id="wallet-withdraw-bank-choices" hidden></div>
       </label>
       <label class="support-field">
         <span>Account number</span>
-        <input type="text" id="wallet-withdraw-account-number" placeholder="Account number">
+        <input type="text" id="wallet-withdraw-account-number" placeholder="0123456789" inputmode="numeric">
       </label>
       <label class="support-field">
         <span>Account name</span>
-        <input type="text" id="wallet-withdraw-account-name" placeholder="Account name">
+        <input type="text" id="wallet-withdraw-account-name" placeholder="Filled after account number">
       </label>
       <button type="button" class="rider-btn rider-btn--request" id="wallet-withdraw-submit">Withdraw →</button>
     </div>

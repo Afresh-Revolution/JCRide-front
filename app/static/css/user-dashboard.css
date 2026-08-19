@@ -3583,6 +3583,28 @@ body.rider-trip-chat-open {
   font-size: 0.875rem;
 }
 
+.wallet-bank-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.wallet-bank-choice {
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--user-border);
+  border-radius: var(--user-radius-sm);
+  background: var(--user-card);
+  color: var(--user-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wallet-bank-choice:hover {
+  border-color: var(--user-green);
+}
+
 .wallet-method-list {
   border: 1px solid var(--user-border);
   border-radius: 1rem;
@@ -3997,6 +4019,100 @@ body.rider-trip-chat-open {
 .settings-delete-btn svg {
   width: 14px;
   height: 14px;
+}
+
+.delete-account-page {
+  max-width: 36rem;
+  padding: 1.5rem 1.75rem 1.75rem;
+}
+
+.delete-account-page__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--user-muted);
+  text-decoration: none;
+}
+
+.delete-account-page__back svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.delete-account-page__back:hover {
+  color: var(--user-text);
+}
+
+.delete-account-page__icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef2f2;
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.delete-account-page__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.delete-account-page__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--user-text);
+}
+
+.delete-account-page__lead {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--user-muted);
+}
+
+.delete-account-page__list {
+  margin: 0 0 1.25rem;
+  padding: 0 0 0 1.15rem;
+  color: var(--user-text);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+.delete-account-page__note,
+.delete-account-page__warn {
+  margin: 0 0 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.delete-account-page__note {
+  color: var(--user-muted);
+}
+
+.delete-account-page__warn {
+  padding: 0.75rem 1rem;
+  border-radius: var(--user-radius-sm);
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.delete-account-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.delete-account-page__actions .rider-btn--danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Confirm dialog */

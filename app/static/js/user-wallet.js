@@ -64,6 +64,14 @@
   var withdrawAmount = 5000;
   var sendAmountInput = document.getElementById("wallet-send-amount-input");
   var withdrawAmountInput = document.getElementById("wallet-withdraw-amount-input");
+  var withdrawBankInput = document.getElementById("wallet-withdraw-bank");
+  var withdrawBankCodeInput = document.getElementById("wallet-withdraw-bank-code");
+  var withdrawBankChoices = document.getElementById("wallet-withdraw-bank-choices");
+  var withdrawAccountNumber = document.getElementById("wallet-withdraw-account-number");
+  var withdrawAccountName = document.getElementById("wallet-withdraw-account-name");
+  var paystackBanks = [];
+  var selectedBank = null;
+  var resolveTimer = null;
   var sendPhoneInput = document.getElementById("wallet-send-phone");
   var sendRecipientEl = document.getElementById("wallet-send-recipient");
   var sendLookupTimer = null;
@@ -132,6 +140,96 @@
     withdrawAmountInput.addEventListener("input", function () {
       withdrawAmount = Number(withdrawAmountInput.value || 0);
       syncAmountChips("wallet-withdraw-quick-amounts", withdrawAmount);
+    });
+  }
+
+  function hideBankChoices() {
+    if (!withdrawBankChoices) return;
+    withdrawBankChoices.hidden = true;
+    withdrawBankChoices.innerHTML = "";
+  }
+
+  function renderBankChoices(query) {
+    if (!withdrawBankChoices) return;
+    var q = String(query || "").trim().toLowerCase();
+    if (!q || selectedBank) {
+      hideBankChoices();
+      return;
+    }
+    var matches = paystackBanks.filter(function (bank) {
+      return String(bank.name || "").toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 8);
+    if (!matches.length) {
+      hideBankChoices();
+      return;
+    }
+    withdrawBankChoices.innerHTML = matches
+      .map(function (bank) {
+        return '<button type="button" class="wallet-bank-choice" data-code="' +
+          String(bank.code || "").replace(/"/g, "") +
+          '" data-name="' +
+          String(bank.name || "").replace(/"/g, "&quot;") +
+          '">' +
+          String(bank.name || "") +
+          "</button>";
+      })
+      .join("");
+    withdrawBankChoices.hidden = false;
+  }
+
+  function resolveWithdrawAccount() {
+    if (!withdrawAccountNumber || !window.UserApi || !window.UserApi.post) return;
+    var digits = (withdrawAccountNumber.value || "").replace(/\D/g, "");
+    var code = (withdrawBankCodeInput && withdrawBankCodeInput.value) || (selectedBank && selectedBank.code) || "";
+    if (!code || digits.length < 10) return;
+    if (withdrawAccountName) withdrawAccountName.placeholder = "Resolving account name…";
+    window.UserApi.post("/user/api/wallet/banks/resolve", {
+      account_number: digits,
+      bank_code: code,
+    })
+      .then(function (data) {
+        if (data && data.account_name && withdrawAccountName) {
+          withdrawAccountName.value = data.account_name;
+        }
+      })
+      .catch(function () {})
+      .finally(function () {
+        if (withdrawAccountName) withdrawAccountName.placeholder = "Filled after account number";
+      });
+  }
+
+  if (window.UserApi && window.UserApi.get) {
+    window.UserApi.get("/user/api/wallet/banks")
+      .then(function (data) {
+        paystackBanks = (data && data.banks) || [];
+      })
+      .catch(function () {
+        paystackBanks = [];
+      });
+  }
+
+  if (withdrawBankInput) {
+    withdrawBankInput.addEventListener("input", function () {
+      selectedBank = null;
+      if (withdrawBankCodeInput) withdrawBankCodeInput.value = "";
+      renderBankChoices(withdrawBankInput.value);
+    });
+  }
+  if (withdrawBankChoices) {
+    withdrawBankChoices.addEventListener("click", function (event) {
+      var btn = event.target.closest(".wallet-bank-choice");
+      if (!btn) return;
+      selectedBank = { name: btn.getAttribute("data-name") || "", code: btn.getAttribute("data-code") || "" };
+      if (withdrawBankInput) withdrawBankInput.value = selectedBank.name;
+      if (withdrawBankCodeInput) withdrawBankCodeInput.value = selectedBank.code;
+      hideBankChoices();
+      resolveWithdrawAccount();
+    });
+  }
+  if (withdrawAccountNumber) {
+    withdrawAccountNumber.addEventListener("input", function () {
+      clearTimeout(resolveTimer);
+      resolveTimer = setTimeout(resolveWithdrawAccount, 400);
     });
   }
 
@@ -325,26 +423,31 @@
   var withdrawSubmit = document.getElementById("wallet-withdraw-submit");
   if (withdrawSubmit) {
     withdrawSubmit.addEventListener("click", function () {
-      var bank = (document.getElementById("wallet-withdraw-bank").value || "").trim();
-      var accountNumber = (document.getElementById("wallet-withdraw-account-number").value || "").trim();
-      var accountName = (document.getElementById("wallet-withdraw-account-name").value || "").trim();
+      var bank = (withdrawBankInput && withdrawBankInput.value) || "";
+      var bankCode = (withdrawBankCodeInput && withdrawBankCodeInput.value) || (selectedBank && selectedBank.code) || "";
+      var accountNumber = (withdrawAccountNumber && withdrawAccountNumber.value) || "";
+      var accountName = (withdrawAccountName && withdrawAccountName.value) || "";
+      bank = bank.trim();
+      accountNumber = accountNumber.replace(/\D/g, "");
+      accountName = accountName.trim();
       if (!withdrawAmount || withdrawAmount < 1000) {
         alert("Minimum withdrawal is ₦1,000.");
         return;
       }
-      if (!bank || !accountNumber || !accountName) {
-        alert("Fill in all withdrawal fields.");
+      if (!bankCode || accountNumber.length < 10 || !accountName) {
+        alert("Select a bank, then enter account number so we can fill the account name.");
         return;
       }
       setBusy(withdrawSubmit, true);
       UserApi.post("/user/api/wallet/withdraw", {
         amount_ngn: withdrawAmount,
         bank_name: bank,
+        bank_code: bankCode,
         account_number: accountNumber,
         account_name: accountName,
       })
         .then(function () {
-          alert("Withdrawal request submitted. Admin will approve before the amount leaves your wallet.");
+          alert("Paystack is sending this to your bank. Your wallet is deducted now, and the amount is refunded if the transfer fails.");
           window.location.reload();
         })
         .catch(function (err) {

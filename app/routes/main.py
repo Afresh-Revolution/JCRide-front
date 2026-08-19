@@ -38,6 +38,8 @@ from app.services.api_client import (
     unlock_account,
     get_wallet_transactions,
     initialize_paystack,
+    list_paystack_banks,
+    resolve_paystack_bank_account,
     list_notifications,
     list_scheduled_rides,
     list_support_tickets,
@@ -266,7 +268,10 @@ def _rider_token() -> str | None:
 
 
 def _referral_for_ui(referral: dict | None) -> dict | None:
-    return rewrite_referral_invite_url(referral, base_url=get_public_app_url())
+    rewritten = rewrite_referral_invite_url(referral, base_url=get_public_app_url())
+    if not rewritten or rewritten.get("enabled") is False:
+        return None
+    return rewritten
 
 
 def _jwt_user_id(token: str | None) -> str | None:
@@ -1518,6 +1523,9 @@ def user_dashboard():
         policy_data, policy_ok = _safe_rider_api(get_account_policy)
         account_policy = policy_data if policy_ok else {}
     referral = _referral_for_ui(payload.get("referral") if summary_ok else None)
+    if not referral:
+        referral_data, referral_ok = _safe_rider_api(get_referral_info)
+        referral = _referral_for_ui(referral_data if referral_ok else None)
     recent_rides = dashboard_recent_rides(payload)
     recent_trips = [ride_to_recent_trip(item) for item in recent_rides[:3]]
     if summary_ok:
@@ -2289,6 +2297,8 @@ def user_settings():
         return guard
     settings_data, ok = _safe_rider_api(get_user_settings)
     settings = settings_from_api(settings_data if ok else None)
+    referral_data, referral_ok = _safe_rider_api(get_referral_info)
+    referral = _referral_for_ui(referral_data if referral_ok else None)
     has_active_trip = bool(session.get("active_trip"))
     profile_data, profile_ok = _safe_rider_api(get_profile)
     user = {}
@@ -2300,12 +2310,27 @@ def user_settings():
         "user/settings.html",
         active_page="settings",
         settings=settings,
+        referral=referral,
         api_connected=ok,
         has_active_trip=has_active_trip,
         has_local_password=has_local_password or not joscity_only,
         joscity_only=joscity_only,
         notification_channels=_notification_channels(),
         notification_topics=_notification_topics(),
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/delete-account")
+def user_delete_account():
+    guard = _require_rider()
+    if guard:
+        return guard
+    has_active_trip = bool(session.get("active_trip"))
+    return render_template(
+        "user/delete_account.html",
+        active_page="settings",
+        has_active_trip=has_active_trip,
         **_rider_context(),
     )
 
@@ -2792,6 +2817,35 @@ def user_api_wallet_fund_request():
         return _user_api_error(exc)
 
 
+@main_bp.route("/user/api/wallet/banks")
+def user_api_wallet_banks():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(list_paystack_banks(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/banks/resolve", methods=["POST"])
+def user_api_wallet_banks_resolve():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            resolve_paystack_bank_account(
+                _rider_token(),
+                payload.get("account_number", ""),
+                payload.get("bank_code", ""),
+            )
+        )
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
 @main_bp.route("/user/api/wallet/withdraw", methods=["POST"])
 def user_api_wallet_withdraw():
     guard = _require_rider_api()
@@ -2806,6 +2860,7 @@ def user_api_wallet_withdraw():
                 payload.get("bank_name", ""),
                 payload.get("account_number", ""),
                 payload.get("account_name", ""),
+                payload.get("bank_code") or None,
             )
         )
     except ApiError as exc:
@@ -3109,6 +3164,11 @@ def user_api_dashboard_summary():
             except ApiError:
                 account_policy = {}
         referral = _referral_for_ui(payload.get("referral"))
+        if not referral:
+            try:
+                referral = _referral_for_ui(get_referral_info(_rider_token()))
+            except ApiError:
+                referral = None
         recent_rides = dashboard_recent_rides(payload)
         recent_trips = [ride_to_recent_trip(item) for item in recent_rides[:3]]
         _sync_rider_wallet_session(wallet_from_dashboard_stats(payload))

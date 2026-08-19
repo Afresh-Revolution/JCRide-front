@@ -155,6 +155,73 @@
   border-color: #fecaca;
 }
 
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--dash-border);
+}
+
+.settings-toggle-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.settings-toggle-row span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.settings-toggle-row strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.settings-toggle-row em {
+  font-style: normal;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--dash-muted);
+}
+
+.settings-toggle-row input[type="checkbox"] {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #d1d5db;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.settings-toggle-row input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.settings-toggle-row input[type="checkbox"]:checked {
+  background: var(--dash-green);
+}
+
+.settings-toggle-row input[type="checkbox"]:checked::after {
+  transform: translateX(20px);
+}
+
 .settings-field--inline {
   flex-direction: row;
   align-items: center;

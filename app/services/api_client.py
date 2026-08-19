@@ -1240,17 +1240,33 @@ def create_wallet_funding_request(token, amount_ngn, bank_name, account_name, pr
     )
 
 
-def withdraw_wallet(token, amount_ngn, bank_name, account_number, account_name):
+def withdraw_wallet(token, amount_ngn, bank_name, account_number, account_name, bank_code=None):
+    payload = {
+        "amount_ngn": amount_ngn,
+        "bank_name": bank_name,
+        "account_number": account_number,
+        "account_name": account_name,
+    }
+    if bank_code:
+        payload["bank_code"] = bank_code
     return _request(
         "POST",
         f"{API_PREFIX}/wallet/withdraw",
         token=token,
-        json={
-            "amount_ngn": amount_ngn,
-            "bank_name": bank_name,
-            "account_number": account_number,
-            "account_name": account_name,
-        },
+        json=payload,
+    )
+
+
+def list_paystack_banks(token):
+    return _request("GET", f"{API_PREFIX}/wallet/banks", token=token)
+
+
+def resolve_paystack_bank_account(token, account_number, bank_code):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/wallet/banks/resolve",
+        token=token,
+        json={"account_number": account_number, "bank_code": bank_code},
     )
 
 

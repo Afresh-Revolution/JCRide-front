@@ -92,6 +92,17 @@
     if (input && value != null && value !== "") input.value = value;
   }
 
+  function setCheckbox(name, value) {
+    const input = form && form.querySelector('[name="' + name + '"]');
+    if (input) input.checked = Boolean(value);
+  }
+
+  function parseCheckbox(name, fallback) {
+    const input = form && form.querySelector('[name="' + name + '"]');
+    if (!input) return fallback;
+    return Boolean(input.checked);
+  }
+
   function parseOptionalNumber(name) {
     const input = form && form.querySelector('[name="' + name + '"]');
     if (!input) return undefined;
@@ -162,7 +173,12 @@
         setField("settlement_account", integration.settlement_account);
         setField("webhook_url", integration.webhook_url);
         setField("settlement_schedule", integration.settlement_schedule);
+        setField("public_key", integration.public_key || "");
         setField("api_secret", "");
+
+        setField("referral_bonus_ngn", data.referral_bonus_ngn);
+        setCheckbox("referral_enabled", data.referral_enabled !== false);
+        setCheckbox("referral_require_first_ride", data.referral_require_first_ride !== false);
 
         operationalZones = Array.isArray(data.operational_zones) ? data.operational_zones.slice() : [];
         platformSettingsLoaded = true;
@@ -196,6 +212,9 @@
     assignIfDefined(payload, "min_vehicle_year", parseOptionalNumber("min_vehicle_year"));
     assignIfDefined(payload, "min_driver_rating_threshold", parseOptionalNumber("min_driver_rating_threshold"));
     assignIfDefined(payload, "background_check_provider", parseOptionalString("background_check_provider"));
+    assignIfDefined(payload, "referral_bonus_ngn", parseOptionalNumber("referral_bonus_ngn"));
+    payload.referral_enabled = parseCheckbox("referral_enabled", true);
+    payload.referral_require_first_ride = parseCheckbox("referral_require_first_ride", true);
 
     const docsRaw = (form.querySelector('[name="required_documents"]') || {}).value || "";
     const docs = docsRaw.split(",").map(function (part) { return part.trim(); }).filter(Boolean);
@@ -210,6 +229,7 @@
     assignIfDefined(paymentIntegration, "settlement_account", parseOptionalString("settlement_account"));
     assignIfDefined(paymentIntegration, "webhook_url", parseOptionalString("webhook_url"));
     assignIfDefined(paymentIntegration, "settlement_schedule", parseOptionalString("settlement_schedule"));
+    assignIfDefined(paymentIntegration, "public_key", parseOptionalString("public_key"));
     const apiSecret = parseOptionalString("api_secret");
     if (apiSecret) paymentIntegration.api_secret = apiSecret;
     if (Object.keys(paymentIntegration).length) payload.payment_integration = paymentIntegration;

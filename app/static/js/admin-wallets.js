@@ -253,7 +253,7 @@
     const tbody = document.getElementById("withdrawals-table-body");
     if (!tbody) return;
     if (!withdrawalState.items.length) {
-      tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="7">No withdrawal requests found.</td></tr>';
+      tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="6">No withdrawals found.</td></tr>';
       return;
     }
     tbody.innerHTML = withdrawalState.items
@@ -267,11 +267,7 @@
           "<td>" + escapeHtml(item.bank_name) + " · " + escapeHtml(maskAccount(item.account_number)) + " · " + escapeHtml(item.account_name) + "</td>" +
           '<td><span class="' + queueStatusClass(item.status) + '">' + escapeHtml(item.status) + "</span></td>" +
           "<td>" + escapeHtml(formatDate(item.created_at)) + "</td>" +
-          '<td><div class="queue-actions">' +
-          '<button type="button" class="queue-btn queue-btn--approve" data-withdrawal-approve="' + escapeHtml(item.id) + '"' + (item.can_approve ? "" : " disabled") + ">Approve</button>" +
-          '<button type="button" class="queue-btn queue-btn--neutral" data-withdrawal-paid="' + escapeHtml(item.id) + '"' + (item.can_mark_paid ? "" : " disabled") + ">Mark paid</button>" +
-          '<button type="button" class="queue-btn queue-btn--reject" data-withdrawal-reject="' + escapeHtml(item.id) + '"' + (item.can_reject ? "" : " disabled") + ">Reject</button>" +
-          "</div></td></tr>"
+          "</tr>"
         );
       })
       .join("");
@@ -311,95 +307,9 @@
       })
       .catch(function (err) {
         if (tbody) {
-          tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="7">' + escapeHtml(err.message) + "</td></tr>";
+          tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="6">' + escapeHtml(err.message) + "</td></tr>";
         }
         showToast(err.message, true);
-      });
-  }
-
-  function approveWithdrawal(id, button) {
-    window.AdminConfirm.show({
-      title: "Approve withdrawal",
-      message: "Approve this payout? The rider's wallet will be deducted now. Mark it paid after you send the bank transfer.",
-      confirmLabel: "Approve",
-    }).then(function (confirmed) {
-      if (!confirmed) return;
-      if (button && window.ButtonLoading) window.ButtonLoading.start(button, { text: "Approving…" });
-      return apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(id) + "/approve", { method: "POST" })
-        .then(function () {
-          showToast("Withdrawal approved");
-          loadWithdrawals();
-        })
-        .catch(function (err) {
-          if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
-          showToast(err.message, true);
-        });
-    });
-  }
-
-  function markWithdrawalPaid(id, button) {
-    window.AdminConfirm.show({
-      title: "Mark as paid",
-      message: "Confirm the bank transfer has been completed?",
-      confirmLabel: "Mark paid",
-    }).then(function (confirmed) {
-      if (!confirmed) return;
-      if (button && window.ButtonLoading) window.ButtonLoading.start(button, { text: "Saving…" });
-      return apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(id) + "/mark-paid", { method: "POST" })
-        .then(function () {
-          showToast("Withdrawal marked paid");
-          loadWithdrawals();
-          loadStats();
-        })
-        .catch(function (err) {
-          if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
-          showToast(err.message, true);
-        });
-    });
-  }
-
-  function openWithdrawalRejectModal(id) {
-    withdrawalState.rejectId = id;
-    const modal = document.getElementById("withdrawal-reject-modal");
-    const form = document.getElementById("withdrawal-reject-form");
-    const error = document.getElementById("withdrawal-reject-error");
-    if (form) form.reset();
-    if (error) error.hidden = true;
-    if (modal) modal.hidden = false;
-  }
-
-  function closeWithdrawalRejectModal() {
-    withdrawalState.rejectId = null;
-    const modal = document.getElementById("withdrawal-reject-modal");
-    if (modal) modal.hidden = true;
-  }
-
-  function submitWithdrawalReject(event) {
-    event.preventDefault();
-    const reasonEl = document.getElementById("withdrawal-reject-reason");
-    const error = document.getElementById("withdrawal-reject-error");
-    const reason = reasonEl ? reasonEl.value.trim() : "";
-    if (!withdrawalState.rejectId || reason.length < 2) return;
-    var submitBtn = event.target.querySelector('button[type="submit"], input[type="submit"]');
-    if (submitBtn && window.ButtonLoading) window.ButtonLoading.start(submitBtn, { text: "Rejecting…" });
-    apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(withdrawalState.rejectId) + "/reject", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: reason }),
-    })
-      .then(function () {
-        closeWithdrawalRejectModal();
-        showToast("Withdrawal rejected");
-        loadWithdrawals();
-      })
-      .catch(function (err) {
-        if (error) {
-          error.textContent = err.message;
-          error.hidden = false;
-        }
-      })
-      .finally(function () {
-        if (submitBtn && window.ButtonLoading) window.ButtonLoading.stop(submitBtn);
       });
   }
 
@@ -407,8 +317,6 @@
     const statusFilter = document.getElementById("withdrawals-status-filter");
     const prevBtn = document.getElementById("withdrawals-prev-btn");
     const nextBtn = document.getElementById("withdrawals-next-btn");
-    const rejectForm = document.getElementById("withdrawal-reject-form");
-    const tbody = document.getElementById("withdrawals-table-body");
 
     loadWithdrawals();
 
@@ -433,24 +341,6 @@
           withdrawalState.page += 1;
           loadWithdrawals();
         }
-      });
-    }
-    if (rejectForm) {
-      rejectForm.addEventListener("submit", submitWithdrawalReject);
-    }
-    document.querySelectorAll("[data-close-withdrawal-reject]").forEach(function (btn) {
-      btn.addEventListener("click", closeWithdrawalRejectModal);
-    });
-    if (tbody) {
-      tbody.addEventListener("click", function (event) {
-        const target = event.target;
-        if (!(target instanceof HTMLElement)) return;
-        const approveId = target.getAttribute("data-withdrawal-approve");
-        const paidId = target.getAttribute("data-withdrawal-paid");
-        const rejectId = target.getAttribute("data-withdrawal-reject");
-        if (approveId && !target.disabled) approveWithdrawal(approveId, target);
-        if (paidId && !target.disabled) markWithdrawalPaid(paidId, target);
-        if (rejectId && !target.disabled) openWithdrawalRejectModal(rejectId);
       });
     }
   }

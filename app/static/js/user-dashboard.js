@@ -121,6 +121,10 @@
     if (titleEl && data.credit_ngn) {
       titleEl.textContent = "Earn ₦" + Math.round(Number(data.credit_ngn)).toLocaleString() + " wallet credit";
     }
+    var conditionEl = document.getElementById("referral-condition");
+    if (conditionEl && data.condition_text) {
+      conditionEl.textContent = data.condition_text;
+    }
     if (usesEl) {
       var count = Number(data.uses_count || 0);
       usesEl.textContent = count === 1 ? "1 friend invited" : count + " friends invited";
@@ -231,8 +235,10 @@
         applyStats(data.stats);
         renderPolicy(data.account_policy);
         renderRecentTrips(data.recent_trips);
-        if (data.referral) {
+        if (data.referral && data.referral.enabled !== false) {
           applyReferralData(data.referral);
+        } else if (panel && data.referral && data.referral.enabled === false) {
+          panel.hidden = true;
         }
       })
       .catch(function () {});
