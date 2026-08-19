@@ -3252,6 +3252,18 @@ def user_api_saved_locations():
         return _user_api_error(exc)
 
 
+@main_bp.route("/user/api/saved-locations/<location_id>", methods=["DELETE"])
+def user_api_delete_saved_location(location_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        delete_saved_location(_rider_token(), location_id)
+        return jsonify({"ok": True})
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
 @main_bp.route("/driver", methods=["GET", "POST"])
 def driver_page():
     """Legacy URL - send drivers to the real driver portal."""

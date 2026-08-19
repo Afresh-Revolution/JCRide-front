@@ -430,7 +430,12 @@ def profile_from_api(profile: dict | None) -> dict:
         data["emergency_contact"] = " · ".join(filter(None, [ec_name, ec_phone]))
     locs = profile.get("saved_locations") or []
     data["saved_locations"] = [
-        {"label": loc.get("label"), "address": loc.get("address")} for loc in locs
+        {
+            "id": loc.get("id"),
+            "label": loc.get("label"),
+            "address": loc.get("address"),
+        }
+        for loc in locs
     ]
     data["trusted_contacts"] = profile.get("trusted_contacts") or []
     return data
