@@ -1,10 +1,5 @@
 (function () {
-  const FORM_SELECTOR = [
-    ".auth-login__form",
-    "#admin-login-form",
-    "form.form",
-    ".auth-form",
-  ].join(", ");
+  "use strict";
 
   const ICON_SHOW =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -40,9 +35,7 @@
   }
 
   function initPasswordToggles(root) {
-    root.querySelectorAll(FORM_SELECTOR).forEach((form) => {
-      form.querySelectorAll('input[type="password"]').forEach(bindPasswordToggle);
-    });
+    (root || document).querySelectorAll('input[type="password"]').forEach(bindPasswordToggle);
   }
 
   if (document.readyState === "loading") {

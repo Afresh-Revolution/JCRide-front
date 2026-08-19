@@ -1,6 +1,51 @@
 (function () {
   "use strict";
 
+  var WALLET_VISIBLE_KEY = "josride_wallet_balance_visible";
+
+  function walletBalanceVisible() {
+    try {
+      return localStorage.getItem(WALLET_VISIBLE_KEY) !== "0";
+    } catch (err) {
+      return true;
+    }
+  }
+
+  function applyWalletVisibility() {
+    var valueEl = document.getElementById("wallet-balance-value");
+    var eyeBtn = document.getElementById("wallet-balance-eye");
+    if (!valueEl) return;
+    var visible = walletBalanceVisible();
+    var raw = valueEl.getAttribute("data-raw") || "";
+    if (!raw || raw.indexOf("•") !== -1) {
+      var current = valueEl.textContent || "";
+      if (current && current.indexOf("•") === -1) {
+        raw = current;
+        valueEl.setAttribute("data-raw", raw);
+      }
+    }
+    valueEl.textContent = visible ? raw : "••••••";
+    if (eyeBtn) {
+      eyeBtn.setAttribute("aria-label", visible ? "Hide wallet balance" : "Show wallet balance");
+      var onIcon = eyeBtn.querySelector(".wallet-balance-card__eye-on");
+      var offIcon = eyeBtn.querySelector(".wallet-balance-card__eye-off");
+      if (onIcon) onIcon.classList.toggle("is-hidden", !visible);
+      if (offIcon) offIcon.classList.toggle("is-hidden", visible);
+    }
+  }
+
+  var walletEyeBtn = document.getElementById("wallet-balance-eye");
+  if (walletEyeBtn) {
+    applyWalletVisibility();
+    walletEyeBtn.addEventListener("click", function () {
+      var next = walletBalanceVisible() ? "0" : "1";
+      try {
+        localStorage.setItem(WALLET_VISIBLE_KEY, next);
+      } catch (err) {}
+      applyWalletVisibility();
+    });
+  }
+
   if (!window.UserApi) return;
 
   var configEl = document.getElementById("wallet-api-config");
@@ -338,7 +383,10 @@
   var refreshBtn = document.getElementById("wallet-refresh-btn");
   if (refreshBtn) {
     refreshBtn.addEventListener("click", function () {
-      window.location.reload();
+      setBusy(refreshBtn, true, "Refreshing…");
+      fetchWallet().finally(function () {
+        setBusy(refreshBtn, false);
+      });
     });
   }
 
@@ -378,6 +426,89 @@
         });
     });
   }
+
+  function applyTrend(el, trend) {
+    if (!el) return;
+    if (trend) {
+      el.textContent = "▲ " + trend;
+      el.hidden = false;
+    } else {
+      el.textContent = "";
+      el.hidden = true;
+    }
+  }
+
+  function renderTransactions(items) {
+    var list = document.getElementById("wallet-tx-list");
+    if (!list) return;
+    var rows = Array.isArray(items) ? items : [];
+    if (!rows.length) {
+      list.innerHTML = '<li class="wallet-tx wallet-tx--empty" id="wallet-tx-empty">No transactions yet.</li>';
+      return;
+    }
+    list.innerHTML = rows
+      .map(function (tx) {
+        var type = tx.type || "debit";
+        var icon = type === "credit" ? "↙" : type === "refund" ? "↺" : "↗";
+        return (
+          '<li class="wallet-tx wallet-tx--' +
+          type +
+          '">' +
+          '<span class="wallet-tx__icon" aria-hidden="true">' +
+          icon +
+          "</span>" +
+          '<div class="wallet-tx__body"><strong>' +
+          escapeHtml(tx.title) +
+          "</strong><span>" +
+          escapeHtml(tx.time) +
+          "</span></div>" +
+          '<div class="wallet-tx__amount"><strong>' +
+          escapeHtml(tx.amount) +
+          "</strong><span>" +
+          escapeHtml(tx.status) +
+          "</span></div></li>"
+        );
+      })
+      .join("");
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function applyWalletSummary(wallet) {
+    if (!wallet) return;
+    var valueEl = document.getElementById("wallet-balance-value");
+    if (valueEl && wallet.balance != null && wallet.balance !== "") {
+      valueEl.setAttribute("data-raw", wallet.balance);
+      valueEl.textContent = wallet.balance;
+    }
+    applyWalletVisibility();
+    var subEl = document.getElementById("wallet-balance-sub");
+    if (subEl && wallet.balance_sub) subEl.textContent = wallet.balance_sub;
+    var depositsEl = document.getElementById("wallet-deposits-value");
+    if (depositsEl && wallet.total_deposits != null) depositsEl.textContent = wallet.total_deposits;
+    var spendingEl = document.getElementById("wallet-spending-value");
+    if (spendingEl && wallet.total_spending != null) spendingEl.textContent = wallet.total_spending;
+    applyTrend(document.getElementById("wallet-deposits-trend"), wallet.deposits_trend);
+    applyTrend(document.getElementById("wallet-spending-trend"), wallet.spending_trend);
+  }
+
+  function fetchWallet() {
+    return UserApi.get("/user/api/wallet")
+      .then(function (data) {
+        applyWalletSummary(data.wallet);
+        if (data.transactions) renderTransactions(data.transactions);
+      })
+      .catch(function () {});
+  }
+
+  fetchWallet();
 
   var params = new URLSearchParams(window.location.search);
   var panelParam = String(params.get("panel") || window.location.hash.replace("#", "") || "").toLowerCase();

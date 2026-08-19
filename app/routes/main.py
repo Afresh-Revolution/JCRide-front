@@ -107,6 +107,7 @@ from app.config import (
 )
 from app.rider_api_transforms import (
     contacts_to_share_ui,
+    dashboard_recent_rides,
     dashboard_stats_from_api,
     default_ride_tiers,
     faq_from_api,
@@ -133,6 +134,7 @@ from app.rider_api_transforms import (
     support_category_slug,
     support_ticket_to_ui,
     tracking_step_for_status,
+    wallet_from_dashboard_stats,
     wallet_transactions_to_ui,
 )
 from app.rider_defaults import (
@@ -309,8 +311,38 @@ def _rider_rides_export() -> tuple[list[dict], bool]:
 
 
 def _sync_rider_wallet_session(wallet: dict | None) -> None:
-    if wallet and wallet.get("balance") is not None:
-        session["wallet_balance_ngn"] = wallet.get("balance")
+    if not wallet:
+        return
+    inner = wallet.get("wallet") if isinstance(wallet.get("wallet"), dict) else {}
+    balance = wallet.get("balance")
+    if balance is None:
+        balance = wallet.get("balance_ngn")
+    if balance is None and inner:
+        balance = inner.get("balance_ngn")
+        if balance is None:
+            balance = inner.get("balance")
+    if balance is not None:
+        session["wallet_balance_ngn"] = balance
+
+
+def _load_rider_wallet() -> tuple[dict | None, bool]:
+    wallet_data, wallet_ok = _safe_rider_api(get_wallet)
+    if wallet_ok and isinstance(wallet_data, dict):
+        inner = wallet_data.get("wallet") if isinstance(wallet_data.get("wallet"), dict) else {}
+        has_balance = (
+            wallet_data.get("balance") is not None
+            or wallet_data.get("balance_ngn") is not None
+            or inner.get("balance") is not None
+            or inner.get("balance_ngn") is not None
+        )
+        if has_balance:
+            return wallet_data, True
+    dash, dash_ok = _safe_rider_api(get_customer_dashboard_summary)
+    if dash_ok and dash:
+        return wallet_from_dashboard_stats(dash), True
+    if wallet_ok:
+        return wallet_data, True
+    return None, False
 
 
 def _parse_schedule_time(date_str: str, time_str: str) -> datetime:
@@ -1478,12 +1510,18 @@ def user_dashboard():
     has_gps = session.get("rider_lat") is not None and session.get("rider_lng") is not None
     display_location = session.get("rider_location") if has_gps else "Detecting location…"
     summary, summary_ok = _safe_rider_api(get_customer_dashboard_summary)
-    stats = dashboard_stats_from_api((summary or {}).get("stats"))
+    payload = summary if summary_ok and isinstance(summary, dict) else {}
+    stats = dashboard_stats_from_api(payload)
     stats["location"] = {"value": display_location}
-    account_policy = (summary or {}).get("account_policy") or {} if summary_ok else {}
-    referral = _referral_for_ui((summary or {}).get("referral") if summary_ok else None)
-    recent_rides = (summary or {}).get("recent_rides") or [] if summary_ok else []
+    account_policy = payload.get("account_policy") or {}
+    if not account_policy:
+        policy_data, policy_ok = _safe_rider_api(get_account_policy)
+        account_policy = policy_data if policy_ok else {}
+    referral = _referral_for_ui(payload.get("referral") if summary_ok else None)
+    recent_rides = dashboard_recent_rides(payload)
     recent_trips = [ride_to_recent_trip(item) for item in recent_rides[:3]]
+    if summary_ok:
+        _sync_rider_wallet_session(wallet_from_dashboard_stats(payload))
     live_area = live_area_from_location(display_location)
     map_config = live_area_map_for_location(display_location)
     map_config["location_label"] = display_location
@@ -2159,7 +2197,7 @@ def user_wallet():
     guard = _require_rider()
     if guard:
         return guard
-    wallet_data, wallet_ok = _safe_rider_api(get_wallet)
+    wallet_data, wallet_ok = _load_rider_wallet()
     policy_data, policy_ok = _safe_rider_api(get_account_policy)
     tx_data, tx_ok = _safe_rider_api(lambda token: get_wallet_transactions(token, limit=20))
     if wallet_ok:
@@ -2680,6 +2718,27 @@ def user_api_ride_messages(ride_id):
         return _user_api_error(exc)
 
 
+@main_bp.route("/user/api/wallet")
+def user_api_wallet():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    wallet_data, wallet_ok = _load_rider_wallet()
+    tx_data, tx_ok = _safe_rider_api(lambda token: get_wallet_transactions(token, limit=20))
+    if wallet_ok:
+        _sync_rider_wallet_session(wallet_data)
+    return jsonify(
+        {
+            "wallet": build_wallet_summary(wallet_data if wallet_ok else None),
+            "transactions": (
+                wallet_transactions_to_ui((tx_data or {}).get("transactions") or [])
+                if tx_ok
+                else []
+            ),
+        }
+    )
+
+
 @main_bp.route("/user/api/wallet/paystack/initialize", methods=["POST"])
 def user_api_paystack_initialize():
     guard = _require_rider_api()
@@ -3038,14 +3097,21 @@ def user_api_dashboard_summary():
         return guard
     try:
         summary = get_customer_dashboard_summary(_rider_token())
-        stats = dashboard_stats_from_api((summary or {}).get("stats"))
+        payload = summary if isinstance(summary, dict) else {}
+        stats = dashboard_stats_from_api(payload)
         location_label = session.get("rider_location")
         if location_label:
             stats["location"] = {"value": location_label}
-        account_policy = (summary or {}).get("account_policy") or {}
-        referral = _referral_for_ui((summary or {}).get("referral"))
-        recent_rides = (summary or {}).get("recent_rides") or []
+        account_policy = payload.get("account_policy") or {}
+        if not account_policy:
+            try:
+                account_policy = get_account_policy(_rider_token()) or {}
+            except ApiError:
+                account_policy = {}
+        referral = _referral_for_ui(payload.get("referral"))
+        recent_rides = dashboard_recent_rides(payload)
         recent_trips = [ride_to_recent_trip(item) for item in recent_rides[:3]]
+        _sync_rider_wallet_session(wallet_from_dashboard_stats(payload))
         return jsonify(
             {
                 "stats": stats,

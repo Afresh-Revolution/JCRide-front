@@ -249,35 +249,7 @@ def _build_route_map_coords(
         ],
     }
 
-RECENT_TRIPS = [
-    {
-        "date": "Today",
-        "time": "09:14",
-        "pickup": "Lekki Phase 1",
-        "destination": "Victoria Island",
-        "distance": "8.2 km",
-        "fare": "₦3,450",
-        "status": "completed",
-    },
-    {
-        "date": "Yesterday",
-        "time": "18:42",
-        "pickup": "Ikeja GRA",
-        "destination": "MM Airport",
-        "distance": "24.1 km",
-        "fare": "₦8,900",
-        "status": "completed",
-    },
-    {
-        "date": "Mon 3 Mar",
-        "time": "07:30",
-        "pickup": "Yaba",
-        "destination": "Lekki Phase 1",
-        "distance": "15.6 km",
-        "fare": "₦5,200",
-        "status": "cancelled",
-    },
-]
+RECENT_TRIPS = []
 
 BOOK_RIDE_DEFAULTS = {
     "pickup": "Lekki Phase 1, Lagos",
@@ -439,31 +411,18 @@ SHARE_RIDE = {
     ],
 }
 
-RIDE_HISTORY_TRIPS = [
-    {"id": "JCR-29481", "date": "Mar 25", "time": "10:04", "pickup": "Lekki Phase 1", "destination": "Victoria Island", "distance": "6.0 km", "duration": "15 min", "fare": "₦2,300", "status": "completed"},
-    {"id": "JCR-29480", "date": "Mar 24", "time": "19:08", "pickup": "Yaba", "destination": "Lagos Island", "distance": "11.2 km", "duration": "28 min", "fare": "₦4,120", "status": "completed"},
-    {"id": "JCR-29479", "date": "Mar 24", "time": "08:15", "pickup": "Surulere", "destination": "Ikeja City Mall", "distance": "14.5 km", "duration": "32 min", "fare": "₦5,680", "status": "cancelled"},
-    {"id": "JCR-29478", "date": "Mar 22", "time": "13:21", "pickup": "Ikeja", "destination": "Lekki", "distance": "9.0 km", "duration": "18 min", "fare": "₦3,740", "status": "completed"},
-    {"id": "JCR-29477", "date": "Mar 21", "time": "17:45", "pickup": "VI", "destination": "Ajah", "distance": "18.3 km", "duration": "35 min", "fare": "₦6,900", "status": "completed"},
-    {"id": "JCR-29476", "date": "Mar 20", "time": "07:20", "pickup": "Gbagada", "destination": "CMS", "distance": "12.1 km", "duration": "25 min", "fare": "₦4,500", "status": "completed"},
-]
+RIDE_HISTORY_TRIPS = []
 
 WALLET_SUMMARY = {
-    "balance": "₦42,580.00",
-    "balance_sub": "≈ 12 average trips",
-    "total_deposits": "₦310,000",
-    "deposits_trend": "₦40k this month",
-    "total_spending": "₦267,420",
-    "spending_trend": "148 trips",
+    "balance": "₦0.00",
+    "balance_sub": "Available balance",
+    "total_deposits": "₦0",
+    "deposits_trend": "",
+    "total_spending": "₦0",
+    "spending_trend": "",
 }
 
-WALLET_TRANSACTIONS = [
-    {"type": "debit", "title": "Trip JCR-29481 · Lekki → V.I.", "time": "Today · 09:22", "amount": "-₦3,450", "status": "Success"},
-    {"type": "credit", "title": "Paystack Bank Transfer", "time": "Today · 08:10", "amount": "+₦20,000", "status": "Success"},
-    {"type": "debit", "title": "Trip JCR-29478 · Yaba → Ikeja", "time": "Mar 24 · 19:08", "amount": "-₦5,820", "status": "Success"},
-    {"type": "refund", "title": "Refund · Trip JCR-29470", "time": "Mar 22 · 15:01", "amount": "+₦780", "status": "Refunded"},
-    {"type": "credit", "title": "Card Top-up · **** 4521", "time": "Mar 21 · 10:34", "amount": "+₦10,000", "status": "Success"},
-]
+WALLET_TRANSACTIONS = []
 
 PROFILE_MENU = [
     {"id": "personal", "label": "Personal information", "active": True},
@@ -474,14 +433,14 @@ PROFILE_MENU = [
 ]
 
 PROFILE_DEFAULTS = {
-    "full_name": "Adaeze Okafor",
-    "phone": "+234 803 555 0142",
-    "email": "adaeze@example.com",
-    "dob": "14 Aug 1994",
-    "emergency_contact": "Chinedu O. · +234 805 222 0098",
-    "nin": "•••• •••• 4521",
-    "member_since": "Jan 2023",
-    "badge": "Premium Rider",
+    "full_name": "",
+    "phone": "",
+    "email": "",
+    "dob": "",
+    "emergency_contact": "",
+    "nin": "",
+    "member_since": "",
+    "badge": "Rider",
 }
 
 SUPPORT_FAQ = [

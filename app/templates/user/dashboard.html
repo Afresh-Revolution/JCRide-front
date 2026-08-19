@@ -43,10 +43,10 @@
     <span class="wallet-balance-card__brand">JosRide Wallet</span>
   </div>
   <div class="wallet-balance-card__row">
-    <p class="wallet-balance-card__value" id="dashboard-wallet-value">{{ stats.wallet_balance.value }}</p>
+    <p class="wallet-balance-card__value" id="dashboard-wallet-value" data-raw="{{ stats.wallet_balance.value }}">{{ stats.wallet_balance.value }}</p>
     <button type="button" class="wallet-balance-card__eye" id="dashboard-wallet-eye" aria-label="Hide wallet balance">
       <svg class="wallet-balance-card__eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
-      <svg class="wallet-balance-card__eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.77 21.77 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 0 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      <svg class="wallet-balance-card__eye-off is-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.77 21.77 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 0 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
     </button>
   </div>
   <span class="wallet-balance-card__sub rider-kpi-card__trend rider-kpi-card__trend--up" id="dashboard-wallet-trend"{% if not stats.wallet_balance.trend %} hidden{% endif %}>{% if stats.wallet_balance.trend %}▲ {{ stats.wallet_balance.trend }}{% endif %}</span>
@@ -117,7 +117,7 @@
       data-credit-ngn="{{ referral.credit_ngn }}"
       data-uses-count="{{ referral.uses_count }}"
       {% endif %}>
-      <h2 class="rider-promo__title" id="referral-title">Earn ₦{{ referral.credit_ngn|int if referral else 500 }} wallet credit</h2>
+      <h2 class="rider-promo__title" id="referral-title">{% if referral %}Earn ₦{{ referral.credit_ngn|int }} wallet credit{% else %}Invite a friend, earn wallet credit{% endif %}</h2>
       <p class="rider-promo__text">Invite a friend - you get credit when they complete their first ride.</p>
 
       <div class="rider-referral__share" id="referral-share" hidden>

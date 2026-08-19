@@ -1827,7 +1827,8 @@ def get_customer_dashboard(token):
 
 
 def get_customer_dashboard_summary(token):
-    return _request("GET", f"{API_PREFIX}/customers/dashboard-summary", token=token)
+    # Backend exposes GET /customers/dashboard (flat stats + recent_activities).
+    return get_customer_dashboard(token)
 
 
 def list_customer_rides(token, page=1, limit=50, search=None, booking_id=None, status=None):

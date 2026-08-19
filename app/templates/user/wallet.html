@@ -28,8 +28,14 @@
 <section class="wallet-kpi-grid">
   <article class="wallet-balance-card">
     <span class="wallet-balance-card__label">JosRide Wallet</span>
-    <p class="wallet-balance-card__value">{{ wallet.balance }}</p>
-    <p class="wallet-balance-card__sub">{{ wallet.balance_sub }}</p>
+    <div class="wallet-balance-card__row">
+      <p class="wallet-balance-card__value" id="wallet-balance-value" data-raw="{{ wallet.balance }}">{{ wallet.balance }}</p>
+      <button type="button" class="wallet-balance-card__eye" id="wallet-balance-eye" aria-label="Hide wallet balance">
+        <svg class="wallet-balance-card__eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="wallet-balance-card__eye-off is-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.8 21.8 0 0 1 5.06-6.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.77 21.77 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 0 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      </button>
+    </div>
+    <p class="wallet-balance-card__sub" id="wallet-balance-sub">{{ wallet.balance_sub }}</p>
     <div class="wallet-balance-card__actions">
       <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost" id="wallet-fund-btn">Fund</button>
       <button type="button" class="wallet-balance-card__btn wallet-balance-card__btn--ghost" id="wallet-send-btn">Send</button>
@@ -39,16 +45,16 @@
   <article class="rider-kpi-card">
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Total Deposits</span>
-      <span class="rider-kpi-card__value">{{ wallet.total_deposits }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up">▲ {{ wallet.deposits_trend }}</span>
+      <span class="rider-kpi-card__value" id="wallet-deposits-value">{{ wallet.total_deposits }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="wallet-deposits-trend"{% if not wallet.deposits_trend %} hidden{% endif %}>{% if wallet.deposits_trend %}▲ {{ wallet.deposits_trend }}{% endif %}</span>
     </div>
     <div class="rider-kpi-card__icon rider-kpi-card__icon--credit">↙</div>
   </article>
   <article class="rider-kpi-card">
     <div class="rider-kpi-card__body">
       <span class="rider-kpi-card__label">Total Spending</span>
-      <span class="rider-kpi-card__value">{{ wallet.total_spending }}</span>
-      <span class="rider-kpi-card__trend rider-kpi-card__trend--up">▲ {{ wallet.spending_trend }}</span>
+      <span class="rider-kpi-card__value" id="wallet-spending-value">{{ wallet.total_spending }}</span>
+      <span class="rider-kpi-card__trend rider-kpi-card__trend--up" id="wallet-spending-trend"{% if not wallet.spending_trend %} hidden{% endif %}>{% if wallet.spending_trend %}▲ {{ wallet.spending_trend }}{% endif %}</span>
     </div>
     <div class="rider-kpi-card__icon rider-kpi-card__icon--debit">↗</div>
   </article>
@@ -135,7 +141,7 @@
 
     <div class="wallet-transfer-panel" id="wallet-withdraw-panel" hidden>
       <h2 class="rider-panel__title">Withdraw</h2>
-      <p class="rider-panel__subtitle">Minimum ₦1,000. Admin approves first, then the amount leaves your wallet</p>
+      <p class="rider-panel__subtitle">Minimum ₦1,000. Once approved, amount would be credited into your bank account</p>
       <div class="wallet-amount">
         <span class="wallet-amount__label">AMOUNT (NGN)</span>
         <div class="wallet-amount__quick" id="wallet-withdraw-quick-amounts">
@@ -152,15 +158,15 @@
       </label>
       <label class="support-field">
         <span>Bank name</span>
-        <input type="text" id="wallet-withdraw-bank" placeholder="GTBank">
+        <input type="text" id="wallet-withdraw-bank" placeholder="Bank name">
       </label>
       <label class="support-field">
         <span>Account number</span>
-        <input type="text" id="wallet-withdraw-account-number" placeholder="0123456789">
+        <input type="text" id="wallet-withdraw-account-number" placeholder="Account number">
       </label>
       <label class="support-field">
         <span>Account name</span>
-        <input type="text" id="wallet-withdraw-account-name" placeholder="Jane Doe">
+        <input type="text" id="wallet-withdraw-account-name" placeholder="Account name">
       </label>
       <button type="button" class="rider-btn rider-btn--request" id="wallet-withdraw-submit">Withdraw →</button>
     </div>
@@ -171,7 +177,7 @@
       <h2 class="rider-panel__title">Transactions</h2>
       <button type="button" class="rider-link" id="wallet-refresh-btn">↻ Refresh</button>
     </div>
-    <ul class="wallet-tx-list">
+    <ul class="wallet-tx-list" id="wallet-tx-list">
       {% for tx in transactions %}
       <li class="wallet-tx wallet-tx--{{ tx.type }}">
         <span class="wallet-tx__icon" aria-hidden="true">
@@ -186,6 +192,8 @@
           <span>{{ tx.status }}</span>
         </div>
       </li>
+      {% else %}
+      <li class="wallet-tx wallet-tx--empty" id="wallet-tx-empty">No transactions yet.</li>
       {% endfor %}
     </ul>
   </section>

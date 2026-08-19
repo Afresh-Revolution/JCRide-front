@@ -2,7 +2,9 @@
   "use strict";
 
   function apiRequest(url, options) {
-    return fetch(url, options || {}).then(function (res) {
+    var opts = options || {};
+    if (!opts.credentials) opts.credentials = "same-origin";
+    return fetch(url, opts).then(function (res) {
       return res.json().then(function (data) {
         if (!res.ok) {
           var message = data.error || data.message || data.detail || "Request failed";
