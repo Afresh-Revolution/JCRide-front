@@ -4025,33 +4025,56 @@ body.rider-trip-chat-open {
   max-width: 40rem;
 }
 
+.delete-account__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
 .delete-account__back {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--user-border);
+  background: var(--user-card);
+  color: var(--user-text);
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--user-muted);
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
   text-decoration: none;
 }
 
 .delete-account__back svg {
-  width: 1rem;
-  height: 1rem;
+  width: 20px;
+  height: 20px;
+  max-width: 20px;
+  max-height: 20px;
+  flex-shrink: 0;
+  display: block;
 }
 
 .delete-account__back:hover {
-  color: var(--user-text);
+  background: var(--user-field-bg);
+  border-color: var(--user-green);
 }
 
-.delete-account__header {
-  margin-bottom: 1rem;
+.delete-account__kicker,
+body.user-body .admin-content .delete-account__kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--user-muted);
 }
 
 .delete-account__title {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.35rem;
   font-size: 1.5rem;
+  line-height: 1.2;
   font-weight: 700;
   color: var(--user-text);
 }
