@@ -90,16 +90,15 @@
     return "Join JosRide with my invite link and earn wallet credit: " + url;
   }
 
-  function normalizeInviteUrl(url) {
-    if (!url) return url;
-    try {
-      var parsed = new URL(url, window.location.origin);
-      var ref = parsed.searchParams.get("ref");
-      if (!ref) return url;
-      return window.location.origin + "/register?ref=" + encodeURIComponent(ref);
-    } catch (err) {
-      return url;
+  function normalizeInviteUrl(url, code) {
+    var ref = String(code || "").trim();
+    if (!ref) {
+      var matches = String(url || "").match(/[?&]ref=([A-Za-z0-9]+)/gi) || [];
+      var last = matches[matches.length - 1] || "";
+      ref = last.replace(/^.*ref=/i, "");
     }
+    if (!ref) return "https://josride.com/register";
+    return "https://josride.com/register?ref=" + encodeURIComponent(ref.toUpperCase());
   }
 
   function applyReferralData(data) {
@@ -108,14 +107,9 @@
       return;
     }
 
-    var normalizedUrl = normalizeInviteUrl(data.invite_url);
+    var normalizedUrl = normalizeInviteUrl(data.invite_url, data.code);
     state.inviteUrl = normalizedUrl;
-    var share = data.share_message || "";
-    if (share && data.invite_url && share.indexOf(data.invite_url) >= 0) {
-      state.shareMessage = share.replace(data.invite_url, normalizedUrl);
-    } else {
-      state.shareMessage = share || defaultShareMessage(normalizedUrl);
-    }
+    state.shareMessage = defaultShareMessage(normalizedUrl);
 
     if (urlInput) urlInput.value = state.inviteUrl;
     if (titleEl && data.credit_ngn) {
@@ -338,6 +332,7 @@
     if (panel && panel.getAttribute("data-invite-url")) {
       applyReferralData({
         invite_url: panel.getAttribute("data-invite-url"),
+        code: panel.getAttribute("data-code"),
         share_message: panel.getAttribute("data-share-message") || "",
         credit_ngn: panel.getAttribute("data-credit-ngn"),
         uses_count: panel.getAttribute("data-uses-count"),

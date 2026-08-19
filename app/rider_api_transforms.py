@@ -30,35 +30,43 @@ CATEGORY_LABELS = {
 }
 
 
+PUBLIC_INVITE_ORIGIN = "https://josride.com"
+
+
+def _referral_code_from(referral: dict) -> str | None:
+    raw_code = str(referral.get("code") or "").strip()
+    if raw_code and raw_code.replace("-", "").isalnum() and len(raw_code) <= 16:
+        return raw_code.upper()
+    blob = str(referral.get("invite_url") or "")
+    matches = parse_qs(urlparse(blob.split(",")[-1]).query).get("ref") or []
+    if not matches:
+        import re
+
+        found = re.findall(r"[?&]ref=([A-Za-z0-9]+)", blob, flags=re.I)
+        matches = found[-1:] if found else []
+    code = (matches[-1] if matches else "") or ""
+    return code.upper() or None
+
+
 def rewrite_referral_invite_url(referral: dict | None, *, base_url: str) -> dict | None:
-    """Replace API-default invite host with the site the user is actually on."""
+    """Replace API-default invite host with josride.com. Never keep Vercel or comma-joined hosts."""
     if not referral or not isinstance(referral, dict):
         return referral
 
     referral = dict(referral)
-    code = referral.get("code")
-    if not code:
-        parsed = urlparse(referral.get("invite_url") or "")
-        code = (parse_qs(parsed.query).get("ref") or [None])[0]
+    code = _referral_code_from(referral)
     if not code:
         return referral
 
-    old_url = (referral.get("invite_url") or "").strip()
-    base = (base_url or "").rstrip("/")
-    new_url = f"{base}/register?ref={code}"
+    new_url = f"{PUBLIC_INVITE_ORIGIN}/register?ref={code}"
     referral["invite_url"] = new_url
-
-    share = referral.get("share_message") or ""
-    if old_url and old_url in share:
-        referral["share_message"] = share.replace(old_url, new_url)
-    else:
-        try:
-            credit_val = float(referral.get("credit_ngn", 500))
-            referral["share_message"] = (
-                f"Join JosRide with my invite link and we both earn ₦{credit_val:,.0f} wallet credit: {new_url}"
-            )
-        except (TypeError, ValueError):
-            referral["share_message"] = f"Join JosRide with my invite link and earn wallet credit: {new_url}"
+    try:
+        credit_val = float(referral.get("credit_ngn", 500) or 500)
+    except (TypeError, ValueError):
+        credit_val = 500.0
+    referral["share_message"] = (
+        f"Join JosRide with my invite link and I earn ₦{credit_val:,.0f} wallet credit: {new_url}"
+    )
 
     return referral
 

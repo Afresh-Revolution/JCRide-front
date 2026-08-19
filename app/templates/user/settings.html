@@ -52,17 +52,18 @@
 
   {% if referral %}
   <article class="rider-panel settings-card rider-panel--promo" id="referral-panel"
-    data-invite-url="{{ referral.invite_url }}"
+    data-invite-url="https://josride.com/register?ref={{ referral.code }}"
     data-share-message="{{ referral.share_message }}"
     data-credit-ngn="{{ referral.credit_ngn }}"
     data-uses-count="{{ referral.uses_count }}"
+    data-code="{{ referral.code }}"
     data-condition-text="{{ referral.condition_text or '' }}">
     <h2 class="rider-promo__title" id="referral-title">Earn ₦{{ referral.credit_ngn|int }} wallet credit</h2>
     <p class="rider-promo__text" id="referral-condition">{{ referral.condition_text or 'Invite a friend — you get credit when they complete their first ride.' }}</p>
     <div class="rider-referral__share" id="referral-share">
       <label class="rider-referral__label" for="referral-invite-url">Your invite link</label>
       <div class="rider-referral__link-row">
-        <input type="text" class="rider-referral__input" id="referral-invite-url" readonly value="{{ referral.invite_url }}" aria-label="Invite link">
+        <input type="text" class="rider-referral__input" id="referral-invite-url" readonly value="https://josride.com/register?ref={{ referral.code }}" aria-label="Invite link">
         <button type="button" class="rider-referral__copy" id="referral-copy-btn" aria-label="Copy invite link">
           Copy
         </button>

@@ -233,6 +233,18 @@
 
   var copyBtn = document.getElementById("referral-copy-btn");
   var urlInput = document.getElementById("referral-invite-url");
+  var referralPanel = document.getElementById("referral-panel");
+  if (urlInput && referralPanel) {
+    var code = (referralPanel.getAttribute("data-invite-url") || urlInput.value || "").match(
+      /[?&]ref=([A-Za-z0-9]+)/i
+    );
+    var ref = code && code[1] ? code[1].toUpperCase() : "";
+    if (!ref) {
+      var fromValue = String(urlInput.value || "").match(/[?&]ref=([A-Za-z0-9]+)/i);
+      ref = fromValue && fromValue[1] ? fromValue[1].toUpperCase() : "";
+    }
+    if (ref) urlInput.value = "https://josride.com/register?ref=" + encodeURIComponent(ref);
+  }
   if (copyBtn && urlInput) {
     copyBtn.addEventListener("click", function () {
       var text = urlInput.value || "";
