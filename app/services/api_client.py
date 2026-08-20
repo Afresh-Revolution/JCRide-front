@@ -1893,6 +1893,10 @@ def get_support_faq():
     return _request("GET", f"{API_PREFIX}/public/support/faq")
 
 
+def get_public_contact():
+    return _request("GET", f"{API_PREFIX}/public/contact")
+
+
 def create_live_chat_session(token):
     return _request("POST", f"{API_PREFIX}/support/live-chat/session", token=token)
 

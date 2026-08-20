@@ -89,7 +89,8 @@
 
   function setField(name, value) {
     const input = form && form.querySelector('[name="' + name + '"]');
-    if (input && value != null && value !== "") input.value = value;
+    if (!input || value == null) return;
+    input.value = value;
   }
 
   function setCheckbox(name, value) {
@@ -179,6 +180,9 @@
         setField("referral_bonus_ngn", data.referral_bonus_ngn);
         setCheckbox("referral_enabled", data.referral_enabled !== false);
         setCheckbox("referral_require_first_ride", data.referral_require_first_ride !== false);
+        setField("driver_search_radius_km", data.driver_search_radius_km);
+        setField("driver_support_phone", data.driver_support_phone || "");
+        setField("emergency_phone", data.emergency_phone || "112");
 
         operationalZones = Array.isArray(data.operational_zones) ? data.operational_zones.slice() : [];
         platformSettingsLoaded = true;
@@ -213,8 +217,13 @@
     assignIfDefined(payload, "min_driver_rating_threshold", parseOptionalNumber("min_driver_rating_threshold"));
     assignIfDefined(payload, "background_check_provider", parseOptionalString("background_check_provider"));
     assignIfDefined(payload, "referral_bonus_ngn", parseOptionalNumber("referral_bonus_ngn"));
+    assignIfDefined(payload, "driver_search_radius_km", parseOptionalNumber("driver_search_radius_km"));
     payload.referral_enabled = parseCheckbox("referral_enabled", true);
     payload.referral_require_first_ride = parseCheckbox("referral_require_first_ride", true);
+    const supportPhoneInput = form.querySelector('[name="driver_support_phone"]');
+    if (supportPhoneInput) payload.driver_support_phone = String(supportPhoneInput.value || "").trim();
+    const emergencyPhoneInput = form.querySelector('[name="emergency_phone"]');
+    if (emergencyPhoneInput) payload.emergency_phone = String(emergencyPhoneInput.value || "").trim();
 
     const docsRaw = (form.querySelector('[name="required_documents"]') || {}).value || "";
     const docs = docsRaw.split(",").map(function (part) { return part.trim(); }).filter(Boolean);

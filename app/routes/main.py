@@ -62,6 +62,7 @@ from app.services.api_client import (
     get_nearby_drivers,
     get_referral_info,
     get_support_faq,
+    get_public_contact,
     get_public_trip_share,
     list_customer_rides,
     list_saved_locations,
@@ -2471,6 +2472,17 @@ def user_support():
     faq_data, faq_ok = _safe_rider_api(lambda token: get_support_faq(), None)
     faq_items = faq_from_api(faq_data) if faq_ok and faq_data else []
     support_phone = get_driver_support_phone()
+    emergency_phone = get_emergency_phone()
+    try:
+        contact = get_public_contact()
+        api_support = str((contact or {}).get("driver_support_phone") or "").strip()
+        api_emergency = str((contact or {}).get("emergency_phone") or "").strip()
+        if api_support:
+            support_phone = api_support
+        if api_emergency:
+            emergency_phone = api_emergency
+    except ApiError:
+        pass
     return render_template(
         "user/support.html",
         active_page="support",
@@ -2479,7 +2491,7 @@ def user_support():
         api_connected=tickets_ok,
         support_phone=support_phone,
         support_phone_display=format_support_phone_display(support_phone),
-        emergency_phone=get_emergency_phone(),
+        emergency_phone=emergency_phone,
         **_rider_context(),
     )
 
