@@ -3,6 +3,7 @@
 {% macro pwa_head() -%}
 <script>
 (function(){var d=window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: window-controls-overlay)').matches||window.navigator.standalone===true;if(d)document.documentElement.classList.add('is-pwa');})();
+(function(){try{var k='josride_user_theme',p=localStorage.getItem(k);if(p!=='light'&&p!=='dark'&&p!=='system')p='system';var dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var r=p==='dark'||(p==='system'&&dark)?'dark':'light';var root=document.documentElement;root.setAttribute('data-user-theme',r);root.setAttribute('data-theme-pref',p);root.style.colorScheme=r;}catch(e){}})();
 </script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="preload" href="{{ static_url('pwa/icons/icon-192.png') }}" as="image" type="image/png">
@@ -42,6 +43,7 @@
 {%- endmacro %}
 
 {% macro pwa_scripts() -%}
+<script src="{{ static_url('js/theme-preference.js') }}" defer></script>
 <script src="{{ static_url('js/pwa-register.js') }}" defer></script>
 <script src="{{ static_url('js/pwa-install.js') }}" defer></script>
 <script src="{{ static_url('js/scroll-to-top.js') }}" defer></script>

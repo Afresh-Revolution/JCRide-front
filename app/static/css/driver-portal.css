@@ -704,7 +704,7 @@ body.driver-cancel-trip-modal-open {
   overflow: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-user-theme="dark"] {
   .driver-cancel-trip-modal {
     color: #f8fafc;
   }
@@ -1460,7 +1460,7 @@ body.driver-cancel-trip-modal-open {
   display: none;
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-user-theme="dark"] {
   .active-trip-maneuver {
     background: rgba(17, 24, 39, 0.96);
     border-color: #4b5563;
@@ -2043,7 +2043,7 @@ body.driver-cancel-trip-modal-open {
   }
 }
 
-@media (prefers-color-scheme: light) {
+html[data-user-theme="light"] {
   .driver-active-ride-card {
     background: linear-gradient(145deg, #ecfdf5 0%, #ffffff 52%, #f8fafc 100%);
     border-color: #bbf7d0;
@@ -2346,7 +2346,7 @@ html.is-pwa .driver-trip-chat-sheet {
   );
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-user-theme="dark"] {
   .driver-trip-chat-sheet__panel {
     background: #0f172a;
     border-top-color: #1e293b;
@@ -2844,7 +2844,7 @@ html.is-pwa .driver-trip-chat-sheet {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-user-theme="dark"] {
   .earnings-withdraw-card__hero {
     background: linear-gradient(135deg, #0a4f2a 0%, #0f5132 55%, #14532d 100%);
   }
@@ -4071,7 +4071,7 @@ html[data-user-theme="dark"] .earnings-withdraw-form__actions {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+html[data-user-theme="dark"] {
   .driver-profile-upload__select,
   .driver-profile-upload__browse {
     background: #1e293b;
@@ -4663,7 +4663,7 @@ html[data-user-theme="dark"] .driver-vehicle-field select {
 }
 
 /* Dark mode overrides — must follow component rules above */
-@media (prefers-color-scheme: dark) {
+html[data-user-theme="dark"] {
   .driver-profile-summary__badge {
     background: rgba(6, 95, 70, 0.35);
     border-color: rgba(74, 222, 128, 0.35);

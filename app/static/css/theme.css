@@ -1,11 +1,10 @@
-/* System light / dark theme — follows device preference */
+/* Resolved light / dark theme — set by theme-preference.js (default: device) */
 
 html {
   color-scheme: light dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+html[data-user-theme="dark"] {
     /* Landing */
     --ink: #f1f5f9;
     --ink-muted: #cbd5e1;
@@ -91,7 +90,7 @@ html {
     --border: #334155;
     --surface: #111827;
     --bg: #0f172a;
-  }
+    color-scheme: dark;
 
   /* Base text & placeholders */
   body.landing {
@@ -2322,21 +2321,20 @@ html {
   }
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f8fafc;
-    --surface: #ffffff;
-    --border: #e2e8f0;
-    --text: #0f172a;
-    --muted: #64748b;
-    --primary: #059669;
-    --primary-hover: #047857;
-    --secondary: #6c5ce7;
-    --error: #dc2626;
-  }
+html[data-user-theme="light"] {
+  color-scheme: light;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #059669;
+  --primary-hover: #047857;
+  --secondary: #6c5ce7;
+  --error: #dc2626;
 }
 
-/* Rider portal manual theme (Settings → Dark mode) */
+/* Extra rider/driver overrides when dark is forced */
 html[data-user-theme="dark"] {
   color-scheme: dark;
   --dash-bg: #0b1220;
@@ -2581,8 +2579,133 @@ html[data-user-theme="light"] {
   background: rgba(0, 0, 0, 0.06);
 }
 
-@media (prefers-color-scheme: dark) {
-  .flash-dismissible__close:hover {
-    background: rgba(255, 255, 255, 0.08);
-  }
+html[data-user-theme="dark"] .flash-dismissible__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Theme picker (rider + driver settings) */
+.settings-card--theme,
+.driver-settings-card--theme {
+  grid-column: 1 / -1;
+}
+
+.settings-theme__lead,
+body.user-body .admin-content .settings-theme__lead,
+body.driver-portal .settings-theme__lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--user-muted, var(--dash-muted, #6b7280));
+}
+
+.settings-theme {
+  border: 1px solid var(--user-border, var(--dash-border, #e5e7eb));
+  border-radius: 1rem;
+  overflow: hidden;
+  background: var(--user-card, var(--dash-card, #fff));
+}
+
+.settings-theme__option {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  margin: 0;
+  padding: 1rem;
+  border: 0;
+  border-bottom: 1px solid var(--user-border, var(--dash-border, #e5e7eb));
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-theme__option:last-of-type {
+  border-bottom: 0;
+}
+
+.settings-theme__option:hover {
+  background: var(--user-field-bg, var(--dash-input-bg, #f9fafb));
+}
+
+.settings-theme__option.is-selected {
+  background: var(--green-50, rgba(6, 95, 70, 0.08));
+}
+
+.settings-theme__icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--user-field-icon-bg, var(--dash-input-bg, #f3f4f6));
+  color: var(--user-muted, var(--dash-muted, #6b7280));
+}
+
+.settings-theme__icon svg,
+.settings-theme__check svg {
+  width: 22px;
+  height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.settings-theme__option.is-selected .settings-theme__icon {
+  background: var(--green-100, rgba(6, 95, 70, 0.16));
+  color: var(--user-green, var(--dash-green, #0d6b38));
+}
+
+.settings-theme__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-theme__copy strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--user-text, var(--dash-text, #111827));
+}
+
+.settings-theme__copy span {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--user-muted, var(--dash-muted, #6b7280));
+}
+
+.settings-theme__check {
+  flex-shrink: 0;
+  color: var(--user-muted, var(--dash-muted, #9ca3af));
+}
+
+.settings-theme__option.is-selected .settings-theme__check {
+  color: var(--user-green, var(--dash-green, #0d6b38));
+}
+
+.settings-theme__check-on {
+  display: none;
+}
+
+.settings-theme__option.is-selected .settings-theme__check-on {
+  display: block;
+}
+
+.settings-theme__option.is-selected .settings-theme__check-off {
+  display: none;
+}
+
+.settings-theme__note,
+body.user-body .admin-content .settings-theme__note,
+body.driver-portal .settings-theme__note {
+  margin: 0.85rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--user-muted, var(--dash-muted, #6b7280));
 }

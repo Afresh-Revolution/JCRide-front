@@ -4,6 +4,11 @@
 {% block portal_content %}
 <section class="driver-settings-page" aria-label="Driver settings">
   <div class="driver-settings-grid">
+    <article class="driver-settings-card driver-settings-card--theme">
+      <h2 class="driver-settings-card__title">Theme</h2>
+      {% include "includes/theme_picker.html" %}
+    </article>
+
     <article class="driver-settings-card">
       <h2 class="driver-settings-card__title">Driving preferences</h2>
       <ul class="driver-settings-list">

@@ -7,21 +7,13 @@
 
 {% block user_content %}
 <div class="settings-grid">
+  <article class="rider-panel settings-card settings-card--theme">
+    <h2 class="settings-card__title">Theme</h2>
+    {% include "includes/theme_picker.html" %}
+  </article>
+
   <article class="rider-panel settings-card">
     <h2 class="settings-card__title">App preferences</h2>
-    <div class="settings-toggle">
-      <span class="settings-toggle__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-      </span>
-      <div class="settings-toggle__body">
-        <strong>Dark mode</strong>
-        <span>Reduce eye strain at night</span>
-      </div>
-      <label class="user-toggle">
-        <input type="checkbox" id="settings-dark-mode"{% if settings.dark_mode %} checked{% endif %}>
-        <span class="user-toggle__slider"></span>
-      </label>
-    </div>
     <div class="settings-toggle">
       <span class="settings-toggle__icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
