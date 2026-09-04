@@ -1461,20 +1461,55 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  align-items: stretch;
+}
+
+.landing-mobile__store-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .landing-mobile__btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.8rem 1.25rem;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  padding: 0.7rem 1.1rem;
   border-radius: var(--radius-pill);
   font-size: 0.9rem;
   font-weight: 650;
   line-height: 1.2;
-  white-space: nowrap;
+  text-align: left;
+  text-decoration: none;
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.landing-mobile__btn svg {
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  flex-shrink: 0;
+}
+
+.landing-mobile__btn-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.landing-mobile__btn-copy strong {
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.landing-mobile__btn-copy small {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.9;
 }
 
 .landing-mobile__btn--android,
@@ -1484,10 +1519,34 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid transparent;
 }
 
-.landing-mobile__btn--android:hover,
-.landing-mobile__btn--ios:hover {
+.landing-mobile__btn--android:hover:not(.landing-mobile__btn--soon),
+.landing-mobile__btn--ios:hover:not(.landing-mobile__btn--soon) {
   background: var(--green-brand-hover);
   transform: translateY(-1px);
+}
+
+.landing-mobile__btn--driver-android,
+.landing-mobile__btn--driver-ios {
+  background: #064e3b;
+  color: #ecfdf5;
+  border: 1px solid transparent;
+}
+
+.landing-mobile__btn--driver-android:hover:not(.landing-mobile__btn--soon),
+.landing-mobile__btn--driver-ios:hover:not(.landing-mobile__btn--soon) {
+  background: #047857;
+  transform: translateY(-1px);
+}
+
+.landing-mobile__btn--soon {
+  opacity: 0.78;
+  cursor: default;
+  pointer-events: none;
+  transform: none;
+  box-shadow: none;
+  background: rgba(6, 95, 70, 0.12);
+  color: var(--ink);
+  border: 1px solid rgba(6, 95, 70, 0.2);
 }
 
 .landing-mobile__btn--ghost {
@@ -1608,6 +1667,12 @@ a { color: inherit; text-decoration: none; }
 
   .landing-mobile__btn--ghost:hover {
     background: rgba(30, 41, 59, 0.9);
+  }
+
+  .landing-mobile__btn--soon {
+    background: rgba(6, 95, 70, 0.28);
+    border-color: rgba(52, 211, 153, 0.28);
+    color: #d1fae5;
   }
 
   .landing-mobile__phone {
@@ -2241,8 +2306,13 @@ a { color: inherit; text-decoration: none; }
     align-items: stretch;
   }
 
+  .landing-mobile__store-group {
+    flex-direction: column;
+  }
+
   .landing-mobile__btn {
     width: 100%;
+    justify-content: flex-start;
   }
 
   .landing-hero__mockup {

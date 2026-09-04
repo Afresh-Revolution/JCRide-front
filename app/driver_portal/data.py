@@ -307,13 +307,6 @@ DRIVER_SETTINGS_PREFERENCES = [
         "hint": "Join virtual queue at MMA2",
         "enabled": True,
     },
-    {
-        "id": "night_mode",
-        "label": "Night mode",
-        "hint": "Dark UI after sunset",
-        "enabled": True,
-        "icon": "moon",
-    },
 ]
 
 DRIVER_SETTINGS_LOCALE = {
