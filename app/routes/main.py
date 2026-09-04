@@ -2122,6 +2122,12 @@ def public_shared_trip(booking_id: str):
         "cancelled": "Trip ended",
         "expired": "Trip ended",
     }
+    apps = load_landing_page().get("mobile_apps") or {}
+    app_download_url = (
+        apps.get("josride_android_url")
+        or apps.get("josride_ios_url")
+        or "https://josride.com"
+    )
     return render_template(
         "public/shared_trip.html",
         booking_id=booking_id,
@@ -2129,7 +2135,7 @@ def public_shared_trip(booking_id: str):
         trip=trip,
         error=error,
         status_label=status_labels.get(status, "Live trip"),
-        app_download_url="https://josride.com",
+        app_download_url=app_download_url,
         app_scheme_url=f"josride://t/{booking_id}?s={share_token}" if share_token else "josride://",
     )
 

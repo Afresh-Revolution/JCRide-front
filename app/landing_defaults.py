@@ -173,4 +173,10 @@ DEFAULT_LANDING_PAGE: dict = {
             {"value": "24/7", "label": "Safety team"},
         ],
     },
+    "mobile_apps": {
+        "josride_android_url": "",
+        "josride_ios_url": "",
+        "josride_driver_android_url": "",
+        "josride_driver_ios_url": "",
+    },
 }
