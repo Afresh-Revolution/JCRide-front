@@ -81,7 +81,7 @@ from app.services.api_client import (
     get_admin_report_drivers,
     get_admin_report_users,
 )
-from app.services.landing_content import merge_landing_page
+from app.services.landing_content import invalidate_landing_cache, merge_landing_page
 from app.admin_api_transforms import (
     live_trips_to_map,
     normalize_admin_trips_list,
@@ -1337,7 +1337,9 @@ def api_platform_settings():
 def api_platform_settings_update():
     payload = request.get_json(silent=True) or {}
     try:
-        return jsonify(update_admin_platform_settings(_admin_token(), payload))
+        data = update_admin_platform_settings(_admin_token(), payload)
+        invalidate_landing_cache()
+        return jsonify(data)
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 

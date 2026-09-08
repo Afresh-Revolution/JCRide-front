@@ -57,6 +57,11 @@ def merge_landing_page(data: dict | None) -> dict:
     return _deep_merge(default_landing_page(), data)
 
 
+def invalidate_landing_cache() -> None:
+    _landing_cache["expires_at"] = 0.0
+    _landing_cache["value"] = None
+
+
 def load_landing_page() -> dict:
     now = time.time()
     cached = _landing_cache.get("value")
