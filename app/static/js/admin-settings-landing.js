@@ -68,7 +68,6 @@
       return (
         '<div class="landing-list__item" data-pricing-index="' + index + '">' +
         field("Tier name", tier.name, "pricing_section.tiers." + index + ".name") +
-        field("Price per km (₦)", tier.price_per_km, "pricing_section.tiers." + index + ".price_per_km", "number") +
         field("Description", tier.description, "pricing_section.tiers." + index + ".description", "textarea") +
         field("Features (comma-separated)", (tier.features || []).join(", "), "pricing_section.tiers." + index + ".features_csv") +
         field("CTA label", tier.cta_label, "pricing_section.tiers." + index + ".cta_label") +
