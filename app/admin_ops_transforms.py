@@ -10,6 +10,29 @@ def _short_id(value: str | None) -> str:
     return text[:8].upper()
 
 
+def account_display_name(row: dict) -> str:
+    """Read names from JosRide and JosCity personal/business account payloads."""
+    for key in ("user_name", "full_name", "fullName", "display_name", "displayName", "business_name", "businessName", "name"):
+        value = row.get(key)
+        if isinstance(value, str) and value.strip() and value.strip().lower() not in ("unknown user", "josride user"):
+            return value.strip()
+    first = row.get("user_firstname") or row.get("first_name") or row.get("firstName") or ""
+    last = row.get("user_lastname") or row.get("last_name") or row.get("lastName") or ""
+    name = " ".join(value.strip() for value in (first, last) if isinstance(value, str) and value.strip())
+    if name:
+        return name
+    for key in ("username", "user_name", "userName"):
+        value = row.get(key)
+        if isinstance(value, str) and value.strip() and value.strip().lower() not in ("unknown user", "josride user"):
+            return value.strip()
+    for key in ("user", "profile", "data"):
+        if isinstance(row.get(key), dict):
+            name = account_display_name(row[key])
+            if name:
+                return name
+    return ""
+
+
 def normalize_funding_list(data: dict) -> dict:
     items = []
     for row in data.get("items") or []:
@@ -21,6 +44,7 @@ def normalize_funding_list(data: dict) -> dict:
                 "id": row.get("id"),
                 "user_id": row.get("user_id"),
                 "user_short": _short_id(row.get("user_id")),
+                "user_name": account_display_name(row) or "Unknown user",
                 "amount_ngn": float(row.get("amount_ngn") or 0),
                 "bank_name": row.get("bank_name") or "-",
                 "account_name": row.get("account_name") or "-",
@@ -28,7 +52,7 @@ def normalize_funding_list(data: dict) -> dict:
                 "proof_url": row.get("proof_url"),
                 "status": row.get("status") or "pending",
                 "provider": provider,
-                "can_approve": provider == "manual" and row.get("status") == "pending",
+                "can_approve": provider in ("manual", "paystack") and row.get("status") == "pending",
                 "rejection_reason": row.get("rejection_reason"),
                 "created_at": row.get("created_at"),
                 "reviewed_at": row.get("reviewed_at"),

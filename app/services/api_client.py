@@ -74,7 +74,7 @@ def _request(method, endpoint, token=None, **kwargs):
         headers["Authorization"] = f"Bearer {token}"
 
     timeout = kwargs.pop("timeout", get_api_timeout())
-    max_attempts = 2
+    max_attempts = kwargs.pop("max_attempts", 2)
     api_urls = get_api_urls()
     last_exc: RequestException | None = None
     response = None
@@ -1395,8 +1395,8 @@ def get_admin_users(token, search="", status=None, page=1, limit=20):
     return _request("GET", f"{API_PREFIX}/admin/users", token=token, params=params)
 
 
-def get_admin_user(token, user_id):
-    return _request("GET", f"{API_PREFIX}/admin/users/{user_id}", token=token)
+def get_admin_user(token, user_id, **options):
+    return _request("GET", f"{API_PREFIX}/admin/users/{user_id}", token=token, **options)
 
 
 def update_admin_user_status(token, user_id, status):
@@ -1734,6 +1734,14 @@ def approve_admin_funding_request(token, request_id):
     return _request(
         "POST",
         f"{API_PREFIX}/admin/payments/funding-requests/{request_id}/approve",
+        token=token,
+    )
+
+
+def delete_admin_funding_request(token, request_id):
+    return _request(
+        "DELETE",
+        f"{API_PREFIX}/admin/payments/funding-requests/{request_id}",
         token=token,
     )
 

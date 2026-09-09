@@ -139,7 +139,7 @@
     <div class="queue-card__header">
       <div>
         <h2 class="queue-card__title">Wallet funding requests</h2>
-        <p class="queue-card__subtitle">Approve manual bank transfers. Paystack fundings verify automatically.</p>
+        <p class="queue-card__subtitle">Paystack payments verify automatically. If a payment remains pending, confirm receipt of the full amount before approving it manually.</p>
       </div>
       <div class="queue-card__tools">
         <label>
@@ -232,5 +232,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/admin-payments.js') }}"></script>
+<script src="{{ static_url('js/admin-payments.js') }}"></script>
 {% endblock %}

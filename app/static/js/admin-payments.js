@@ -50,8 +50,23 @@
   }
 
   function apiRequest(url, options) {
-    return fetch(url, options || {}).then(function (res) {
-      return res.json().then(function (data) {
+    const requestOptions = options || {};
+    const isRead = !requestOptions.method || requestOptions.method === "GET";
+    function send(attempt) {
+      return fetch(url, requestOptions).catch(function () {
+        if (isRead && attempt === 0) {
+          return new Promise(function (resolve) { setTimeout(resolve, 500); })
+            .then(function () { return send(1); });
+        }
+        throw new Error(isRead
+          ? "Unable to reach the server. Check that the app is running, then retry."
+          : "Connection lost. Refresh the queue to check whether the action completed before trying again.");
+      });
+    }
+    return send(0).then(function (res) {
+      return res.json().catch(function () {
+        throw new Error("The server returned an unexpected response (HTTP " + res.status + "). Refresh the page and sign in again if needed.");
+      }).then(function (data) {
         if (!res.ok) {
           const detail = data.message || data.detail;
           const message = typeof detail === "string" ? detail : "Request failed";
@@ -405,13 +420,11 @@
         const approveDisabled = item.can_approve ? "" : " disabled";
         const approveTitle = item.can_approve
           ? "Approve and credit wallet"
-          : item.provider !== "manual"
-            ? "Paystack fundings verify automatically"
-            : "Already reviewed";
+          : "This request is not eligible for approval";
         return (
           "<tr data-funding-id=\"" + escapeHtml(item.id) + "\">" +
           '<td><span class="queue-ref">' + escapeHtml(item.reference) + "</span></td>" +
-          "<td>" + escapeHtml(item.user_short) + "</td>" +
+          "<td>" + escapeHtml(item.user_name || "Unknown user") + "</td>" +
           '<td class="queue-amount">' + escapeHtml(formatNairaFull(item.amount_ngn)) + "</td>" +
           "<td>" + escapeHtml(item.bank_name) + " · " + escapeHtml(item.account_name) + " · " + proof + "</td>" +
           '<td><span class="queue-provider-tag' + (item.provider === "manual" ? " queue-provider-tag--manual" : "") + '">' + escapeHtml(item.provider) + "</span></td>" +
@@ -420,6 +433,7 @@
           '<td><div class="queue-actions">' +
           '<button type="button" class="queue-btn queue-btn--approve" data-funding-approve="' + escapeHtml(item.id) + '"' + approveDisabled + ' title="' + escapeHtml(approveTitle) + '">Approve</button>' +
           '<button type="button" class="queue-btn queue-btn--reject" data-funding-reject="' + escapeHtml(item.id) + '"' + (item.status === "pending" ? "" : " disabled") + ">Reject</button>" +
+          '<button type="button" class="queue-btn queue-btn--reject" data-funding-delete="' + escapeHtml(item.id) + '">Delete</button>' +
           "</div></td></tr>"
         );
       })
@@ -455,13 +469,19 @@
         fundingState.items = data.items || [];
         fundingState.total = data.total || 0;
         fundingState.totalPages = data.total_pages || 1;
+        if (fundingState.page > fundingState.totalPages) {
+          fundingState.page = fundingState.totalPages;
+          return loadFundingRequests();
+        }
         renderFundingTable();
         updateFundingPagination();
       })
       .catch(function (err) {
         if (tbody) {
-          tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="8">' + escapeHtml(err.message) + "</td></tr>";
+          tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="8">' + escapeHtml(err.message) + ' <button type="button" class="queue-btn" data-funding-retry>Retry</button></td></tr>';
         }
+        const pagination = document.getElementById("funding-pagination");
+        if (pagination) pagination.hidden = true;
         showToast(err.message, true);
       });
   }
@@ -469,7 +489,7 @@
   function approveFunding(requestId, button) {
     window.AdminConfirm.show({
       title: "Approve funding",
-      message: "Credit this user's wallet with the requested amount?",
+      message: "Confirm that the full requested amount has been received before approving. This will immediately credit the user's wallet, including for a pending Paystack payment.",
       confirmLabel: "Approve",
     }).then(function (confirmed) {
       if (!confirmed) return;
@@ -486,6 +506,29 @@
           if (button && window.ButtonLoading) window.ButtonLoading.stop(button);
           showToast(err.message, true);
         });
+    });
+  }
+
+  function deleteFunding(requestId, button) {
+    window.AdminConfirm.show({
+      title: "Delete funding request",
+      message: "Permanently delete this funding request? This cannot be undone. Existing wallet credits will remain unchanged.",
+      confirmLabel: "Delete",
+    }).then(function (confirmed) {
+      if (!confirmed) return;
+      const buttons = button.closest("tr").querySelectorAll("button");
+      const disabledStates = Array.from(buttons, function (btn) { return btn.disabled; });
+      buttons.forEach(function (btn) { btn.disabled = true; });
+      return apiRequest("/admin/api/payments/funding-requests/" + encodeURIComponent(requestId), {
+        method: "DELETE",
+      }).then(function () {
+        showToast("Funding request permanently deleted");
+        return loadFundingRequests();
+      }).catch(function (err) {
+        showToast(err.message, true);
+      }).finally(function () {
+        buttons.forEach(function (btn, index) { btn.disabled = disabledStates[index]; });
+      });
     });
   }
 
@@ -578,8 +621,14 @@
       fundingBody.addEventListener("click", function (event) {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;
+        if (target.hasAttribute("data-funding-retry")) {
+          loadFundingRequests();
+          return;
+        }
         const approveId = target.getAttribute("data-funding-approve");
         const rejectId = target.getAttribute("data-funding-reject");
+        const deleteId = target.getAttribute("data-funding-delete");
+        if (deleteId && !target.disabled) deleteFunding(deleteId, target);
         if (approveId && !target.disabled) approveFunding(approveId, target);
         if (rejectId && !target.disabled) openFundingRejectModal(rejectId);
       });

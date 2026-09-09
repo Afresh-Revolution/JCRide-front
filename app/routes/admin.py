@@ -65,6 +65,7 @@ from app.services.api_client import (
     get_admin_landing_page,
     update_admin_landing_page,
     get_admin_funding_requests,
+    delete_admin_funding_request,
     approve_admin_funding_request,
     reject_admin_funding_request,
     get_admin_withdrawals,
@@ -97,6 +98,7 @@ from app.admin_api_transforms import (
 from app.admin_ops_transforms import (
     normalize_accident_list,
     normalize_funding_list,
+    account_display_name,
     normalize_report_list,
     normalize_sos_list,
     normalize_withdrawal_list,
@@ -572,17 +574,48 @@ def api_funding_requests():
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 20, type=int)
     try:
-        return jsonify(
-            normalize_funding_list(
-                get_admin_funding_requests(
-                    _admin_token(),
-                    status=status,
-                    provider=provider,
-                    page=page,
-                    limit=limit,
-                )
-            )
+        token = _admin_token()
+        data = get_admin_funding_requests(
+            token, status=status, provider=provider, page=page, limit=limit,
         )
+        # Older API deployments omit names. Resolve only this page's unique
+        # account IDs, including JosCity-linked users, through the admin API.
+        from concurrent.futures import ThreadPoolExecutor, wait
+
+        def lookup_name(user_id):
+            try:
+                return user_id, account_display_name(get_admin_user(token, user_id, timeout=(2, 3), max_attempts=1))
+            except ApiError:
+                return user_id, ""
+
+        missing = {
+            row["user_id"] for row in data.get("items", [])
+            if isinstance(row, dict) and row.get("user_id") and not account_display_name(row)
+        }
+        if missing:
+            executor = ThreadPoolExecutor(max_workers=4)
+            futures = [executor.submit(lookup_name, user_id) for user_id in missing]
+            try:
+                completed, _ = wait(futures, timeout=3)
+                names = dict(future.result() for future in completed)
+            finally:
+                # Optional profile lookups must never block the funding queue.
+                executor.shutdown(wait=False, cancel_futures=True)
+            for row in data.get("items", []):
+                if isinstance(row, dict) and not account_display_name(row):
+                    row["user_name"] = names.get(row.get("user_id"), "")
+        return jsonify(
+            normalize_funding_list(data)
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/payments/funding-requests/<request_id>", methods=["DELETE"])
+@admin_required
+def api_delete_funding_request(request_id):
+    try:
+        return jsonify(delete_admin_funding_request(_admin_token(), request_id))
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
