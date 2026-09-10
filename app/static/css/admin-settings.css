@@ -1,4 +1,19 @@
 /* Admin Settings page */
+.fixed-location-search { position: relative; }
+.fixed-location-attribution { align-self: flex-start; background: #fff; border-radius: 3px; padding: 4px 6px; line-height: 14px; }
+.fixed-location-search > label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+.fixed-location-search > small { color: var(--dash-muted); font-size: 0.75rem; }
+.fixed-location-options {
+  position: absolute; top: 76px; left: 0; right: 0; z-index: 30;
+  max-height: 260px; overflow-y: auto; margin: 0; padding: 0.3rem;
+  list-style: none; border: 1px solid var(--dash-border); border-radius: 10px;
+  background: var(--dash-card, #fff); color: var(--dash-text, #172033);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+.fixed-location-options[hidden] { display: none; }
+.fixed-location-options > li { padding: 0.75rem; cursor: pointer; border-radius: 6px; font-size: 0.875rem; }
+.fixed-location-options > li:hover,
+.fixed-location-options > li[aria-selected="true"] { background: var(--dash-green); color: #fff; }
 
 .settings-page { display: flex; flex-direction: column; gap: 1.25rem; }
 

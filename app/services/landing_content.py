@@ -3,7 +3,7 @@ import time
 
 from app.config import BACKEND_ENV_PATHS, ENV_PATH, _env_value
 from app.landing_defaults import DEFAULT_LANDING_PAGE
-from app.services.api_client import ApiError, get_public_landing_page
+from app.services.api_client import get_public_landing_page
 
 _LANDING_CACHE_TTL_SECONDS = 120
 _landing_cache: dict[str, object] = {"expires_at": 0.0, "value": None}
@@ -25,7 +25,8 @@ def _http_url(value) -> str:
 
 def overlay_mobile_apps(landing: dict) -> dict:
     """Prefer API/env store URLs. Empty URL → Coming soon on the landing buttons."""
-    apps = dict(landing.get("mobile_apps") or {})
+    raw_apps = landing.get("mobile_apps")
+    apps = dict(raw_apps) if isinstance(raw_apps, dict) else {}
     for field, names in _APP_STORE_ENV.items():
         current = _http_url(apps.get(field))
         if not current:
@@ -74,7 +75,8 @@ def load_landing_page() -> dict:
             _landing_cache["value"] = copy.deepcopy(merged)
             _landing_cache["expires_at"] = now + _LANDING_CACHE_TTL_SECONDS
             return overlay_mobile_apps(merged)
-    except ApiError:
+    except Exception:
+        # ApiError or unexpected payload shape must not break public pages.
         pass
     fallback = default_landing_page()
     _landing_cache["value"] = copy.deepcopy(fallback)
