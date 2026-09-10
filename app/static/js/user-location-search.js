@@ -28,7 +28,7 @@
     return lng >= 2.6 && lng <= 14.7 && lat >= 4.0 && lat <= 14.0;
   }
 
-  function searchPlaces(query) {
+  function searchPlaces(query, options) {
     var q = (query || "").trim();
     if (q.length < 2) return Promise.resolve([]);
     var url =
@@ -40,6 +40,7 @@
       "&lon=" + NIGERIA_BIAS.lng;
     return fetch(url)
       .then(function (res) {
+        if (!res.ok) throw new Error("Location search unavailable");
         return res.json();
       })
       .then(function (data) {
@@ -59,7 +60,8 @@
           })
           .slice(0, 8);
       })
-      .catch(function () {
+      .catch(function (error) {
+        if (options && options.strict) throw error;
         return [];
       });
   }

@@ -1,6 +1,19 @@
-{% extends "landing_base.html" %}
-{% block title %}Track shared JosRide trip{% endblock %}
-{% block content %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Track shared JosRide trip</title>
+  <style>
+    body { margin:0; background:#f8fafc; color:#0f172a; font-family:system-ui,sans-serif; }
+    .landing-btn { display:inline-block; padding:12px 18px; border-radius:12px; font-weight:600; }
+    .landing-btn--primary { background:#059669; color:white; }
+    .landing-btn--ghost { border:1px solid #059669; color:#047857; }
+  </style>
+</head>
+<body>
 <section class="landing-container" style="padding:48px 20px 72px;max-width:640px;margin:0 auto;">
   <p style="margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Shared trip</p>
   <h1 style="margin:0 0 20px;font-size:28px;line-height:1.2;color:#0f172a;">{{ status_label }}</h1>
@@ -70,4 +83,5 @@
   </script>
   {% endif %}
 </section>
-{% endblock %}
+</body>
+</html>

@@ -154,6 +154,9 @@
   function loadSettings() {
     return Promise.all([
       apiRequest("/admin/api/settings/platform").then(function (data) {
+        setField("fixed_destination_location", data.fixed_destination_location || "");
+        setField("fixed_destination_amount_ngn", data.fixed_destination_location ? (data.fixed_destination_amount_ngn ?? 0) : "");
+        if (window.AdminLocationSearch) window.AdminLocationSearch.loaded(data.fixed_destination_location || "");
         setField("economy_base_fare_ngn", data.economy_base_fare_ngn);
         setField("comfort_base_fare_ngn", data.comfort_base_fare_ngn);
         setField("premium_base_fare_ngn", data.premium_base_fare_ngn);
@@ -205,6 +208,10 @@
 
   function collectPlatformPayload() {
     const payload = {};
+    if (platformSettingsLoaded) {
+      payload.fixed_destination_location = parseOptionalString("fixed_destination_location") || "";
+      payload.fixed_destination_amount_ngn = parseOptionalNumber("fixed_destination_amount_ngn") ?? 0;
+    }
     assignIfDefined(payload, "economy_base_fare_ngn", parseOptionalNumber("economy_base_fare_ngn"));
     assignIfDefined(payload, "comfort_base_fare_ngn", parseOptionalNumber("comfort_base_fare_ngn"));
     assignIfDefined(payload, "premium_base_fare_ngn", parseOptionalNumber("premium_base_fare_ngn"));
@@ -303,6 +310,22 @@
         return;
       }
 
+      if (!platformSettingsLoaded) {
+        showToast("Settings have not loaded. Refresh the page before saving.", true);
+        return;
+      }
+      const location = parseOptionalString("fixed_destination_location");
+      const amountInput = form.querySelector('[name="fixed_destination_amount_ngn"]');
+      const amount = parseOptionalNumber("fixed_destination_amount_ngn");
+      if (location && window.AdminLocationSearch && !window.AdminLocationSearch.isSelected()) {
+        showToast("Select a destination from the map suggestions before saving.", true);
+        return;
+      }
+      if ((location && (!amountInput.checkValidity() || amount == null || amount < 0)) ||
+          (!location && (amountInput.value !== "" || amountInput.validity.badInput))) {
+        showToast("Enter a destination and an amount (0 means free), or clear both to disable the fixed fare.", true);
+        return;
+      }
       const bikePayload = collectBikePayload();
       const platformPayload = collectPlatformPayload();
       if (Object.keys(bikePayload).length === 0 && Object.keys(platformPayload).length === 0) {

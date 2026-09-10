@@ -2110,8 +2110,14 @@ def public_shared_trip(booking_id: str):
     else:
         try:
             trip = get_public_trip_share(share_token)
+            if trip is not None and not isinstance(trip, dict):
+                trip = None
+                error = "This share link is unavailable."
         except ApiError as exc:
             error = exc.message or "This share link is unavailable."
+        except Exception:
+            # Never 500 a public tracking link on upstream/network glitches.
+            error = "This share link is temporarily unavailable. Try again in a moment."
 
     status = (trip or {}).get("status") or ""
     status_labels = {
@@ -2122,22 +2128,55 @@ def public_shared_trip(booking_id: str):
         "cancelled": "Trip ended",
         "expired": "Trip ended",
     }
-    apps = load_landing_page().get("mobile_apps") or {}
-    app_download_url = (
-        apps.get("josride_android_url")
-        or apps.get("josride_ios_url")
-        or "https://josride.com"
+    app_download_url = "https://josride.com"
+    try:
+        apps = (load_landing_page() or {}).get("mobile_apps") or {}
+        if isinstance(apps, dict):
+            app_download_url = (
+                apps.get("josride_android_url")
+                or apps.get("josride_ios_url")
+                or app_download_url
+            )
+    except Exception:
+        pass
+
+    status_label = status_labels.get(status, "Live trip")
+    app_scheme_url = (
+        f"josride://t/{booking_id}?s={share_token}" if share_token else "josride://"
     )
-    return render_template(
-        "public/shared_trip.html",
-        booking_id=booking_id,
-        share_token=share_token,
-        trip=trip,
-        error=error,
-        status_label=status_labels.get(status, "Live trip"),
-        app_download_url=app_download_url,
-        app_scheme_url=f"josride://t/{booking_id}?s={share_token}" if share_token else "josride://",
-    )
+    try:
+        return render_template(
+            "public/shared_trip.html",
+            booking_id=booking_id,
+            share_token=share_token,
+            trip=trip,
+            error=error,
+            status_label=status_label,
+            app_download_url=app_download_url,
+            app_scheme_url=app_scheme_url,
+        )
+    except Exception:
+        # Template/deploy mismatch must not blank the share link with a bare 500.
+        safe_error = error or "Could not render this shared trip page."
+        safe_booking = str(booking_id or "").replace("<", "").replace(">", "")
+        open_app = (
+            f" · <a href='{app_scheme_url}'>Open in app</a>" if share_token else ""
+        )
+        return (
+            "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>Track shared JosRide trip</title></head><body style='font-family:system-ui;"
+            "max-width:40rem;margin:2rem auto;padding:0 1rem;line-height:1.5'>"
+            "<p style='text-transform:uppercase;letter-spacing:.08em;color:#64748b;"
+            "font-size:12px;font-weight:600'>Shared trip</p>"
+            f"<h1 style='font-size:1.5rem'>{status_label}</h1>"
+            f"<p><strong>{safe_booking}</strong></p>"
+            f"<p style='color:#64748b'>{safe_error}</p>"
+            f"<p><a href='{app_download_url}'>Get JosRide</a>{open_app}</p>"
+            "</body></html>",
+            200,
+            {"Content-Type": "text/html; charset=utf-8"},
+        )
 
 
 @main_bp.route("/user/live-tracking/share")
