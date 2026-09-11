@@ -259,7 +259,7 @@
   function deleteDriver(driverId, driverName) {
     window.AdminConfirm.show({
       title: "Delete driver",
-      message: "Delete " + driverName + "? Their account will be removed and this cannot be undone.",
+      message: "Permanently delete " + driverName + "? Their email, phone, and JosCity id will be freed and this cannot be undone.",
       confirmLabel: "Delete",
       variant: "danger",
     }).then(function (confirmed) {
