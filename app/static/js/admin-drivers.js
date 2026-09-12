@@ -1,6 +1,9 @@
 (function () {
   "use strict";
 
+  const pageRoot = document.querySelector(".drivers-page");
+  const vehicleCategory = pageRoot && pageRoot.dataset.vehicleCategory ? pageRoot.dataset.vehicleCategory : "";
+
   const state = {
     search: "",
     status: "all",
@@ -10,6 +13,7 @@
     totalPages: 1,
     drivers: [],
     searchTimer: null,
+    vehicleCategory: vehicleCategory,
   };
 
   const tbody = document.getElementById("drivers-table-body");
@@ -127,7 +131,8 @@
   }
 
   function loadStats() {
-    return apiRequest("/admin/api/drivers/stats")
+    const params = state.vehicleCategory ? "?vehicle_category=" + encodeURIComponent(state.vehicleCategory) : "";
+    return apiRequest("/admin/api/drivers/stats" + params)
       .then(renderStats)
       .catch(function () {});
   }
@@ -196,6 +201,7 @@
     });
     if (state.search) params.set("search", state.search);
     if (state.status && state.status !== "all") params.set("status", state.status);
+    if (state.vehicleCategory) params.set("vehicle_category", state.vehicleCategory);
 
     return apiRequest("/admin/api/drivers?" + params.toString())
       .then(function (data) {

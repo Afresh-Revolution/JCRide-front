@@ -392,6 +392,12 @@ def drivers():
     return render_template("admin/drivers.html", active_page="drivers")
 
 
+@admin_bp.route("/tricycle")
+@admin_required
+def tricycle():
+    return render_template("admin/tricycle.html", active_page="tricycle")
+
+
 @admin_bp.route("/bike-delivery")
 @admin_required
 def bike_delivery():
@@ -899,7 +905,7 @@ def api_cancel_ride(ride_id):
 @admin_required
 def api_driver_stats():
     try:
-        return jsonify(get_admin_driver_stats(_admin_token()))
+        return jsonify(get_admin_driver_stats(_admin_token(), vehicle_category=request.args.get("vehicle_category")))
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
@@ -911,9 +917,17 @@ def api_drivers():
     status = request.args.get("status")
     page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", 20, type=int)
+    vehicle_category = request.args.get("vehicle_category")
     try:
         return jsonify(
-            get_admin_drivers(_admin_token(), search=search, status=status, page=page, limit=limit)
+            get_admin_drivers(
+                _admin_token(),
+                search=search,
+                status=status,
+                page=page,
+                limit=limit,
+                vehicle_category=vehicle_category,
+            )
         )
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
@@ -960,6 +974,7 @@ def api_vehicle_changes():
                 status=request.args.get("status", "pending"),
                 page=int(request.args.get("page", 1)),
                 limit=int(request.args.get("limit", 20)),
+                vehicle_category=request.args.get("vehicle_category"),
             )
         )
     except ApiError as exc:
@@ -1001,6 +1016,50 @@ def api_reject_vehicle_change(request_id):
                 request_id,
                 reason=payload.get("reason"),
             )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/document-edits")
+@admin_required
+def api_document_edits():
+    try:
+        from app.services.api_client import get_admin_document_edits
+
+        return jsonify(
+            get_admin_document_edits(
+                _admin_token(),
+                status=request.args.get("status", "pending_review"),
+                page=request.args.get("page", 1, type=int),
+                limit=request.args.get("limit", 20, type=int),
+                vehicle_category=request.args.get("vehicle_category"),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/document-edits/<request_id>/approve", methods=["POST"])
+@admin_required
+def api_approve_document_edit(request_id):
+    try:
+        from app.services.api_client import approve_admin_document_edit
+
+        return jsonify(approve_admin_document_edit(_admin_token(), request_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/document-edits/<request_id>/reject", methods=["POST"])
+@admin_required
+def api_reject_document_edit(request_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        from app.services.api_client import reject_admin_document_edit
+
+        return jsonify(
+            reject_admin_document_edit(_admin_token(), request_id, reason=payload.get("reason"))
         )
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code

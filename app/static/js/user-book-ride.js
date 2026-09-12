@@ -18,6 +18,9 @@
   var pickupLng = document.getElementById("pickup-lng");
   var destLat = document.getElementById("destination-lat");
   var destLng = document.getElementById("destination-lng");
+  var categoryInput = document.getElementById("vehicle-category");
+  var tricycleFareAmount = document.getElementById("tricycle-fare-amount");
+  var tricycleFareEta = document.getElementById("tricycle-fare-eta");
 
   var maxStops = 2;
   var planTimer = null;
@@ -105,6 +108,15 @@
     schedulePlan();
   }
 
+  function selectedCategory() {
+    var checked = tiers ? tiers.querySelector('input[type="radio"]:checked') : null;
+    return (checked && checked.getAttribute("data-category")) || "car";
+  }
+
+  function syncCategoryInput() {
+    if (categoryInput) categoryInput.value = selectedCategory();
+  }
+
   function selectedTier() {
     var checked = tiers ? tiers.querySelector('input[type="radio"]:checked') : null;
     return checked ? checked.value : "economy";
@@ -181,12 +193,18 @@
 
   function fetchNearbyDrivers(lat, lng) {
     if (!window.UserApi) return Promise.resolve([]);
-    return UserApi.request(
+    var category = selectedCategory();
+    var url =
       "/user/api/nearby-drivers?lat=" +
-        encodeURIComponent(lat) +
-        "&lng=" +
-        encodeURIComponent(lng)
-    )
+      encodeURIComponent(lat) +
+      "&lng=" +
+      encodeURIComponent(lng) +
+      "&vehicle_category=" +
+      encodeURIComponent(category);
+    if (category === "car") {
+      url += "&service_tier=" + encodeURIComponent(selectedTier());
+    }
+    return UserApi.request(url)
       .then(function (data) {
         return (data.drivers || []).map(function (d) {
           return { lat: d.lat, lng: d.lng };
@@ -201,7 +219,7 @@
     if (!tiers || baseFare == null) return;
     tiers.querySelectorAll(".ride-tier").forEach(function (card) {
       var input = card.querySelector('input[type="radio"]');
-      if (!input) return;
+      if (!input || input.getAttribute("data-category") === "tricycle") return;
       var fare = Math.round(baseFare * tierMultiplier(input.value));
       input.setAttribute("data-fare", formatNgn(fare));
       input.setAttribute("data-fare-num", String(fare));
@@ -245,7 +263,7 @@
       pickup_label: pickup.label,
       dropoff_label: dropoff.label,
       badge_label: waypoints.length > 2 ? "Route with stops" : "Fastest route",
-      vehicle_type: "car",
+      vehicle_type: selectedCategory(),
       map_zoom: 13,
       route: routeData && routeData.route ? routeData.route : [],
       use_fastest_route: true,
@@ -255,21 +273,41 @@
     window.RiderRouteMap.update(config);
   }
 
+  function applyTricycleEstimate(estimate) {
+    if (!estimate || estimate.estimated_fare_ngn == null) return;
+    var fare = formatNgn(estimate.estimated_fare_ngn);
+    var tricycleInput = tiers ? tiers.querySelector('input[data-category="tricycle"]') : null;
+    if (tricycleInput) {
+      tricycleInput.setAttribute("data-fare", fare);
+      tricycleInput.setAttribute("data-fare-num", String(Math.round(estimate.estimated_fare_ngn)));
+    }
+    if (tricycleFareAmount) tricycleFareAmount.textContent = fare + " est.";
+    if (tricycleFareEta) {
+      var mins = estimate.estimated_duration_minutes;
+      tricycleFareEta.textContent = mins ? "~" + mins + " min trip" : "Distance fare";
+    }
+  }
+
   function updateStats(routeData, estimate) {
     if (routeData) {
       if (tripDistance) tripDistance.textContent = routeData.distance_km.toFixed(1) + " km";
       if (tripDuration) tripDuration.textContent = routeData.duration_min + " min";
     }
     if (estimate && estimate.estimated_fare_ngn != null) {
-      updateTierPrices(estimate.estimated_fare_ngn, estimate.estimated_duration_minutes || (routeData && routeData.duration_min));
+      if (estimate.vehicle_category === "tricycle") {
+        applyTricycleEstimate(estimate);
+      } else {
+        updateTierPrices(estimate.estimated_fare_ngn, estimate.estimated_duration_minutes || (routeData && routeData.duration_min));
+      }
       refreshSelectedFare();
     }
   }
 
-  function buildEstimatePayload(waypoints) {
+  function buildEstimatePayload(waypoints, category) {
     var pickup = waypoints[0];
     var dropoff = waypoints[waypoints.length - 1];
     var stops = [];
+    var cat = category || selectedCategory();
     if (waypoints.length > 2) {
       waypoints.slice(1, -1).forEach(function (stop) {
         stops.push({ address: stop.label, lat: stop.lat, lng: stop.lng });
@@ -282,10 +320,17 @@
       pickup_lng: pickup.lng,
       destination_lat: dropoff.lat,
       destination_lng: dropoff.lng,
-      service_tier: selectedTier(),
-      vehicle_category: "car",
+      service_tier: "economy",
+      vehicle_category: cat,
       stops: stops.length ? stops : undefined,
     };
+  }
+
+  function postEstimate(payload) {
+    if (!window.UserApi) return Promise.resolve(null);
+    return UserApi.post("/user/api/rides/estimate", payload).catch(function () {
+      return null;
+    });
   }
 
   function planTrip() {
@@ -314,17 +359,19 @@
       }
 
       if (window.UserApi) {
-        var estimatePayload = buildEstimatePayload(waypoints);
-        UserApi.post("/user/api/rides/estimate", estimatePayload)
-          .then(function (estimate) {
-            lastEstimate = estimate;
-            updateStats(routeData, estimate);
-            if (requestBtn) requestBtn.disabled = false;
-          })
-          .catch(function () {
-            if (routeData) updateStats(routeData, null);
-            if (requestBtn) requestBtn.disabled = false;
-          });
+        Promise.all([
+          postEstimate(buildEstimatePayload(waypoints, "car")),
+          postEstimate(buildEstimatePayload(waypoints, "tricycle")),
+        ]).then(function (pair) {
+          var carEstimate = pair[0];
+          var kekeEstimate = pair[1];
+          if (routeData) updateStats(routeData, null);
+          if (carEstimate) updateStats(routeData, carEstimate);
+          if (kekeEstimate) applyTricycleEstimate(kekeEstimate);
+          lastEstimate = selectedCategory() === "tricycle" ? kekeEstimate : carEstimate;
+          refreshSelectedFare();
+          if (requestBtn) requestBtn.disabled = false;
+        });
       } else if (routeData) {
         updateStats(routeData, null);
         if (requestBtn) requestBtn.disabled = true;
@@ -408,10 +455,19 @@
     addStopBtn.addEventListener("click", addStopField);
   }
 
+  syncCategoryInput();
+
   if (tiers) {
+    var lastCategory = selectedCategory();
     tiers.querySelectorAll('input[type="radio"]').forEach(function (input) {
       input.addEventListener("change", function () {
+        var nextCategory = selectedCategory();
+        syncCategoryInput();
         refreshSelectedFare();
+        if (nextCategory !== lastCategory) {
+          lastCategory = nextCategory;
+          schedulePlan();
+        }
       });
     });
     refreshSelectedFare();
@@ -453,6 +509,7 @@
   }
 
   form.addEventListener("submit", function (event) {
+    syncCategoryInput();
     var waypoints = collectWaypoints();
     if (waypoints.length < 2) {
       event.preventDefault();

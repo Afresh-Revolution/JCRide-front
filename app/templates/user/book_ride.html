@@ -22,7 +22,7 @@
       <input type="hidden" name="pickup_lng" id="pickup-lng">
       <input type="hidden" name="destination_lat" id="destination-lat">
       <input type="hidden" name="destination_lng" id="destination-lng">
-      <input type="hidden" name="vehicle_category" value="car">
+      <input type="hidden" name="vehicle_category" id="vehicle-category" value="car">
 
       <div class="book-ride-form__section">
         <h2 class="book-ride-form__title">Where to?</h2>
@@ -59,13 +59,13 @@
       <div class="book-ride-form__section">
         <div class="book-ride-form__heading">
           <h2 class="book-ride-form__title">Choose your ride</h2>
-          <span class="book-ride-form__hint">Per km billing</span>
+          <span class="book-ride-form__hint">Car class or keke</span>
         </div>
 
         <div class="ride-tiers" id="ride-tiers">
           {% for tier in ride_tiers %}
           <label class="ride-tier{% if tier.selected %} is-selected{% endif %}">
-            <input type="radio" name="tier" value="{{ tier.id }}" data-fare="{{ tier.fare }}" data-fare-num="{{ tier.fare_num }}"{% if tier.selected %} checked{% endif %}>
+            <input type="radio" name="tier" value="{{ tier.id }}" data-category="car" data-fare="{{ tier.fare }}" data-fare-num="{{ tier.fare_num }}"{% if tier.selected %} checked{% endif %}>
             <span class="ride-tier__icon ride-tier__icon--{{ tier.icon }}" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M5 11h14"/></svg>
             </span>
@@ -91,6 +91,19 @@
             <span class="ride-tier__fare ride-tier__fare-dynamic">{{ tier.fare }} est.</span>
           </label>
           {% endfor %}
+          <label class="ride-tier" id="tricycle-fare-card">
+            <input type="radio" name="tier" value="economy" data-category="tricycle" data-fare="—" data-fare-num="">
+            <span class="ride-tier__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h7l3-6H9l-3 6"/><path d="M12 11V7h4"/></svg>
+            </span>
+            <span class="ride-tier__body">
+              <span class="ride-tier__top">
+                <span class="ride-tier__name">Tricycle / Keke</span>
+              </span>
+              <span class="ride-tier__desc" id="tricycle-fare-eta">Distance fare</span>
+            </span>
+            <span class="ride-tier__fare" id="tricycle-fare-amount">—</span>
+          </label>
         </div>
       </div>
 

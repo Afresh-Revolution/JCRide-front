@@ -1,18 +1,22 @@
 {% set category = (driver.get('vehicle_category') or '') if driver else '' %}
 {% set bike_vehicle = category == 'bike' %}
+{% set tricycle_vehicle = category == 'tricycle' %}
+{% set hide_class = bike_vehicle or tricycle_vehicle or ((driver.get('status') if driver else '') != 'approved') %}
 {% set tier = (driver.get('service_tier') or '') if driver else '' %}
-{% set make_ph = 'Bajaj' if bike_vehicle else 'Toyota' %}
-{% set model_ph = 'Boxer' if bike_vehicle else 'Corolla' %}
-{% set color_ph = 'Black' if bike_vehicle else 'Blue' %}
-{% set plate_ph = 'BIK-123-XY' if bike_vehicle else 'ABC-123-XY' %}
-{% set vehicle_complete = driver and driver.get('vehicle_category') and driver.get('plate_number') and driver.get('vehicle_make') and driver.get('vehicle_model') and driver.get('vehicle_color') and (bike_vehicle or driver.get('service_tier')) %}
+{% set make_ph = 'Bajaj' if hide_class else 'Toyota' %}
+{% set model_ph = 'Boxer' if bike_vehicle else ('TVS' if tricycle_vehicle else 'Corolla') %}
+{% set color_ph = 'Black' if bike_vehicle else ('Yellow' if tricycle_vehicle else 'Blue') %}
+{% set plate_ph = 'BIK-123-XY' if bike_vehicle else ('KEK-123-XY' if tricycle_vehicle else 'ABC-123-XY') %}
+{% set vehicle_complete = driver and driver.get('vehicle_category') and driver.get('plate_number') and driver.get('vehicle_make') and driver.get('vehicle_model') and driver.get('vehicle_color') and (hide_class or driver.get('service_tier')) %}
 <section class="driver-vehicle-card{% if not vehicle_complete %} driver-vehicle-card--incomplete{% endif %}">
   <div class="driver-vehicle-card__header">
     <div>
-      <h2 class="driver-vehicle-card__title">{% if bike_vehicle %}Bike details{% else %}Vehicle &amp; service tier{% endif %}</h2>
+      <h2 class="driver-vehicle-card__title">{% if bike_vehicle %}Bike details{% elif tricycle_vehicle %}Tricycle details{% else %}Vehicle &amp; service tier{% endif %}</h2>
       <p class="driver-vehicle-card__sub">
         {% if bike_vehicle %}
         Confirm your bike details. Required before you can go online for deliveries.
+        {% elif tricycle_vehicle %}
+        Confirm your keke details. Required before you can go online. Tricycles have no Eco / Comfort / Premium class.
         {% else %}
         Set your service tier and vehicle details. Required before you can go online.
         {% endif %}
@@ -27,7 +31,10 @@
 
   <form method="post" action="{{ url_for('driver_portal.update_vehicle_profile') }}" class="driver-vehicle-card__form">
     <div class="driver-vehicle-card__grid">
-      {% if not bike_vehicle %}
+      {% if hide_class %}
+      {# Bikes and tricycles have no service class. #}
+      <input type="hidden" name="service_tier" value="economy">
+      {% else %}
       <label class="driver-vehicle-card__field">
         <span>Service tier</span>
         <select name="service_tier" class="driver-vehicle-card__select" required>
@@ -37,9 +44,6 @@
           {% endfor %}
         </select>
       </label>
-      {% else %}
-      {# Bikes have no service tier — set silently for backend compatibility. #}
-      <input type="hidden" name="service_tier" value="economy">
       {% endif %}
 
       <label class="driver-vehicle-card__field">

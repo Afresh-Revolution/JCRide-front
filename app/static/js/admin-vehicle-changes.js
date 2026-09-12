@@ -10,6 +10,8 @@
   var scrollBtn = document.getElementById("vehicle-changes-scroll");
   var section = document.getElementById("vehicle-changes-section");
   var toast = document.getElementById("drivers-toast");
+  var pageRoot = document.querySelector(".drivers-page");
+  var vehicleCategory = pageRoot && pageRoot.dataset.vehicleCategory ? pageRoot.dataset.vehicleCategory : "car";
   var activeRequestId = null;
 
   if (!tbody) return;
@@ -105,7 +107,9 @@
   }
 
   function loadVehicleChanges() {
-    return apiRequest("/admin/api/vehicle-changes?status=pending&limit=50")
+    var params = new URLSearchParams({ status: "pending", limit: "50" });
+    if (vehicleCategory) params.set("vehicle_category", vehicleCategory);
+    return apiRequest("/admin/api/vehicle-changes?" + params.toString())
       .then(function (data) {
         var requests = data.requests || [];
         if (kpiExpiring) kpiExpiring.textContent = String(data.total || requests.length || 0);
