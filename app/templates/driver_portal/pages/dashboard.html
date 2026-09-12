@@ -11,9 +11,10 @@
   {% include "components/dashboard/status_banner.html" %}
   {% include "components/dashboard/active_ride_card.html" %}
   {% set bike_driver = is_bike|default(false) or ((driver.get('vehicle_category') if driver else '') == 'bike') %}
+  {% set skip_tier = bike_driver or ((driver.get('vehicle_category') if driver else '') == 'tricycle') or ((driver.get('status') if driver else '') != 'approved') %}
   {% set vehicle_incomplete = (not driver)
     or (not driver.get('vehicle_category'))
-    or (not bike_driver and not driver.get('service_tier'))
+    or (not skip_tier and not driver.get('service_tier'))
     or (not driver.get('vehicle_make'))
     or (not driver.get('vehicle_model'))
     or (not driver.get('vehicle_color'))

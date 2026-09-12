@@ -77,7 +77,7 @@
 
 .auth-signup__vehicle-options {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
   margin-bottom: 1.25rem;
 }

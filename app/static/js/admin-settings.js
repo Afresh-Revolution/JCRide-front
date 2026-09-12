@@ -161,6 +161,10 @@
         setField("comfort_base_fare_ngn", data.comfort_base_fare_ngn);
         setField("premium_base_fare_ngn", data.premium_base_fare_ngn);
         setField("economy_per_km_ngn", data.economy_per_km_ngn);
+        setField("comfort_per_km_ngn", data.comfort_per_km_ngn);
+        setField("premium_per_km_ngn", data.premium_per_km_ngn);
+        setField("tricycle_base_fare_ngn", data.tricycle_base_fare_ngn);
+        setField("tricycle_per_km_ngn", data.tricycle_per_km_ngn);
         setField("waiting_time_per_minute_ngn", data.waiting_time_per_minute_ngn);
         setField("traffic_surcharge_multiplier", data.traffic_surcharge_multiplier);
         setField("cancellation_fee_ngn", data.cancellation_fee_ngn);
@@ -216,6 +220,10 @@
     assignIfDefined(payload, "comfort_base_fare_ngn", parseOptionalNumber("comfort_base_fare_ngn"));
     assignIfDefined(payload, "premium_base_fare_ngn", parseOptionalNumber("premium_base_fare_ngn"));
     assignIfDefined(payload, "economy_per_km_ngn", parseOptionalNumber("economy_per_km_ngn"));
+    assignIfDefined(payload, "comfort_per_km_ngn", parseOptionalNumber("comfort_per_km_ngn"));
+    assignIfDefined(payload, "premium_per_km_ngn", parseOptionalNumber("premium_per_km_ngn"));
+    assignIfDefined(payload, "tricycle_base_fare_ngn", parseOptionalNumber("tricycle_base_fare_ngn"));
+    assignIfDefined(payload, "tricycle_per_km_ngn", parseOptionalNumber("tricycle_per_km_ngn"));
     assignIfDefined(payload, "waiting_time_per_minute_ngn", parseOptionalNumber("waiting_time_per_minute_ngn"));
     assignIfDefined(payload, "traffic_surcharge_multiplier", parseOptionalNumber("traffic_surcharge_multiplier"));
     assignIfDefined(payload, "cancellation_fee_ngn", parseOptionalNumber("cancellation_fee_ngn"));

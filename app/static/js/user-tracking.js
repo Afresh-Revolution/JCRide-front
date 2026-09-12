@@ -483,7 +483,9 @@
       id: activeRideId() || config.rideId || "preview-ride",
       status: previewStatusOverride,
       request_type: isDeliveryJob(activeRideState) ? "delivery" : "ride",
-      vehicle_category: isDeliveryJob(activeRideState) ? "bike" : "car",
+      vehicle_category:
+        (activeRideState && activeRideState.vehicle_category) ||
+        (isDeliveryJob(activeRideState) ? "bike" : "car"),
       driver: (activeRideState && activeRideState.driver) || {
         full_name: isDeliveryJob(null) ? "Preview biker" : "Preview driver",
         name: isDeliveryJob(null) ? "Preview biker" : "Preview driver",

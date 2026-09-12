@@ -948,7 +948,7 @@ def _submit_driver_application(signup: dict, token: str) -> dict:
     if not all(len(url) >= 8 for url in (license_url, papers_url, nin_url)):
         raise ApiError("Upload all required documents before submitting.", 400)
     vehicle_category = signup.get("vehicle_type") or "car"
-    if vehicle_category not in {"car", "bike"}:
+    if vehicle_category not in {"car", "bike", "tricycle"}:
         vehicle_category = "car"
     register_payload = {
         "driver_license_url": license_url,
@@ -981,7 +981,7 @@ def _resume_driver_signup_from_login(result: dict, identifier: str) -> None:
     user = result.get("user") or {}
     previous = _get_driver_signup()
     vehicle_type = previous.get("vehicle_type")
-    if vehicle_type not in {"car", "bike"}:
+    if vehicle_type not in {"car", "bike", "tricycle"}:
         vehicle_type = None
     signup = {
         "access_token": result.get("access_token", ""),
@@ -1069,7 +1069,7 @@ def driver_register_page():
                     )
                     # Heal bike/car choice if register ignored vehicle_category.
                     vehicle_type = signup.get("vehicle_type")
-                    if vehicle_type in {"car", "bike"}:
+                    if vehicle_type in {"car", "bike", "tricycle"}:
                         try:
                             driver = get_driver_profile(token)
                             driver_row = driver.get("driver") or driver
@@ -1114,7 +1114,7 @@ def driver_register_page():
             password = request.form.get("password", "")
             confirm_password = request.form.get("confirm_password", "")
             vehicle_type = request.form.get("vehicle_type", "car").strip().lower()
-            if vehicle_type not in {"car", "bike"}:
+            if vehicle_type not in {"car", "bike", "tricycle"}:
                 vehicle_type = "car"
             signup = _get_driver_signup()
             signup["vehicle_type"] = vehicle_type
@@ -3180,6 +3180,8 @@ def user_api_nearby_drivers():
                 lat,
                 lng,
                 radius_km=request.args.get("radius_km", 1500, type=float),
+                service_tier=request.args.get("service_tier"),
+                vehicle_category=request.args.get("vehicle_category"),
             )
         )
     except ApiError as exc:

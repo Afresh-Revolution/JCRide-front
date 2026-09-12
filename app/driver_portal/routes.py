@@ -95,7 +95,7 @@ driver_portal_bp = Blueprint(
 )
 
 SERVICE_TIERS = ("economy", "comfort", "premium")
-VEHICLE_CATEGORIES = ("car", "bike")
+VEHICLE_CATEGORIES = ("car", "tricycle", "bike")
 DRIVER_APP_SETTINGS_KEY = "driver_app_settings"
 
 
@@ -174,6 +174,10 @@ def _driver_vehicle_category(driver: dict | None = None) -> str:
         return ""
     row = profile.get("driver") or profile
     return _cache_vehicle_category(row.get("vehicle_category"))
+
+
+def _needs_service_tier(category: str) -> bool:
+    return category == "car"
 
 
 def _is_bike_driver(driver: dict | None = None) -> bool:
@@ -417,6 +421,8 @@ def update_vehicle_profile():
     if vehicle_category == "bike":
         # Bike partners only run delivery jobs on the economy tier.
         payload["service_tier"] = "economy"
+    elif vehicle_category == "tricycle":
+        pass
     elif service_tier in SERVICE_TIERS:
         payload["service_tier"] = service_tier
     if vehicle_make:
@@ -475,7 +481,7 @@ def update_profile_vehicle():
         missing.append("plate number")
     if vehicle_category not in VEHICLE_CATEGORIES:
         missing.append("vehicle type")
-    if vehicle_category != "bike" and service_tier not in SERVICE_TIERS:
+    if _needs_service_tier(vehicle_category) and service_tier not in SERVICE_TIERS:
         missing.append("service tier")
 
     if missing:
@@ -483,17 +489,16 @@ def update_profile_vehicle():
         return redirect(url_for("driver_portal.profile"))
 
     try:
-        update_driver_profile(
-            token,
-            {
-                "vehicle_make": vehicle_make,
-                "vehicle_model": vehicle_model,
-                "vehicle_color": vehicle_color,
-                "plate_number": plate_number,
-                "vehicle_category": vehicle_category,
-                "service_tier": service_tier,
-            },
-        )
+        profile_payload = {
+            "vehicle_make": vehicle_make,
+            "vehicle_model": vehicle_model,
+            "vehicle_color": vehicle_color,
+            "plate_number": plate_number,
+            "vehicle_category": vehicle_category,
+        }
+        if _needs_service_tier(vehicle_category) or vehicle_category == "bike":
+            profile_payload["service_tier"] = service_tier or "economy"
+        update_driver_profile(token, profile_payload)
         _cache_vehicle_category(vehicle_category)
         flash(
             "Bike profile saved. You can go online for deliveries."
@@ -886,8 +891,14 @@ def upload_profile_document():
     try:
         from app.services.api_client import upload_driver_document
 
-        upload_driver_document(token, document_type, upload)
-        flash("Document uploaded for review.", "success")
+        result = upload_driver_document(token, document_type, upload) or {}
+        if result.get("edit_requested"):
+            flash(
+                "Replacement submitted for admin review. The current document stays in effect until approved.",
+                "success",
+            )
+        else:
+            flash("Document uploaded for review.", "success")
     except ApiError as exc:
         flash(exc.message, "error")
     return redirect(url_for("driver_portal.profile"))
@@ -1212,6 +1223,8 @@ def submit_vehicle_change():
         missing.append("vehicle category")
     if vehicle_category == "bike":
         service_tier = "economy"
+    elif vehicle_category == "tricycle":
+        service_tier = ""
     elif service_tier not in SERVICE_TIERS:
         missing.append("service tier")
     if not photo_plate_distance or not photo_plate_distance.filename:
@@ -1228,16 +1241,18 @@ def submit_vehicle_change():
     try:
         from app.services.api_client import submit_vehicle_change_request
 
+        change_payload = {
+            "vehicle_make": vehicle_make,
+            "vehicle_model": vehicle_model,
+            "vehicle_color": vehicle_color,
+            "plate_number": plate_number,
+            "vehicle_category": vehicle_category,
+        }
+        if service_tier:
+            change_payload["service_tier"] = service_tier
         submit_vehicle_change_request(
             token,
-            {
-                "vehicle_make": vehicle_make,
-                "vehicle_model": vehicle_model,
-                "vehicle_color": vehicle_color,
-                "plate_number": plate_number,
-                "vehicle_category": vehicle_category,
-                "service_tier": service_tier,
-            },
+            change_payload,
             {
                 "photo_plate_distance": photo_plate_distance,
                 "photo_interior": photo_interior,

@@ -1421,16 +1421,21 @@ def invite_admin_user(token, name, email, password):
     )
 
 
-def get_admin_driver_stats(token):
-    return _request("GET", f"{API_PREFIX}/admin/drivers/stats", token=token)
+def get_admin_driver_stats(token, vehicle_category=None):
+    params = {}
+    if vehicle_category:
+        params["vehicle_category"] = vehicle_category
+    return _request("GET", f"{API_PREFIX}/admin/drivers/stats", token=token, params=params)
 
 
-def get_admin_drivers(token, search="", status=None, page=1, limit=20):
+def get_admin_drivers(token, search="", status=None, page=1, limit=20, vehicle_category=None):
     params = {"page": page, "limit": limit}
     if search:
         params["search"] = search
     if status:
         params["status"] = status
+    if vehicle_category:
+        params["vehicle_category"] = vehicle_category
     return _request("GET", f"{API_PREFIX}/admin/drivers", token=token, params=params)
 
 
@@ -1451,10 +1456,12 @@ def delete_admin_driver(token, driver_id):
     return _request("DELETE", f"{API_PREFIX}/admin/drivers/{driver_id}", token=token)
 
 
-def get_admin_vehicle_changes(token, status="pending", page=1, limit=20):
+def get_admin_vehicle_changes(token, status="pending", page=1, limit=20, vehicle_category=None):
     params = {"page": page, "limit": limit}
     if status:
         params["status"] = status
+    if vehicle_category:
+        params["vehicle_category"] = vehicle_category
     return _request("GET", f"{API_PREFIX}/admin/vehicle-changes", token=token, params=params)
 
 
@@ -1477,6 +1484,31 @@ def reject_admin_vehicle_change(token, request_id, reason=None):
     return _request(
         "POST",
         f"{API_PREFIX}/admin/vehicle-changes/{request_id}/reject",
+        token=token,
+        json=payload,
+    )
+
+
+def get_admin_document_edits(token, status="pending_review", page=1, limit=20, vehicle_category=None):
+    params = {"page": page, "limit": limit}
+    if status:
+        params["status"] = status
+    if vehicle_category:
+        params["vehicle_category"] = vehicle_category
+    return _request("GET", f"{API_PREFIX}/admin/document-edits", token=token, params=params)
+
+
+def approve_admin_document_edit(token, request_id):
+    return _request("POST", f"{API_PREFIX}/admin/document-edits/{request_id}/approve", token=token)
+
+
+def reject_admin_document_edit(token, request_id, reason=None):
+    payload = {}
+    if reason:
+        payload["reason"] = reason
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/document-edits/{request_id}/reject",
         token=token,
         json=payload,
     )

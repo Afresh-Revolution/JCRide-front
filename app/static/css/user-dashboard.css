@@ -1152,6 +1152,44 @@ button.rider-link:hover {
   overflow-y: auto;
 }
 
+.ride-categories {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.ride-category {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--user-border);
+  border-radius: var(--user-radius-sm);
+  background: var(--user-card);
+  cursor: pointer;
+}
+
+.ride-category input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ride-category.is-selected {
+  border-color: var(--user-green);
+  background: var(--user-field-bg);
+}
+
+.ride-category__name {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.ride-category__meta {
+  font-size: 0.8rem;
+  color: var(--user-muted, #64748b);
+}
+
 .ride-tier {
   display: grid;
   grid-template-columns: auto 1fr auto;

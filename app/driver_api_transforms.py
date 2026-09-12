@@ -331,11 +331,11 @@ def profile_from_api(data: dict, performance: dict | None = None) -> dict:
     raw_tier = _vehicle_field(driver.get("service_tier")).lower()
     # Keep empty when unset so bike signups are not silently treated as cars.
     vehicle_category = raw_category
-    # Bikes have no public tier type; still keep economy internally if the API set it.
-    service_tier = "" if raw_category == "bike" else raw_tier
+    # Bikes and tricycles have no public car class; still keep economy internally if the API set it.
+    service_tier = "" if raw_category in {"bike", "tricycle"} else raw_tier
     make_model = f"{make} {model}".strip()
     vehicle_complete = bool(
-        make and model and color and plate and raw_category and (raw_category == "bike" or raw_tier)
+        make and model and color and plate and raw_category and (raw_category in {"bike", "tricycle"} or raw_tier)
     )
 
     return {
@@ -361,7 +361,7 @@ def profile_from_api(data: dict, performance: dict | None = None) -> dict:
             "color": color or "-",
             "plate": plate or "-",
             "category": raw_category.replace("_", " ").title() if raw_category else "-",
-            "tier_label": "" if raw_category == "bike" else (raw_tier.replace("_", " ").title() if raw_tier else "-"),
+            "tier_label": "" if raw_category in {"bike", "tricycle"} else (raw_tier.replace("_", " ").title() if raw_tier else "-"),
             "vehicle_category": vehicle_category,
             "service_tier": service_tier,
             "is_complete": vehicle_complete,

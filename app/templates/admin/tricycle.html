@@ -1,14 +1,14 @@
 {% extends "admin/layout.html" %}
-{% set active_page = 'drivers' %}
+{% set active_page = 'tricycle' %}
 
-{% block page_title %}Drivers{% endblock %}
+{% block page_title %}Tricycle{% endblock %}
 
 {% block page_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-drivers.css') }}">
 {% endblock %}
 
 {% block dashboard_content %}
-<section class="drivers-page" data-vehicle-category="car">
+<section class="drivers-page" data-vehicle-category="tricycle">
   <div class="drivers-kpi-grid">
     <article class="drivers-kpi-card">
       <div class="drivers-kpi-card__body">
@@ -19,7 +19,7 @@
     </article>
     <article class="drivers-kpi-card">
       <div class="drivers-kpi-card__body">
-        <span class="drivers-kpi-card__label">Active drivers</span>
+        <span class="drivers-kpi-card__label">Active tricycle drivers</span>
         <span class="drivers-kpi-card__value" id="kpi-active">-</span>
       </div>
       <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" data-filter="approved">Review</button>
@@ -33,37 +33,12 @@
     </article>
     <article class="drivers-kpi-card">
       <div class="drivers-kpi-card__body">
-        <span class="drivers-kpi-card__label">Vehicle changes pending</span>
+        <span class="drivers-kpi-card__label">Document edits pending</span>
         <span class="drivers-kpi-card__value" id="kpi-expiring">-</span>
       </div>
-      <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" id="vehicle-changes-scroll">Review</button>
+      <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" id="document-edits-scroll">Review</button>
     </article>
   </div>
-
-  <section class="drivers-card dash-card drivers-vehicle-changes" id="vehicle-changes-section" aria-label="Vehicle change requests">
-    <div class="drivers-vehicle-changes__header">
-      <div>
-        <h2 class="drivers-vehicle-changes__title">Vehicle change requests</h2>
-        <p class="drivers-vehicle-changes__sub">Review driver vehicle updates. Approve to apply new details or reject to restore access with existing vehicle info.</p>
-      </div>
-    </div>
-    <div class="drivers-table-wrap">
-      <table class="drivers-table" aria-label="Vehicle change requests">
-        <thead>
-          <tr>
-            <th scope="col">Driver</th>
-            <th scope="col">Current vehicle</th>
-            <th scope="col">Requested vehicle</th>
-            <th scope="col">Submitted</th>
-            <th scope="col"><span class="sr-only">Actions</span></th>
-          </tr>
-        </thead>
-        <tbody id="vehicle-changes-table-body">
-          <tr class="drivers-table__loading"><td colspan="5">Loading vehicle changes…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
 
   <section class="drivers-card dash-card drivers-vehicle-changes" id="document-edits-section" aria-label="Document edit requests">
     <div class="drivers-vehicle-changes__header">
@@ -71,7 +46,6 @@
         <h2 class="drivers-vehicle-changes__title">Document edit requests</h2>
         <p class="drivers-vehicle-changes__sub">Approve a replacement only after review. The current document stays in effect until then.</p>
       </div>
-      <span class="drivers-kpi-card__value" id="kpi-document-edits">-</span>
     </div>
     <div class="drivers-table-wrap">
       <table class="drivers-table" aria-label="Document edit requests">
@@ -93,7 +67,7 @@
   <div class="drivers-toolbar dash-card">
     <div class="drivers-search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="drivers-search-input" placeholder="Search by name or plate" aria-label="Search drivers">
+      <input type="search" id="drivers-search-input" placeholder="Search tricycle drivers" aria-label="Search tricycle drivers">
     </div>
     <div class="drivers-filter-tabs" role="tablist" aria-label="Filter by status">
       <button type="button" class="drivers-filter-tab is-active" data-status="all" role="tab">All</button>
@@ -105,11 +79,11 @@
 
   <div class="drivers-card dash-card">
     <div class="drivers-table-wrap">
-      <table class="drivers-table" aria-label="Driver management">
+      <table class="drivers-table" aria-label="Tricycle driver management">
         <thead>
           <tr>
             <th scope="col">Driver</th>
-            <th scope="col">Vehicle</th>
+            <th scope="col">Tricycle</th>
             <th scope="col">Plate</th>
             <th scope="col">Trips</th>
             <th scope="col">Earnings</th>
@@ -119,7 +93,7 @@
           </tr>
         </thead>
         <tbody id="drivers-table-body">
-          <tr class="drivers-table__loading"><td colspan="8">Loading drivers…</td></tr>
+          <tr class="drivers-table__loading"><td colspan="8">Loading tricycle drivers…</td></tr>
         </tbody>
       </table>
     </div>
@@ -136,7 +110,7 @@
 <div class="drivers-modal-overlay" id="driver-detail-modal" hidden>
   <div class="drivers-modal" role="dialog" aria-labelledby="driver-detail-title" aria-modal="true">
     <div class="drivers-modal__header">
-      <h2 id="driver-detail-title">Driver details</h2>
+      <h2 id="driver-detail-title">Tricycle driver details</h2>
       <button type="button" class="drivers-modal__close" data-close-modal aria-label="Close">&times;</button>
     </div>
     <div class="drivers-modal__body" id="driver-detail-body"></div>
@@ -146,26 +120,10 @@
   </div>
 </div>
 
-<div class="drivers-modal-overlay" id="vehicle-change-modal" hidden>
-  <div class="drivers-modal drivers-modal--wide" role="dialog" aria-labelledby="vehicle-change-title" aria-modal="true">
-    <div class="drivers-modal__header">
-      <h2 id="vehicle-change-title">Vehicle change review</h2>
-      <button type="button" class="drivers-modal__close" data-close-vehicle-modal aria-label="Close">&times;</button>
-    </div>
-    <div class="drivers-modal__body" id="vehicle-change-body"></div>
-    <div class="drivers-modal__footer">
-      <button type="button" class="drivers-btn drivers-btn--ghost" data-close-vehicle-modal>Close</button>
-      <button type="button" class="drivers-btn drivers-btn--danger" id="vehicle-change-reject-btn">Reject</button>
-      <button type="button" class="drivers-btn drivers-btn--primary" id="vehicle-change-approve-btn">Approve</button>
-    </div>
-  </div>
-</div>
-
 <div class="drivers-toast" id="drivers-toast" hidden role="status"></div>
 {% endblock %}
 
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/admin-drivers.js') }}"></script>
-<script src="{{ url_for('static', filename='js/admin-vehicle-changes.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin-document-edits.js') }}"></script>
 {% endblock %}
