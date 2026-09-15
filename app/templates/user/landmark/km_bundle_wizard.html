@@ -1,0 +1,77 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'landmark_plans' %}
+{% block page_title %}KM Pack{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<section class="lm-page">
+  <div class="lm-header">
+    <div>
+      <a href="{{ url_for('main.user_landmark_plans') }}" style="color:var(--dash-muted,#64748b);text-decoration:none;font-size:0.85rem;">&larr; My Ride Plans</a>
+      <h1 style="margin-top:6px;">KM Pack</h1>
+      <p>Buy kilometres. Go anywhere. Use any driver tier available &mdash; no fixed destination required.</p>
+    </div>
+  </div>
+
+  {% if step == 1 %}
+  <h2>Choose a pack</h2>
+  {% if not packs %}
+  <p class="lm-empty">No KM Packs are available right now. Check back soon.</p>
+  {% else %}
+  <form method="post">
+    <input type="hidden" name="step" value="1">
+    <div class="lm-option-list">
+      {% for pack in packs %}
+      <label class="lm-option">
+        <input type="radio" name="pack_id" value="{{ pack.id }}" {% if draft.pack_id == pack.id %}checked{% endif %} required>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span>
+            <strong>{{ pack.km_amount }} KM</strong>
+            <em>{{ pack.name }}</em>
+          </span>
+          <span style="text-align:right;">
+            {% if pack.discount_percent %}
+            <span style="text-decoration:line-through;color:var(--dash-muted,#64748b);font-size:0.85rem;">{{ pack.price_display }}</span><br>
+            {% endif %}
+            <strong style="font-size:1.1rem;">{{ pack.final_price_display }}</strong>
+          </span>
+        </div>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="lm-btn-row">
+      <button type="submit" class="lm-btn lm-btn--primary lm-btn--block">Continue</button>
+    </div>
+  </form>
+  {% endif %}
+
+  {% elif step == 2 and selected_pack %}
+  <h2>Review and pay</h2>
+  <div class="lm-summary">
+    <div class="lm-summary-row"><span>Pack</span><strong>{{ selected_pack.km_amount }} KM</strong></div>
+    {% if selected_pack.discount_percent %}
+    <div class="lm-summary-row"><span>Normal value</span><strong style="text-decoration:line-through;">{{ selected_pack.price_display }}</strong></div>
+    <div class="lm-summary-row"><span>Plan discount ({{ selected_pack.discount_percent }}%)</span></div>
+    {% endif %}
+    <hr class="lm-summary-divider">
+    <div class="lm-summary-total"><strong>Total</strong><strong>{{ selected_pack.final_price_display }}</strong></div>
+  </div>
+
+  <form method="post">
+    <input type="hidden" name="step" value="2">
+    <div class="lm-btn-row">
+      <button type="submit" name="action" value="back" class="lm-btn lm-btn--outline">Choose a different pack</button>
+    </div>
+    <div class="lm-btn-row">
+      <button type="submit" name="action" value="pay_paystack" class="lm-btn lm-btn--primary lm-btn--block">Pay with Paystack</button>
+    </div>
+    <div class="lm-btn-row">
+      <button type="submit" name="action" value="choose_manual" class="lm-btn lm-btn--outline lm-btn--block">Manual Bank Transfer</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

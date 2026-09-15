@@ -282,6 +282,64 @@
   <p class="landing-pricing-note">{{ ps.footnote }}</p>
 </section>
 
+{# ── Landmark booking (Fixed Route + KM Pack) ── #}
+<section class="landing-section" id="landmark" aria-labelledby="landmark-heading">
+  <div class="landing-container landing-section__header">
+    <p class="landing-eyebrow">Ride plans</p>
+    <h2 id="landmark-heading" class="landing-section__title">Save more on the rides you take every day</h2>
+    <p class="landing-section__subtitle">Two ways to prepay for less &mdash; pick the one that fits how you move.</p>
+  </div>
+  <div class="landing-container landing-pricing">
+    <article class="landing-price-card">
+      <span class="landing-price-card__badge">Save more</span>
+      <p class="landing-price-card__tier">Fixed Route</p>
+      <p class="landing-price-card__desc">Your regular journey, for less.</p>
+      <ul class="landing-price-card__features">
+        <li>Weekly or monthly</li>
+        <li>One registered route, to and fro</li>
+        <li>Choose your travel days</li>
+        <li>Return trips included</li>
+        <li>Your preferred vehicle</li>
+      </ul>
+      <form method="post" action="{{ url_for('main.enter_rider_portal') }}" class="landing-entry-form landing-entry-form--block">
+        <input type="hidden" name="next" value="{{ url_for('main.user_landmark_fixed_route_new') }}">
+        <button type="submit" class="landing-btn landing-btn--primary landing-btn--block">Choose Fixed Route</button>
+      </form>
+    </article>
+    <article class="landing-price-card">
+      <span class="landing-price-card__badge">Save more</span>
+      <p class="landing-price-card__tier">KM Pack</p>
+      <p class="landing-price-card__desc">Buy kilometres. Go anywhere. Save more.</p>
+      <ul class="landing-price-card__features">
+        <li>Prepay distance at a discounted rate</li>
+        <li>Ride to any eligible destination</li>
+        <li>Use any driver tier available</li>
+        <li>Track your KM balance live</li>
+        <li>Automatic usage tracking</li>
+      </ul>
+      <form method="post" action="{{ url_for('main.enter_rider_portal') }}" class="landing-entry-form landing-entry-form--block">
+        <input type="hidden" name="next" value="{{ url_for('main.user_landmark_km_bundle_new') }}">
+        <button type="submit" class="landing-btn landing-btn--accent landing-btn--block">Explore KM Packs</button>
+      </form>
+    </article>
+  </div>
+  <div class="landing-container landing-section__header" style="margin-top:48px;">
+    <h3 class="landing-section__title" style="font-size:1.4rem;">Which plan is right for you?</h3>
+  </div>
+  <div class="landing-container landing-pricing">
+    <article class="landing-price-card">
+      <p class="landing-price-card__tier">Fixed Route</p>
+      <p class="landing-price-card__desc">Best if you repeatedly travel between the same two places.</p>
+      <p class="landing-price-card__desc"><strong>Home &harr; Office</strong></p>
+    </article>
+    <article class="landing-price-card">
+      <p class="landing-price-card__tier">KM Pack</p>
+      <p class="landing-price-card__desc">Best if you travel frequently to different destinations.</p>
+      <p class="landing-price-card__desc"><strong>Home &rarr; Office &rarr; Market &rarr; Airport</strong></p>
+    </article>
+  </div>
+</section>
+
 {# ── Testimonials ── #}
 <section class="landing-section landing-section--muted" id="testimonials" aria-labelledby="testimonials-heading">
   <div class="landing-container landing-section__header">

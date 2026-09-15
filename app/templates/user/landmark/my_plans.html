@@ -1,0 +1,67 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'landmark_plans' %}
+{% block page_title %}My Ride Plans{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<section class="lm-page">
+  <div class="lm-header">
+    <div>
+      <h1>My Ride Plans</h1>
+      <p>Your fixed-route and KM Pack subscriptions.</p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <a class="lm-btn lm-btn--outline" href="{{ url_for('main.user_landmark_km_bundle_new', action='restart') }}">+ KM Pack</a>
+      <a class="lm-btn lm-btn--primary" href="{{ url_for('main.user_landmark_fixed_route_new', action='restart') }}">+ Fixed Route</a>
+    </div>
+  </div>
+
+  {% if not api_connected %}
+  <p class="lm-empty">We couldn't load your plans right now. Refresh to try again.</p>
+  {% elif not plans %}
+  <div class="lm-empty">
+    <p>You don't have any ride plans yet.</p>
+    <p>
+      <a href="{{ url_for('main.user_landmark_fixed_route_new') }}">Set up a Fixed Route</a>
+      &nbsp;or&nbsp;
+      <a href="{{ url_for('main.user_landmark_km_bundle_new') }}">buy a KM Pack</a>
+    </p>
+  </div>
+  {% else %}
+  <div class="lm-plan-grid">
+    {% for plan in plans %}
+    <a class="lm-plan-card" href="{{ url_for('main.user_landmark_plan_detail', plan_type=plan.plan_type.replace('_', '-'), plan_id=plan.id) }}" style="text-decoration:none;">
+      <div class="lm-plan-card__top">
+        <div>
+          <p class="lm-plan-card__title">{{ plan.label }}</p>
+          {% if plan.plan_type == 'fixed_route' %}
+          <p class="lm-plan-card__meta">{{ plan.billing_cycle }} · {{ plan.service_tier }} · {{ plan.schedule_label }}</p>
+          {% else %}
+          <p class="lm-plan-card__meta">{{ plan.km_total }} KM pack</p>
+          {% endif %}
+        </div>
+        <span class="lm-badge {{ plan.status_badge_class }}">{{ plan.status_label }}</span>
+      </div>
+
+      {% if plan.plan_type == 'fixed_route' %}
+      <p class="lm-plan-card__meta">{{ plan.trips_used }} / {{ plan.included_trips }} trips used</p>
+      <div class="lm-progress"><div class="lm-progress__bar" style="width:{{ plan.progress_percent }}%"></div></div>
+      <div class="lm-plan-card__foot">
+        <span>{{ plan.started_at_display }} → {{ plan.expires_at_display }}</span>
+      </div>
+      {% else %}
+      <p class="lm-plan-card__meta">{{ plan.km_remaining }} KM remaining</p>
+      <div class="lm-progress"><div class="lm-progress__bar lm-progress__bar--km" style="width:{{ plan.progress_percent }}%"></div></div>
+      <div class="lm-plan-card__foot">
+        <span>{{ plan.remaining_value_display }} value left</span>
+      </div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

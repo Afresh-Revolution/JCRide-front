@@ -1,0 +1,206 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'landmark_plans' %}
+{% block page_title %}Fixed Route{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<section class="lm-page">
+  <div class="lm-header">
+    <div>
+      <a href="{{ url_for('main.user_landmark_plans') }}" style="color:var(--dash-muted,#64748b);text-decoration:none;font-size:0.85rem;">&larr; My Ride Plans</a>
+      <h1 style="margin-top:6px;">Fixed Route</h1>
+    </div>
+  </div>
+
+  <div class="lm-stepper">
+    {% for n in range(1, total_steps + 1) %}
+    <span class="lm-stepper__dot {% if n < step %}is-done{% elif n == step %}is-active{% endif %}"></span>
+    {% endfor %}
+  </div>
+  <p class="lm-step-label">Step {{ step }} of {{ total_steps }}</p>
+
+  {% if step == 1 %}
+  <h2>Where do you regularly travel?</h2>
+  <form method="post" id="lm-route-form">
+    <input type="hidden" name="step" value="1">
+    <div class="lm-form-field">
+      <label for="lm-pickup">From</label>
+      <input type="text" id="lm-pickup" name="pickup" placeholder="Search pickup location" autocomplete="off" value="{{ draft.pickup_address or '' }}" required>
+      <input type="hidden" name="pickup_lat" id="lm-pickup-lat" value="{{ draft.pickup_lat or '' }}">
+      <input type="hidden" name="pickup_lng" id="lm-pickup-lng" value="{{ draft.pickup_lng or '' }}">
+    </div>
+    <div class="lm-form-field">
+      <label for="lm-dropoff">To</label>
+      <input type="text" id="lm-dropoff" name="dropoff" placeholder="Search destination" autocomplete="off" value="{{ draft.destination_address or '' }}" required>
+      <input type="hidden" name="destination_lat" id="lm-dest-lat" value="{{ draft.destination_lat or '' }}">
+      <input type="hidden" name="destination_lng" id="lm-dest-lng" value="{{ draft.destination_lng or '' }}">
+    </div>
+    {% if draft.pickup_address and draft.destination_address %}
+    <div class="lm-summary" style="margin-bottom:16px;">
+      <div class="lm-summary-row"><span>{{ draft.pickup_address }}</span></div>
+      <div class="lm-summary-row"><span>{{ draft.destination_address }}</span></div>
+    </div>
+    {% endif %}
+    <div class="lm-btn-row">
+      <button type="submit" class="lm-btn lm-btn--primary lm-btn--block">Continue</button>
+    </div>
+  </form>
+
+  {% elif step == 2 %}
+  <h2>How often do you travel?</h2>
+  <form method="post">
+    <input type="hidden" name="step" value="2">
+    <div class="lm-option-list">
+      <label class="lm-option">
+        <input type="radio" name="schedule_type" value="every_day" {% if not draft.schedule_type or draft.schedule_type == 'every_day' %}checked{% endif %} onchange="document.getElementById('lm-custom-days').hidden = true">
+        <strong>Every Day</strong><em>Monday &ndash; Sunday</em>
+      </label>
+      <label class="lm-option">
+        <input type="radio" name="schedule_type" value="weekdays" {% if draft.schedule_type == 'weekdays' %}checked{% endif %} onchange="document.getElementById('lm-custom-days').hidden = true">
+        <strong>Weekdays</strong><em>Monday &ndash; Friday</em>
+      </label>
+      <label class="lm-option">
+        <input type="radio" name="schedule_type" value="custom" {% if draft.schedule_type == 'custom' %}checked{% endif %} onchange="document.getElementById('lm-custom-days').hidden = false">
+        <strong>Custom</strong><em>Pick your own travel days</em>
+      </label>
+    </div>
+    <div id="lm-custom-days" {% if draft.schedule_type != 'custom' %}hidden{% endif %} style="margin-top:14px;">
+      <div class="lm-day-grid">
+        {% for idx, label in weekday_labels %}
+        <label class="lm-day-chip">
+          <input type="checkbox" name="travel_days" value="{{ idx }}" {% if draft.travel_days and idx in draft.travel_days %}checked{% endif %}>
+          {{ label }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <p style="color:var(--dash-muted,#64748b);font-size:0.85rem;margin-top:14px;">Selecting your travel days directly affects your plan price.</p>
+    <div class="lm-btn-row">
+      <button type="submit" formaction="{{ url_for('main.user_landmark_fixed_route_new') }}" name="action" value="back" class="lm-btn lm-btn--outline">&lsaquo; Back</button>
+      <button type="submit" class="lm-btn lm-btn--primary">Continue</button>
+    </div>
+  </form>
+
+  {% elif step == 3 %}
+  <h2>Choose your ride</h2>
+  <form method="post">
+    <input type="hidden" name="step" value="3">
+    <div class="lm-vehicle-grid">
+      {% for v in vehicle_options %}
+      <label class="lm-vehicle-card">
+        <input type="radio" name="vehicle" value="{{ v.key }}" {% if (draft.vehicle or 'economy') == v.key %}checked{% endif %}>
+        <strong>{{ v.label }}</strong>
+        <em>{{ v.desc }}</em>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="lm-btn-row">
+      <button type="submit" name="action" value="back" class="lm-btn lm-btn--outline">&lsaquo; Back</button>
+      <button type="submit" class="lm-btn lm-btn--primary">Continue</button>
+    </div>
+  </form>
+
+  {% elif step == 4 %}
+  <h2>Choose your plan duration</h2>
+  <form method="post">
+    <input type="hidden" name="step" value="4">
+    <div class="lm-option-list">
+      <label class="lm-option">
+        <input type="radio" name="billing_cycle" value="weekly" {% if (draft.billing_cycle or 'weekly') == 'weekly' %}checked{% endif %}>
+        <strong>Weekly</strong><em>Billed every week</em>
+      </label>
+      <label class="lm-option">
+        <input type="radio" name="billing_cycle" value="monthly" {% if draft.billing_cycle == 'monthly' %}checked{% endif %}>
+        <strong>Monthly</strong><em>Billed every month &middot; best value</em>
+      </label>
+    </div>
+    <div class="lm-btn-row">
+      <button type="submit" name="action" value="back" class="lm-btn lm-btn--outline">&lsaquo; Back</button>
+      <button type="submit" class="lm-btn lm-btn--primary">Continue</button>
+    </div>
+  </form>
+
+  {% elif step == 5 %}
+  <h2>Review your plan</h2>
+  {% if quote %}
+  <div class="lm-summary">
+    <div class="lm-summary-row"><span>Route</span><strong>{{ draft.pickup_address }} ↔ {{ draft.destination_address }}</strong></div>
+    <div class="lm-summary-row"><span>Vehicle</span><strong>{{ (draft.vehicle or 'economy')|capitalize }}</strong></div>
+    <div class="lm-summary-row"><span>Plan</span><strong>{{ (draft.billing_cycle or 'weekly')|capitalize }}</strong></div>
+    <div class="lm-summary-row"><span>Travel schedule</span><strong>
+      {% if draft.schedule_type == 'weekdays' %}Monday &ndash; Friday
+      {% elif draft.schedule_type == 'custom' %}Custom days
+      {% else %}Every day{% endif %}
+    </strong></div>
+    <div class="lm-summary-row"><span>Included trips</span><strong>{{ quote.included_trips }}</strong></div>
+    <hr class="lm-summary-divider">
+    <div class="lm-summary-row"><span>Normal cost</span><strong>&#8358;{{ '{:,.0f}'.format(quote.original_price_ngn) }}</strong></div>
+    {% if quote.discount_percent %}
+    <div class="lm-summary-row"><span>Plan discount ({{ quote.discount_percent }}%)</span><strong>&minus; &#8358;{{ '{:,.0f}'.format(quote.original_price_ngn - quote.price_ngn) }}</strong></div>
+    {% endif %}
+    <hr class="lm-summary-divider">
+    <div class="lm-summary-total"><strong>Your plan</strong><strong>&#8358;{{ '{:,.0f}'.format(quote.price_ngn) }}</strong></div>
+    {% if quote.discount_percent %}
+    <span class="lm-savings-badge">You save &#8358;{{ '{:,.0f}'.format(quote.original_price_ngn - quote.price_ngn) }}</span>
+    {% endif %}
+  </div>
+
+  <form method="post">
+    <input type="hidden" name="step" value="5">
+    <div class="lm-btn-row">
+      <button type="submit" name="action" value="back" class="lm-btn lm-btn--outline">Edit plan</button>
+    </div>
+    <div class="lm-btn-row">
+      <button type="submit" name="action" value="pay_paystack" class="lm-btn lm-btn--primary lm-btn--block">Pay with Paystack</button>
+    </div>
+    <div class="lm-btn-row">
+      <button type="submit" name="action" value="choose_manual" class="lm-btn lm-btn--outline lm-btn--block">Manual Bank Transfer</button>
+    </div>
+  </form>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+{% if step == 1 %}
+<script src="{{ url_for('static', filename='js/user-location-search.js') }}"></script>
+<script>
+(function () {
+  if (!window.RiderLocationSearch) return;
+  var pickup = document.getElementById("lm-pickup");
+  var dest = document.getElementById("lm-dropoff");
+  var form = document.getElementById("lm-route-form");
+  if (pickup) {
+    RiderLocationSearch.attach(pickup, function (item) {
+      document.getElementById("lm-pickup-lat").value = item.lat;
+      document.getElementById("lm-pickup-lng").value = item.lng;
+    });
+  }
+  if (dest) {
+    RiderLocationSearch.attach(dest, function (item) {
+      document.getElementById("lm-dest-lat").value = item.lat;
+      document.getElementById("lm-dest-lng").value = item.lng;
+    });
+  }
+  if (form) {
+    form.addEventListener("submit", function () {
+      var p = RiderLocationSearch.readCoords(pickup);
+      var d = RiderLocationSearch.readCoords(dest);
+      if (p) {
+        document.getElementById("lm-pickup-lat").value = p.lat;
+        document.getElementById("lm-pickup-lng").value = p.lng;
+      }
+      if (d) {
+        document.getElementById("lm-dest-lat").value = d.lat;
+        document.getElementById("lm-dest-lng").value = d.lng;
+      }
+    });
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

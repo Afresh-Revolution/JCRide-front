@@ -1,0 +1,80 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'landmark_km_packs' %}
+{% block page_title %}KM Packs{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="settings-page">
+  <div class="settings-header">
+    <div>
+      <h1 class="settings-header__title">KM Packs</h1>
+      <p class="settings-header__sub">Prepaid kilometre bundles — usable on any driver tier, priced independently of ride fares.</p>
+    </div>
+  </div>
+
+  <article class="dash-card settings-card">
+    <h2 class="settings-card__title">Driver payout rate</h2>
+    <p class="settings-card__sub">What a KM Pack pays a driver per covered kilometre, regardless of which tier picks up the ride. Falls back to the Economy per-km rate if left blank.</p>
+    <form method="post" action="{{ url_for('admin.landmark_km_packs_rate') }}" class="settings-fields">
+      <label class="settings-field">
+        <span>Rate per km</span>
+        <div class="settings-input-prefix"><span>₦</span><input type="number" name="landmark_km_bundle_per_km_rate_ngn" min="0" step="1" value="{{ settings.landmark_km_bundle_per_km_rate_ngn or '' }}" placeholder="Falls back to Economy rate"></div>
+      </label>
+      <div class="lm-btn-row" style="align-self:flex-end;">
+        <button type="submit" class="lm-btn lm-btn--primary">Save rate</button>
+      </div>
+    </form>
+  </article>
+
+  <article class="dash-card settings-card">
+    <h2 class="settings-card__title">Add a pack</h2>
+    <form method="post" class="settings-fields">
+      <input type="hidden" name="action" value="create">
+      <label class="settings-field"><span>Name (optional)</span><input type="text" name="name" placeholder="e.g. 100 KM Pack"></label>
+      <label class="settings-field"><span>KM amount</span><input type="number" name="km_amount" min="1" step="0.1" required></label>
+      <label class="settings-field"><span>Price</span><div class="settings-input-prefix"><span>₦</span><input type="number" name="price_ngn" min="0" step="1" required></div></label>
+      <label class="settings-field"><span>Discount %</span><div class="settings-input-suffix"><input type="number" name="discount_percent" min="0" max="100" step="0.1" value="0"><span>%</span></div></label>
+      <div class="lm-btn-row" style="align-self:flex-end;">
+        <button type="submit" class="lm-btn lm-btn--primary">Add pack</button>
+      </div>
+    </form>
+  </article>
+
+  <h2 style="margin-top:24px;">Catalog</h2>
+  <div class="lm-plan-grid">
+    {% for pack in packs %}
+    <div class="lm-plan-card">
+      <div class="lm-plan-card__top">
+        <div>
+          <p class="lm-plan-card__title">{{ pack.name }}</p>
+          <p class="lm-plan-card__meta">{{ pack.km_amount }} km</p>
+        </div>
+        <span class="lm-badge {{ 'is-active' if pack.is_active else 'is-expired' }}">{{ 'Active' if pack.is_active else 'Inactive' }}</span>
+      </div>
+      <div class="lm-summary-row"><span>Price</span><strong>{{ pack.price_display }}</strong></div>
+      <div class="lm-summary-row"><span>Discount</span><strong>{{ pack.discount_percent }}%</strong></div>
+      <div class="lm-summary-row"><span>Final price</span><strong>{{ pack.final_price_display }}</strong></div>
+      <div class="lm-btn-row">
+        <form method="post" style="flex:1;">
+          <input type="hidden" name="action" value="toggle">
+          <input type="hidden" name="pack_id" value="{{ pack.id }}">
+          <input type="hidden" name="is_active" value="{{ '1' if pack.is_active else '0' }}">
+          <button type="submit" class="lm-btn lm-btn--outline lm-btn--block">{{ 'Deactivate' if pack.is_active else 'Activate' }}</button>
+        </form>
+        <form method="post" style="flex:1;" onsubmit="return confirm('Remove this pack? It stays visible to existing subscribers.');">
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="pack_id" value="{{ pack.id }}">
+          <button type="submit" class="lm-btn lm-btn--outline lm-btn--block">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% else %}
+    <p class="lm-empty">No KM Packs yet — add one above.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

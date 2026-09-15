@@ -1,0 +1,57 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'landmark_plans' %}
+{% block page_title %}Confirming payment{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<section class="lm-page">
+  <div class="lm-status-hero" id="lm-processing-hero">
+    <div class="lm-spinner"></div>
+    <h1>Confirming your payment&hellip;</h1>
+    <p>This usually takes a few seconds. Please don't close this page.</p>
+    <div class="lm-btn-row" style="max-width:320px;margin:0 auto;">
+      <a class="lm-btn lm-btn--outline lm-btn--block" href="{{ url_for('main.user_landmark_plans') }}">My Ride Plans</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+  var planType = {{ plan_type|tojson }};
+  var planId = {{ plan_id|tojson }};
+  if (!planType || !planId) return;
+  var attempts = 0;
+  var maxAttempts = 20; // ~60s at 3s interval
+
+  function check() {
+    attempts += 1;
+    fetch("{{ url_for('main.user_landmark_payment_status_json') }}?plan_type=" + encodeURIComponent(planType) + "&plan_id=" + encodeURIComponent(planId))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.status === "active") {
+          window.location.href = "{{ url_for('main.user_landmark_plans') }}";
+          return;
+        }
+        if (attempts >= maxAttempts) {
+          window.location.href = "{{ url_for('main.user_landmark_payment_failed') }}?plan_type=" + encodeURIComponent(planType);
+          return;
+        }
+        window.setTimeout(check, 3000);
+      })
+      .catch(function () {
+        if (attempts >= maxAttempts) {
+          window.location.href = "{{ url_for('main.user_landmark_payment_failed') }}?plan_type=" + encodeURIComponent(planType);
+          return;
+        }
+        window.setTimeout(check, 3000);
+      });
+  }
+  window.setTimeout(check, 2000);
+})();
+</script>
+{% endblock %}

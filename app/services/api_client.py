@@ -575,6 +575,8 @@ def _ride_payload(
     stops=None,
     city=None,
     vehicle_category="car",
+    landmark_plan_id=None,
+    landmark_plan_leg=None,
 ):
     from app.rider_api_transforms import infer_city
 
@@ -591,6 +593,10 @@ def _ride_payload(
     }
     if stops:
         payload["stops"] = stops
+    if landmark_plan_id:
+        payload["landmark_plan_id"] = landmark_plan_id
+        if landmark_plan_leg:
+            payload["landmark_plan_leg"] = landmark_plan_leg
     return payload
 
 
@@ -668,6 +674,8 @@ def request_ride_coords(
     stops=None,
     city=None,
     vehicle_category="car",
+    landmark_plan_id=None,
+    landmark_plan_leg=None,
 ):
     return _request(
         "POST",
@@ -684,8 +692,14 @@ def request_ride_coords(
             stops=stops,
             city=city,
             vehicle_category=vehicle_category,
+            landmark_plan_id=landmark_plan_id,
+            landmark_plan_leg=landmark_plan_leg,
         ),
     )
+
+
+def get_wallet_funding_config(token):
+    return _request("GET", f"{API_PREFIX}/wallet/funding-config", token=token)
 
 
 def get_current_ride(token):
@@ -1967,3 +1981,122 @@ def delete_trusted_contact(token, contact_id):
 
 def create_ride_share_link(token, ride_id):
     return _request("POST", f"{API_PREFIX}/rides/{ride_id}/share", token=token)
+
+
+# ---------------------------------------------------------------------------
+# Landmark booking: fixed-route (to/fro) and km-bundle rider subscriptions.
+# ---------------------------------------------------------------------------
+
+def landmark_list_km_bundle_packs():
+    return _request("GET", f"{API_PREFIX}/landmark/km-bundles")
+
+
+def landmark_quote_fixed_route(token, payload):
+    return _request("POST", f"{API_PREFIX}/landmark/fixed-route/quote", token=token, json=payload)
+
+
+def landmark_subscribe_fixed_route(token, payload):
+    return _request("POST", f"{API_PREFIX}/landmark/fixed-route/subscribe", token=token, json=payload)
+
+
+def landmark_fixed_route_tier_options(token, plan_id, leg):
+    return _request(
+        "GET",
+        f"{API_PREFIX}/landmark/fixed-route/{plan_id}/tier-options",
+        token=token,
+        params={"leg": leg},
+    )
+
+
+def landmark_pause_fixed_route(token, plan_id):
+    return _request("POST", f"{API_PREFIX}/landmark/fixed-route/{plan_id}/pause", token=token)
+
+
+def landmark_resume_fixed_route(token, plan_id):
+    return _request("POST", f"{API_PREFIX}/landmark/fixed-route/{plan_id}/resume", token=token)
+
+
+def landmark_cancel_fixed_route(token, plan_id):
+    return _request("DELETE", f"{API_PREFIX}/landmark/fixed-route/{plan_id}", token=token)
+
+
+def landmark_subscribe_km_bundle(token, payload):
+    return _request("POST", f"{API_PREFIX}/landmark/km-bundles/subscribe", token=token, json=payload)
+
+
+def landmark_pause_km_bundle(token, subscription_id):
+    return _request(
+        "POST", f"{API_PREFIX}/landmark/km-bundles/{subscription_id}/pause", token=token
+    )
+
+
+def landmark_resume_km_bundle(token, subscription_id):
+    return _request(
+        "POST", f"{API_PREFIX}/landmark/km-bundles/{subscription_id}/resume", token=token
+    )
+
+
+def landmark_cancel_km_bundle(token, subscription_id):
+    return _request("DELETE", f"{API_PREFIX}/landmark/km-bundles/{subscription_id}", token=token)
+
+
+def landmark_my_plans(token):
+    return _request("GET", f"{API_PREFIX}/landmark/my-plans", token=token)
+
+
+# -- Admin -------------------------------------------------------------------
+
+def get_admin_landmark_km_bundle_packs(token):
+    return _request("GET", f"{API_PREFIX}/admin/landmark/km-bundle-packs", token=token)
+
+
+def create_admin_landmark_km_bundle_pack(token, payload):
+    return _request(
+        "POST", f"{API_PREFIX}/admin/landmark/km-bundle-packs", token=token, json=payload
+    )
+
+
+def update_admin_landmark_km_bundle_pack(token, pack_id, payload):
+    return _request(
+        "PATCH",
+        f"{API_PREFIX}/admin/landmark/km-bundle-packs/{pack_id}",
+        token=token,
+        json=payload,
+    )
+
+
+def delete_admin_landmark_km_bundle_pack(token, pack_id):
+    return _request(
+        "DELETE", f"{API_PREFIX}/admin/landmark/km-bundle-packs/{pack_id}", token=token
+    )
+
+
+def get_admin_landmark_fixed_route_plans(token):
+    return _request("GET", f"{API_PREFIX}/admin/landmark/fixed-route-plans", token=token)
+
+
+def get_admin_landmark_km_bundle_subscriptions(token):
+    return _request(
+        "GET", f"{API_PREFIX}/admin/landmark/km-bundle-subscriptions", token=token
+    )
+
+
+def get_admin_landmark_pending_payments(token):
+    return _request("GET", f"{API_PREFIX}/admin/landmark/payments/pending", token=token)
+
+
+def approve_admin_landmark_payment(token, payment_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/landmark/payments/{payment_id}/approve",
+        token=token,
+    )
+
+
+def reject_admin_landmark_payment(token, payment_id, reason=None):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/landmark/payments/{payment_id}/reject",
+        token=token,
+        json={"rejection_reason": reason} if reason else {},
+    )

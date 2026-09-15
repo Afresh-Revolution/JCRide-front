@@ -1,0 +1,46 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'landmark_subscriptions' %}
+{% block page_title %}Subscriptions{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="settings-page">
+  <div class="settings-header">
+    <div>
+      <h1 class="settings-header__title">Subscriptions</h1>
+      <p class="settings-header__sub">Every Fixed Route plan and KM Pack, across all riders.</p>
+    </div>
+  </div>
+
+  <div class="dash-card" style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left;color:var(--dash-muted,#64748b);font-size:0.8rem;">
+          <th style="padding:10px;">Plan</th>
+          <th style="padding:10px;">Type</th>
+          <th style="padding:10px;">Price paid</th>
+          <th style="padding:10px;">Status</th>
+          <th style="padding:10px;">Started</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr style="border-top:1px solid var(--dash-border,#e5e7eb);">
+          <td style="padding:10px;">{{ row.plan_summary }}</td>
+          <td style="padding:10px;">{{ row.kind }}</td>
+          <td style="padding:10px;">{{ row.price_display }}</td>
+          <td style="padding:10px;"><span class="lm-badge {{ row.status_badge_class }}">{{ row.status_label }}</span></td>
+          <td style="padding:10px;">{{ row.started_at_display }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="padding:16px;color:var(--dash-muted,#64748b);">No subscriptions yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

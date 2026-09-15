@@ -17,6 +17,15 @@ from flask import Blueprint, flash, get_flashed_messages, jsonify, redirect, ren
 from app.services.api_client import (
     ApiError,
     admin_login,
+    approve_admin_landmark_payment,
+    create_admin_landmark_km_bundle_pack,
+    delete_admin_landmark_km_bundle_pack,
+    get_admin_landmark_fixed_route_plans,
+    get_admin_landmark_km_bundle_packs,
+    get_admin_landmark_km_bundle_subscriptions,
+    get_admin_landmark_pending_payments,
+    reject_admin_landmark_payment,
+    update_admin_landmark_km_bundle_pack,
     get_admin_live_trips,
     get_admin_revenue,
     get_admin_ride_tiers,
@@ -83,6 +92,11 @@ from app.services.api_client import (
     get_admin_report_users,
 )
 from app.services.landing_content import invalidate_landing_cache, merge_landing_page
+from app.services.landmark_transforms import (
+    fixed_route_plan_to_ui,
+    km_bundle_pack_to_ui,
+    km_bundle_subscription_to_ui,
+)
 from app.admin_api_transforms import (
     live_trips_to_map,
     normalize_admin_trips_list,
@@ -462,6 +476,192 @@ def analytics():
 @admin_required
 def settings_page():
     return render_template("admin/settings.html", active_page="settings")
+
+
+# ---------------------------------------------------------------------------
+# Landmark booking: Fixed Routes, KM Packs, Subscriptions, Transactions.
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/landmark/fixed-routes", methods=["GET", "POST"])
+@admin_required
+def landmark_fixed_routes():
+    token = _admin_token()
+    if request.method == "POST":
+        try:
+            eligible = request.form.getlist("eligible_vehicles")
+            payload = {
+                "fixed_route_enabled": request.form.get("fixed_route_enabled") == "1",
+                "fixed_route_weekly_enabled": request.form.get("fixed_route_weekly_enabled") == "1",
+                "fixed_route_monthly_enabled": request.form.get("fixed_route_monthly_enabled") == "1",
+                "fixed_route_discount_percent": request.form.get("fixed_route_discount_percent", type=float) or 0,
+                "fixed_route_eligible_vehicles": eligible or ["keke", "economy", "comfort", "premium"],
+            }
+            update_admin_platform_settings(token, payload)
+            flash("Fixed Route settings updated.", "success")
+        except ApiError as exc:
+            flash(exc.message, "error")
+        return redirect(url_for("admin.landmark_fixed_routes"))
+
+    try:
+        settings_data = get_admin_platform_settings(token)
+    except ApiError as exc:
+        flash(exc.message, "error")
+        settings_data = {}
+
+    plans = []
+    try:
+        rows = get_admin_landmark_fixed_route_plans(token)
+        plans = [fixed_route_plan_to_ui(p) for p in (rows or [])]
+    except ApiError as exc:
+        flash(exc.message, "error")
+
+    return render_template(
+        "admin/landmark_fixed_routes.html",
+        active_page="landmark_fixed_routes",
+        settings=settings_data,
+        plans=plans,
+        vehicle_choices=["keke", "economy", "comfort", "premium"],
+    )
+
+
+@admin_bp.route("/landmark/km-packs", methods=["GET", "POST"])
+@admin_required
+def landmark_km_packs():
+    token = _admin_token()
+    if request.method == "POST":
+        action = request.form.get("action", "create")
+        try:
+            if action == "create":
+                create_admin_landmark_km_bundle_pack(
+                    token,
+                    {
+                        "name": request.form.get("name") or None,
+                        "km_amount": request.form.get("km_amount", type=float),
+                        "price_ngn": request.form.get("price_ngn", type=float),
+                        "discount_percent": request.form.get("discount_percent", type=float) or 0,
+                        "is_active": True,
+                    },
+                )
+                flash("KM Pack created.", "success")
+            elif action == "toggle":
+                pack_id = request.form.get("pack_id")
+                is_active = request.form.get("is_active") == "1"
+                update_admin_landmark_km_bundle_pack(token, pack_id, {"is_active": not is_active})
+                flash("KM Pack updated.", "success")
+            elif action == "delete":
+                pack_id = request.form.get("pack_id")
+                delete_admin_landmark_km_bundle_pack(token, pack_id)
+                flash("KM Pack removed.", "success")
+        except ApiError as exc:
+            flash(exc.message, "error")
+        return redirect(url_for("admin.landmark_km_packs"))
+
+    packs = []
+    try:
+        rows = get_admin_landmark_km_bundle_packs(token)
+        packs = [km_bundle_pack_to_ui(p) for p in (rows or [])]
+    except ApiError as exc:
+        flash(exc.message, "error")
+
+    try:
+        settings_data = get_admin_platform_settings(token)
+    except ApiError:
+        settings_data = {}
+
+    return render_template(
+        "admin/landmark_km_packs.html",
+        active_page="landmark_km_packs",
+        packs=packs,
+        settings=settings_data,
+    )
+
+
+@admin_bp.route("/landmark/km-packs/rate", methods=["POST"])
+@admin_required
+def landmark_km_packs_rate():
+    token = _admin_token()
+    try:
+        rate = request.form.get("landmark_km_bundle_per_km_rate_ngn", type=float)
+        update_admin_platform_settings(token, {"landmark_km_bundle_per_km_rate_ngn": rate})
+        flash("KM Pack driver-payout rate updated.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+    return redirect(url_for("admin.landmark_km_packs"))
+
+
+@admin_bp.route("/landmark/subscriptions")
+@admin_required
+def landmark_subscriptions():
+    token = _admin_token()
+    rows = []
+    try:
+        fixed_rows = get_admin_landmark_fixed_route_plans(token)
+        for row in fixed_rows or []:
+            ui = fixed_route_plan_to_ui(row)
+            ui["kind"] = "Fixed Route"
+            ui["plan_summary"] = f"{row.get('pickup_address', '')} ↔ {row.get('destination_address', '')}"
+            rows.append(ui)
+    except ApiError as exc:
+        flash(exc.message, "error")
+    try:
+        km_rows = get_admin_landmark_km_bundle_subscriptions(token)
+        for row in km_rows or []:
+            ui = km_bundle_subscription_to_ui(row)
+            ui["kind"] = "KM Pack"
+            ui["plan_summary"] = f"{row.get('km_total', 0):g} KM"
+            rows.append(ui)
+    except ApiError as exc:
+        flash(exc.message, "error")
+
+    order = {"active": 0, "paused": 1, "pending_payment": 2, "expired": 3, "exhausted": 3, "cancelled": 4}
+    rows.sort(key=lambda item: order.get(item["status"], 5))
+
+    return render_template(
+        "admin/landmark_subscriptions.html",
+        active_page="landmark_subscriptions",
+        rows=rows,
+    )
+
+
+@admin_bp.route("/landmark/transactions", methods=["GET"])
+@admin_required
+def landmark_transactions():
+    token = _admin_token()
+    payments = []
+    try:
+        payments = get_admin_landmark_pending_payments(token) or []
+    except ApiError as exc:
+        flash(exc.message, "error")
+    return render_template(
+        "admin/landmark_transactions.html",
+        active_page="landmark_transactions",
+        payments=payments,
+    )
+
+
+@admin_bp.route("/landmark/transactions/<payment_id>/approve", methods=["POST"])
+@admin_required
+def landmark_transaction_approve(payment_id):
+    token = _admin_token()
+    try:
+        approve_admin_landmark_payment(token, payment_id)
+        flash("Payment approved — plan is now active.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+    return redirect(url_for("admin.landmark_transactions"))
+
+
+@admin_bp.route("/landmark/transactions/<payment_id>/reject", methods=["POST"])
+@admin_required
+def landmark_transaction_reject(payment_id):
+    token = _admin_token()
+    try:
+        reason = request.form.get("reason") or None
+        reject_admin_landmark_payment(token, payment_id, reason)
+        flash("Payment rejected.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+    return redirect(url_for("admin.landmark_transactions"))
 
 
 @admin_bp.route("/api/wallets/stats")

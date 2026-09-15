@@ -8,6 +8,19 @@ import uuid
 from app.services.api_client import (
     ApiError,
     cancel_delivery,
+    get_wallet_funding_config,
+    landmark_cancel_fixed_route,
+    landmark_cancel_km_bundle,
+    landmark_fixed_route_tier_options,
+    landmark_list_km_bundle_packs,
+    landmark_my_plans,
+    landmark_pause_fixed_route,
+    landmark_pause_km_bundle,
+    landmark_quote_fixed_route,
+    landmark_resume_fixed_route,
+    landmark_resume_km_bundle,
+    landmark_subscribe_fixed_route,
+    landmark_subscribe_km_bundle,
     cancel_ride,
     cancel_scheduled_ride,
     change_password,
@@ -168,6 +181,13 @@ from app.rider_defaults import (
     build_route_map_from_ride,
 )
 from app.services.landing_content import load_landing_page
+from app.services.landmark_transforms import (
+    WEEKDAY_LABELS,
+    fixed_route_plan_to_ui,
+    km_bundle_pack_to_ui,
+    km_bundle_subscription_to_ui,
+    my_plans_to_ui,
+)
 from app.services.navigation_guard import (
     grant_driver_entry,
     grant_rider_entry,
@@ -608,10 +628,18 @@ def _false_alarm_locked(policy) -> bool:
     )
 
 
+def _safe_next_url(candidate: str | None) -> str | None:
+    """Only ever redirect to a relative, same-site path — never an absolute URL."""
+    if not candidate or not candidate.startswith("/") or candidate.startswith("//"):
+        return None
+    return candidate
+
+
 def _require_rider(*, allow_locked: bool = False):
     if not session.get("token"):
         flash("Please sign in to access your rider dashboard.", "error")
-        return redirect(url_for("main.rider_login_page"))
+        next_url = _safe_next_url(request.full_path.rstrip("?") if request.query_string else request.path)
+        return redirect(url_for("main.rider_login_page", next=next_url) if next_url else url_for("main.rider_login_page"))
     if allow_locked or request.endpoint in UNLOCK_PAGE_ENDPOINTS:
         return None
     policy, ok = _safe_rider_api(get_account_policy)
@@ -784,10 +812,12 @@ def _handle_login(portal: str):
                         else "Signed in successfully.",
                         "success",
                     )
-                    return redirect(url_for("main.user_dashboard"))
+                    next_url = _safe_next_url(request.form.get("next") or request.args.get("next"))
+                    return redirect(next_url or url_for("main.user_dashboard"))
             except ApiError as exc:
                 flash(exc.message, "error")
 
+    next_url = _safe_next_url(request.values.get("next"))
     return render_template(
         "auth/login_split.html",
         portal=portal,
@@ -795,6 +825,7 @@ def _handle_login(portal: str):
         email=email,
         email_or_phone=email_or_phone,
         remember=remember,
+        next_url=next_url,
     )
 
 
@@ -835,9 +866,10 @@ def portals_page():
 @main_bp.route("/enter/rider", methods=["POST"])
 def enter_rider_portal():
     grant_rider_entry()
+    next_url = _safe_next_url(request.form.get("next"))
     if is_authenticated_rider():
-        return redirect(url_for("main.user_dashboard"))
-    return redirect(url_for("main.rider_login_page"))
+        return redirect(next_url or url_for("main.user_dashboard"))
+    return redirect(url_for("main.rider_login_page", next=next_url) if next_url else url_for("main.rider_login_page"))
 
 
 @main_bp.route("/enter/driver", methods=["POST"])
@@ -1389,6 +1421,10 @@ def user_register_page():
         if ref:
             signup["referral_code"] = ref.strip().upper()
             _save_rider_signup(signup)
+        next_url = _safe_next_url(request.args.get("next"))
+        if next_url:
+            signup["next"] = next_url
+            _save_rider_signup(signup)
 
     if request.method == "POST":
         posted_step = request.form.get("step", type=int) or step
@@ -1497,9 +1533,10 @@ def user_register_page():
                     session["role"] = user.get("role", "customer")
                     session["portal"] = "rider"
                     grant_rider_entry()
+                    next_url = _safe_next_url(signup.get("next"))
                     _clear_rider_signup()
                     flash("Welcome to JosRide! Your account is ready.", "success")
-                    return redirect(url_for("main.user_dashboard"))
+                    return redirect(next_url or url_for("main.user_dashboard"))
                 except ApiError as exc:
                     flash(exc.message, "error")
 
@@ -1616,6 +1653,8 @@ def user_book_ride():
             flash("Select locations from the suggestions so we can route your trip.", "error")
             return redirect(url_for("main.user_book_ride"))
 
+        landmark_plan_id = session.pop("pending_landmark_plan_id", None)
+
         try:
             _clear_stale_requested_ride(token)
             if stops:
@@ -1630,6 +1669,7 @@ def user_book_ride():
                     tier=tier,
                     stops=stops,
                     vehicle_category=vehicle_category,
+                    landmark_plan_id=landmark_plan_id,
                 )
             else:
                 result = request_ride_coords(
@@ -1642,6 +1682,7 @@ def user_book_ride():
                     dest_lng,
                     tier=tier,
                     vehicle_category=vehicle_category,
+                    landmark_plan_id=landmark_plan_id,
                 )
             ride = (result or {}).get("ride") or result or {}
             session["active_trip"] = ride_to_active_trip(ride)
@@ -3321,6 +3362,635 @@ def user_api_delete_saved_location(location_id):
         return jsonify({"ok": True})
     except ApiError as exc:
         return _user_api_error(exc)
+
+
+
+# ---------------------------------------------------------------------------
+# Landmark booking: fixed-route (to/fro) and km-bundle rider subscriptions.
+# ---------------------------------------------------------------------------
+
+LANDMARK_FIXED_WIZARD_KEY = "landmark_fixed_wizard"
+LANDMARK_KM_WIZARD_KEY = "landmark_km_wizard"
+LANDMARK_PLAN_TYPES = ("fixed-route", "km-bundle")
+
+VEHICLE_TIER_OPTIONS = [
+    {"key": "keke", "label": "Keke", "desc": "Tricycle — short local trips"},
+    {"key": "economy", "label": "Economy", "desc": "Everyday affordable rides"},
+    {"key": "comfort", "label": "Comfort", "desc": "Extra space, newer cars"},
+    {"key": "premium", "label": "Premium", "desc": "Top-tier comfort and drivers"},
+]
+
+
+def _landmark_vehicle_fields(vehicle_key: str) -> tuple[str, str]:
+    """Maps the single UI vehicle choice to (service_tier, vehicle_category)."""
+    if vehicle_key == "keke":
+        return "economy", "tricycle"
+    if vehicle_key in ("economy", "comfort", "premium"):
+        return vehicle_key, "car"
+    return "economy", "car"
+
+
+def _fixed_wizard() -> dict:
+    return dict(session.get(LANDMARK_FIXED_WIZARD_KEY) or {"step": 1})
+
+
+def _save_fixed_wizard(data: dict) -> None:
+    session[LANDMARK_FIXED_WIZARD_KEY] = data
+    session.modified = True
+
+
+def _clear_fixed_wizard() -> None:
+    session.pop(LANDMARK_FIXED_WIZARD_KEY, None)
+
+
+def _km_wizard() -> dict:
+    return dict(session.get(LANDMARK_KM_WIZARD_KEY) or {"step": 1})
+
+
+def _save_km_wizard(data: dict) -> None:
+    session[LANDMARK_KM_WIZARD_KEY] = data
+    session.modified = True
+
+
+def _clear_km_wizard() -> None:
+    session.pop(LANDMARK_KM_WIZARD_KEY, None)
+
+
+def _find_landmark_plan(payload: dict, plan_type: str, plan_id: str):
+    key = "fixed_route_plans" if plan_type == "fixed-route" else "km_bundle_subscriptions"
+    for row in payload.get(key) or []:
+        if str(row.get("id")) == str(plan_id):
+            return row
+    return None
+
+
+@main_bp.route("/user/plans")
+def user_landmark_plans():
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    payload, ok = _safe_rider_api(landmark_my_plans, {"fixed_route_plans": [], "km_bundle_subscriptions": []})
+    plans = my_plans_to_ui(payload or {})
+    return render_template(
+        "user/landmark/my_plans.html",
+        active_page="landmark_plans",
+        plans=plans,
+        api_connected=ok,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/plans/<plan_type>/<plan_id>")
+def user_landmark_plan_detail(plan_type, plan_id):
+    guard = _require_rider()
+    if guard:
+        return guard
+    if plan_type not in LANDMARK_PLAN_TYPES:
+        flash("Plan not found.", "error")
+        return redirect(url_for("main.user_landmark_plans"))
+    payload, ok = _safe_rider_api(landmark_my_plans, {})
+    row = _find_landmark_plan(payload or {}, plan_type, plan_id)
+    if not row:
+        flash("That plan could not be found.", "error")
+        return redirect(url_for("main.user_landmark_plans"))
+    plan = fixed_route_plan_to_ui(row) if plan_type == "fixed-route" else km_bundle_subscription_to_ui(row)
+    return render_template(
+        "user/landmark/plan_detail.html",
+        active_page="landmark_plans",
+        plan=plan,
+        plan_type=plan_type,
+        raw=row,
+        api_connected=ok,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/plans/<plan_type>/<plan_id>/pause", methods=["POST"])
+def user_landmark_plan_pause(plan_type, plan_id):
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    try:
+        if plan_type == "fixed-route":
+            landmark_pause_fixed_route(token, plan_id)
+        else:
+            landmark_pause_km_bundle(token, plan_id)
+        flash("Plan paused.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+    return redirect(url_for("main.user_landmark_plan_detail", plan_type=plan_type, plan_id=plan_id))
+
+
+@main_bp.route("/user/plans/<plan_type>/<plan_id>/resume", methods=["POST"])
+def user_landmark_plan_resume(plan_type, plan_id):
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    try:
+        if plan_type == "fixed-route":
+            landmark_resume_fixed_route(token, plan_id)
+        else:
+            landmark_resume_km_bundle(token, plan_id)
+        flash("Plan resumed.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+    return redirect(url_for("main.user_landmark_plan_detail", plan_type=plan_type, plan_id=plan_id))
+
+
+@main_bp.route("/user/plans/<plan_type>/<plan_id>/cancel", methods=["POST"])
+def user_landmark_plan_cancel(plan_type, plan_id):
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    try:
+        if plan_type == "fixed-route":
+            landmark_cancel_fixed_route(token, plan_id)
+        else:
+            landmark_cancel_km_bundle(token, plan_id)
+        flash("Plan cancelled. Unused value is not refunded.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+    return redirect(url_for("main.user_landmark_plans"))
+
+
+@main_bp.route("/user/plans/fixed-route/<plan_id>/book/<leg>", methods=["POST"])
+def user_landmark_book_fixed_route_leg(plan_id, leg):
+    guard = _require_rider()
+    if guard:
+        return guard
+    if leg not in ("to", "fro"):
+        flash("Invalid leg.", "error")
+        return redirect(url_for("main.user_landmark_plan_detail", plan_type="fixed-route", plan_id=plan_id))
+    token = _rider_token()
+    payload, ok = _safe_rider_api(landmark_my_plans, {})
+    row = _find_landmark_plan(payload or {}, "fixed-route", plan_id) if ok else None
+    if not row:
+        flash("That plan could not be found.", "error")
+        return redirect(url_for("main.user_landmark_plans"))
+    if leg == "to":
+        pickup, pickup_lat, pickup_lng = row["pickup_address"], row["pickup_lat"], row["pickup_lng"]
+        dropoff, dest_lat, dest_lng = row["destination_address"], row["destination_lat"], row["destination_lng"]
+    else:
+        pickup, pickup_lat, pickup_lng = row["destination_address"], row["destination_lat"], row["destination_lng"]
+        dropoff, dest_lat, dest_lng = row["pickup_address"], row["pickup_lat"], row["pickup_lng"]
+    tier = row.get("service_tier") or "economy"
+    vehicle_category = row.get("vehicle_category") or "car"
+    try:
+        _clear_stale_requested_ride(token)
+        result = request_ride_coords(
+            token,
+            pickup,
+            dropoff,
+            pickup_lat,
+            pickup_lng,
+            dest_lat,
+            dest_lng,
+            tier=tier,
+            vehicle_category=vehicle_category,
+            landmark_plan_id=plan_id,
+            landmark_plan_leg=leg,
+        )
+        ride = (result or {}).get("ride") or result or {}
+        session["active_trip"] = ride_to_active_trip(ride)
+        flash("Ride requested on your fixed-route plan.", "success")
+    except ApiError as exc:
+        flash(exc.message, "error")
+        return redirect(url_for("main.user_landmark_plan_detail", plan_type="fixed-route", plan_id=plan_id))
+    return redirect(url_for("main.user_live_tracking", reset=1))
+
+
+@main_bp.route("/user/plans/km-bundle/<plan_id>/book")
+def user_landmark_book_km_bundle(plan_id):
+    guard = _require_rider()
+    if guard:
+        return guard
+    session["pending_landmark_plan_id"] = plan_id
+    flash("Book your ride — the fare will be deducted from your KM Pack.", "success")
+    return redirect(url_for("main.user_book_ride"))
+
+
+# -- Fixed route purchase wizard ---------------------------------------------
+
+@main_bp.route("/user/plans/fixed-route/new", methods=["GET", "POST"])
+def user_landmark_fixed_route_new():
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    draft = _fixed_wizard()
+    step = int(draft.get("step") or 1)
+
+    if request.method == "GET":
+        action = request.args.get("action")
+        if action == "restart":
+            _clear_fixed_wizard()
+            return redirect(url_for("main.user_landmark_fixed_route_new"))
+    else:
+        action = request.form.get("action", "continue")
+        posted_step = request.form.get("step", type=int) or step
+
+        if action == "back" and posted_step > 1:
+            draft["step"] = posted_step - 1
+            _save_fixed_wizard(draft)
+            return redirect(url_for("main.user_landmark_fixed_route_new"))
+
+        if posted_step == 1:
+            pickup = request.form.get("pickup", "").strip()
+            dropoff = request.form.get("dropoff", "").strip()
+            pickup_lat = request.form.get("pickup_lat", type=float)
+            pickup_lng = request.form.get("pickup_lng", type=float)
+            dest_lat = request.form.get("destination_lat", type=float)
+            dest_lng = request.form.get("destination_lng", type=float)
+            if not pickup or not dropoff or None in (pickup_lat, pickup_lng, dest_lat, dest_lng):
+                flash("Select both locations from the suggestions so we can route your trip.", "error")
+                return redirect(url_for("main.user_landmark_fixed_route_new"))
+            draft.update(
+                {
+                    "step": 2,
+                    "pickup_address": pickup,
+                    "pickup_lat": pickup_lat,
+                    "pickup_lng": pickup_lng,
+                    "destination_address": dropoff,
+                    "destination_lat": dest_lat,
+                    "destination_lng": dest_lng,
+                }
+            )
+            _save_fixed_wizard(draft)
+            return redirect(url_for("main.user_landmark_fixed_route_new"))
+
+        if posted_step == 2:
+            schedule_type = request.form.get("schedule_type", "every_day")
+            travel_days = [int(d) for d in request.form.getlist("travel_days") if d.isdigit()]
+            if schedule_type == "custom" and not travel_days:
+                flash("Pick at least one travel day.", "error")
+                return redirect(url_for("main.user_landmark_fixed_route_new"))
+            draft.update({"step": 3, "schedule_type": schedule_type, "travel_days": travel_days})
+            _save_fixed_wizard(draft)
+            return redirect(url_for("main.user_landmark_fixed_route_new"))
+
+        if posted_step == 3:
+            vehicle_key = request.form.get("vehicle", "economy")
+            tier, vehicle_category = _landmark_vehicle_fields(vehicle_key)
+            draft.update({"step": 4, "vehicle": vehicle_key, "service_tier": tier, "vehicle_category": vehicle_category})
+            _save_fixed_wizard(draft)
+            return redirect(url_for("main.user_landmark_fixed_route_new"))
+
+        if posted_step == 4:
+            billing_cycle = request.form.get("billing_cycle", "weekly")
+            draft.update({"step": 5, "billing_cycle": billing_cycle})
+            _save_fixed_wizard(draft)
+            return redirect(url_for("main.user_landmark_fixed_route_new"))
+
+        if posted_step == 5:
+            quote_payload = {
+                "pickup_lat": draft.get("pickup_lat"),
+                "pickup_lng": draft.get("pickup_lng"),
+                "destination_lat": draft.get("destination_lat"),
+                "destination_lng": draft.get("destination_lng"),
+                "service_tier": draft.get("service_tier", "economy"),
+                "vehicle_category": draft.get("vehicle_category", "car"),
+                "billing_cycle": draft.get("billing_cycle", "weekly"),
+                "schedule_type": draft.get("schedule_type", "every_day"),
+                "travel_days": draft.get("travel_days") or None,
+            }
+            if action == "choose_manual":
+                return redirect(url_for("main.user_landmark_fixed_route_manual"))
+            if action == "pay_paystack":
+                subscribe_payload = {
+                    **quote_payload,
+                    "label": None,
+                    "pickup_address": draft.get("pickup_address"),
+                    "destination_address": draft.get("destination_address"),
+                    "provider": "paystack",
+                    "callback_url": url_for("main.user_landmark_payment_processing", _external=True),
+                }
+                try:
+                    result = landmark_subscribe_fixed_route(token, subscribe_payload)
+                    payment = result.get("payment") or {}
+                    plan = result.get("fixed_route_plan") or {}
+                    session["landmark_pending"] = {"plan_type": "fixed-route", "plan_id": plan.get("id")}
+                    _clear_fixed_wizard()
+                    auth_url = payment.get("authorization_url")
+                    if auth_url:
+                        return redirect(auth_url)
+                    return redirect(url_for("main.user_landmark_payment_processing"))
+                except ApiError as exc:
+                    flash(exc.message, "error")
+                    return redirect(url_for("main.user_landmark_fixed_route_new"))
+
+    step = int(draft.get("step") or 1)
+    quote = None
+    if step == 5:
+        try:
+            quote = landmark_quote_fixed_route(
+                token,
+                {
+                    "pickup_lat": draft.get("pickup_lat"),
+                    "pickup_lng": draft.get("pickup_lng"),
+                    "destination_lat": draft.get("destination_lat"),
+                    "destination_lng": draft.get("destination_lng"),
+                    "service_tier": draft.get("service_tier", "economy"),
+                    "vehicle_category": draft.get("vehicle_category", "car"),
+                    "billing_cycle": draft.get("billing_cycle", "weekly"),
+                    "schedule_type": draft.get("schedule_type", "every_day"),
+                    "travel_days": draft.get("travel_days") or None,
+                },
+            )
+        except ApiError as exc:
+            flash(exc.message, "error")
+            draft["step"] = 1
+            _save_fixed_wizard(draft)
+            return redirect(url_for("main.user_landmark_fixed_route_new"))
+
+    return render_template(
+        "user/landmark/fixed_route_wizard.html",
+        active_page="landmark_plans",
+        step=step,
+        total_steps=5,
+        draft=draft,
+        quote=quote,
+        vehicle_options=VEHICLE_TIER_OPTIONS,
+        weekday_labels=list(enumerate(WEEKDAY_LABELS)),
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/plans/fixed-route/new/manual", methods=["GET", "POST"])
+def user_landmark_fixed_route_manual():
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    draft = _fixed_wizard()
+    if not draft.get("pickup_address"):
+        return redirect(url_for("main.user_landmark_fixed_route_new"))
+
+    if request.method == "POST":
+        bank_name = request.form.get("bank_name", "").strip()
+        account_name = request.form.get("account_name", "").strip()
+        if not bank_name or not account_name:
+            flash("Enter the bank name and account name you transferred from.", "error")
+            return redirect(url_for("main.user_landmark_fixed_route_manual"))
+        payload = {
+            "pickup_lat": draft.get("pickup_lat"),
+            "pickup_lng": draft.get("pickup_lng"),
+            "destination_lat": draft.get("destination_lat"),
+            "destination_lng": draft.get("destination_lng"),
+            "service_tier": draft.get("service_tier", "economy"),
+            "vehicle_category": draft.get("vehicle_category", "car"),
+            "billing_cycle": draft.get("billing_cycle", "weekly"),
+            "schedule_type": draft.get("schedule_type", "every_day"),
+            "travel_days": draft.get("travel_days") or None,
+            "label": None,
+            "pickup_address": draft.get("pickup_address"),
+            "destination_address": draft.get("destination_address"),
+            "provider": "manual",
+            "bank_name": bank_name,
+            "account_name": account_name,
+        }
+        try:
+            result = landmark_subscribe_fixed_route(token, payload)
+            plan = result.get("fixed_route_plan") or {}
+            _clear_fixed_wizard()
+            return redirect(url_for("main.user_landmark_pending", plan_type="fixed-route", plan_id=plan.get("id")))
+        except ApiError as exc:
+            flash(exc.message, "error")
+            return redirect(url_for("main.user_landmark_fixed_route_manual"))
+
+    funding_config, ok = _safe_rider_api(get_wallet_funding_config, {})
+    quote, _ok2 = _safe_rider_api(
+        lambda tok: landmark_quote_fixed_route(
+            tok,
+            {
+                "pickup_lat": draft.get("pickup_lat"),
+                "pickup_lng": draft.get("pickup_lng"),
+                "destination_lat": draft.get("destination_lat"),
+                "destination_lng": draft.get("destination_lng"),
+                "service_tier": draft.get("service_tier", "economy"),
+                "vehicle_category": draft.get("vehicle_category", "car"),
+                "billing_cycle": draft.get("billing_cycle", "weekly"),
+                "schedule_type": draft.get("schedule_type", "every_day"),
+                "travel_days": draft.get("travel_days") or None,
+            },
+        )
+    )
+    return render_template(
+        "user/landmark/manual_transfer.html",
+        active_page="landmark_plans",
+        plan_type="fixed-route",
+        draft=draft,
+        quote=quote,
+        amount_ngn=(quote or {}).get("price_ngn"),
+        funding_config=funding_config or {},
+        back_url=url_for("main.user_landmark_fixed_route_new"),
+        **_rider_context(),
+    )
+
+
+# -- KM Pack purchase wizard --------------------------------------------------
+
+@main_bp.route("/user/plans/km-bundle/new", methods=["GET", "POST"])
+def user_landmark_km_bundle_new():
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    draft = _km_wizard()
+    step = int(draft.get("step") or 1)
+
+    if request.method == "GET" and request.args.get("action") == "restart":
+        _clear_km_wizard()
+        return redirect(url_for("main.user_landmark_km_bundle_new"))
+
+    packs = []
+    try:
+        packs_payload = landmark_list_km_bundle_packs()
+        packs = [km_bundle_pack_to_ui(p) for p in (packs_payload or {}).get("packs") or [] if p.get("is_active", True)]
+    except ApiError as exc:
+        flash(exc.message, "error")
+
+    if request.method == "POST":
+        action = request.form.get("action", "continue")
+        posted_step = request.form.get("step", type=int) or step
+
+        if action == "back" and posted_step > 1:
+            draft["step"] = posted_step - 1
+            _save_km_wizard(draft)
+            return redirect(url_for("main.user_landmark_km_bundle_new"))
+
+        if posted_step == 1:
+            pack_id = request.form.get("pack_id", "").strip()
+            if not pack_id:
+                flash("Choose a KM Pack to continue.", "error")
+                return redirect(url_for("main.user_landmark_km_bundle_new"))
+            draft.update({"step": 2, "pack_id": pack_id})
+            _save_km_wizard(draft)
+            return redirect(url_for("main.user_landmark_km_bundle_new"))
+
+        if posted_step == 2:
+            if action == "choose_manual":
+                return redirect(url_for("main.user_landmark_km_bundle_manual"))
+            if action == "pay_paystack":
+                try:
+                    result = landmark_subscribe_km_bundle(
+                        token,
+                        {
+                            "pack_id": draft.get("pack_id"),
+                            "provider": "paystack",
+                            "callback_url": url_for("main.user_landmark_payment_processing", _external=True),
+                        },
+                    )
+                    payment = result.get("payment") or {}
+                    sub = result.get("km_bundle_subscription") or {}
+                    session["landmark_pending"] = {"plan_type": "km-bundle", "plan_id": sub.get("id")}
+                    _clear_km_wizard()
+                    auth_url = payment.get("authorization_url")
+                    if auth_url:
+                        return redirect(auth_url)
+                    return redirect(url_for("main.user_landmark_payment_processing"))
+                except ApiError as exc:
+                    flash(exc.message, "error")
+                    return redirect(url_for("main.user_landmark_km_bundle_new"))
+
+    step = int(draft.get("step") or 1)
+    selected_pack = next((p for p in packs if str(p["id"]) == str(draft.get("pack_id"))), None)
+    return render_template(
+        "user/landmark/km_bundle_wizard.html",
+        active_page="landmark_plans",
+        step=step,
+        draft=draft,
+        packs=packs,
+        selected_pack=selected_pack,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/plans/km-bundle/new/manual", methods=["GET", "POST"])
+def user_landmark_km_bundle_manual():
+    guard = _require_rider()
+    if guard:
+        return guard
+    token = _rider_token()
+    draft = _km_wizard()
+    if not draft.get("pack_id"):
+        return redirect(url_for("main.user_landmark_km_bundle_new"))
+
+    if request.method == "POST":
+        bank_name = request.form.get("bank_name", "").strip()
+        account_name = request.form.get("account_name", "").strip()
+        if not bank_name or not account_name:
+            flash("Enter the bank name and account name you transferred from.", "error")
+            return redirect(url_for("main.user_landmark_km_bundle_manual"))
+        try:
+            result = landmark_subscribe_km_bundle(
+                token,
+                {
+                    "pack_id": draft.get("pack_id"),
+                    "provider": "manual",
+                    "bank_name": bank_name,
+                    "account_name": account_name,
+                },
+            )
+            sub = result.get("km_bundle_subscription") or {}
+            _clear_km_wizard()
+            return redirect(url_for("main.user_landmark_pending", plan_type="km-bundle", plan_id=sub.get("id")))
+        except ApiError as exc:
+            flash(exc.message, "error")
+            return redirect(url_for("main.user_landmark_km_bundle_manual"))
+
+    funding_config, ok = _safe_rider_api(get_wallet_funding_config, {})
+    packs_payload, _ok2 = _safe_rider_api(lambda tok: landmark_list_km_bundle_packs(), {})
+    packs = [km_bundle_pack_to_ui(p) for p in (packs_payload or {}).get("packs") or []]
+    selected_pack = next((p for p in packs if str(p["id"]) == str(draft.get("pack_id"))), None)
+    return render_template(
+        "user/landmark/manual_transfer.html",
+        active_page="landmark_plans",
+        plan_type="km-bundle",
+        draft=draft,
+        quote=None,
+        amount_ngn=(selected_pack or {}).get("final_price_ngn"),
+        selected_pack=selected_pack,
+        funding_config=funding_config or {},
+        back_url=url_for("main.user_landmark_km_bundle_new"),
+        **_rider_context(),
+    )
+
+
+# -- Payment status pages -----------------------------------------------------
+
+@main_bp.route("/user/plans/pending")
+def user_landmark_pending():
+    guard = _require_rider()
+    if guard:
+        return guard
+    plan_type = request.args.get("plan_type", "fixed-route")
+    plan_id = request.args.get("plan_id", "")
+    return render_template(
+        "user/landmark/pending.html",
+        active_page="landmark_plans",
+        plan_type=plan_type,
+        plan_id=plan_id,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/plans/payment/processing")
+def user_landmark_payment_processing():
+    guard = _require_rider()
+    if guard:
+        return guard
+    pending = session.get("landmark_pending") or {}
+    return render_template(
+        "user/landmark/processing.html",
+        active_page="landmark_plans",
+        plan_type=pending.get("plan_type", ""),
+        plan_id=pending.get("plan_id", ""),
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/plans/payment/failed")
+def user_landmark_payment_failed():
+    guard = _require_rider()
+    if guard:
+        return guard
+    plan_type = request.args.get("plan_type", "fixed-route")
+    retry_url = (
+        url_for("main.user_landmark_fixed_route_new")
+        if plan_type == "fixed-route"
+        else url_for("main.user_landmark_km_bundle_new")
+    )
+    return render_template(
+        "user/landmark/payment_failed.html",
+        active_page="landmark_plans",
+        retry_url=retry_url,
+        **_rider_context(),
+    )
+
+
+@main_bp.route("/user/plans/payment/status.json")
+def user_landmark_payment_status_json():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    pending = session.get("landmark_pending") or {}
+    plan_type = request.args.get("plan_type") or pending.get("plan_type")
+    plan_id = request.args.get("plan_id") or pending.get("plan_id")
+    token = _rider_token()
+    try:
+        payload = landmark_my_plans(token)
+    except ApiError as exc:
+        return jsonify({"status": "unknown", "error": exc.message})
+    row = _find_landmark_plan(payload or {}, plan_type, plan_id) if plan_type and plan_id else None
+    if not row:
+        return jsonify({"status": "unknown"})
+    if row.get("status") == "active":
+        session.pop("landmark_pending", None)
+    return jsonify({"status": row.get("status")})
 
 
 @main_bp.route("/driver", methods=["GET", "POST"])
