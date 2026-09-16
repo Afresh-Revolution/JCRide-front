@@ -1,0 +1,57 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'landmark_transactions' %}
+{% block page_title %}Transactions{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="settings-page">
+  <div class="settings-header">
+    <div>
+      <h1 class="settings-header__title">Landmark payments</h1>
+      <p class="settings-header__sub">Manual bank-transfer payments awaiting review. Paystack payments confirm automatically.</p>
+    </div>
+  </div>
+
+  <div class="dash-card" style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left;color:var(--dash-muted,#64748b);font-size:0.8rem;">
+          <th style="padding:10px;">Reference</th>
+          <th style="padding:10px;">Plan type</th>
+          <th style="padding:10px;">Provider</th>
+          <th style="padding:10px;">Amount</th>
+          <th style="padding:10px;">Status</th>
+          <th style="padding:10px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr style="border-top:1px solid var(--dash-border,#e5e7eb);">
+          <td style="padding:10px;">{{ p.reference }}</td>
+          <td style="padding:10px;">{{ 'Fixed Route' if p.plan_type == 'fixed_route' else 'KM Pack' }}</td>
+          <td style="padding:10px;">{{ p.provider|capitalize }}</td>
+          <td style="padding:10px;">&#8358;{{ '{:,.0f}'.format(p.amount_ngn) }}</td>
+          <td style="padding:10px;"><span class="lm-badge is-pending">{{ p.status|capitalize }}</span></td>
+          <td style="padding:10px;">
+            <div style="display:flex;gap:8px;">
+              <form method="post" action="{{ url_for('admin.landmark_transaction_approve', payment_id=p.id) }}">
+                <button type="submit" class="lm-btn lm-btn--primary" style="padding:8px 14px;">Approve</button>
+              </form>
+              <form method="post" action="{{ url_for('admin.landmark_transaction_reject', payment_id=p.id) }}" onsubmit="return confirm('Reject this payment? The plan will be cancelled.');">
+                <button type="submit" class="lm-btn lm-btn--outline" style="padding:8px 14px;">Reject</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="padding:16px;color:var(--dash-muted,#64748b);">Nothing pending review.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

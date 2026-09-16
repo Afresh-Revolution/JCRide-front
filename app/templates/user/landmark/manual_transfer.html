@@ -1,0 +1,52 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'landmark_plans' %}
+{% block page_title %}Manual Bank Transfer{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<section class="lm-page">
+  <div class="lm-header">
+    <div>
+      <a href="{{ back_url }}" style="color:var(--dash-muted,#64748b);text-decoration:none;font-size:0.85rem;">&larr; Back</a>
+      <h1 style="margin-top:6px;">Manual Bank Transfer</h1>
+      <p>Transfer the amount below, then tell us which account you sent it from. Your plan activates once an admin confirms the payment.</p>
+    </div>
+  </div>
+
+  <div class="lm-bank-card">
+    {% if funding_config and funding_config.bank_name %}
+    <div class="lm-bank-card__row"><span>Bank</span><strong>{{ funding_config.bank_name }}</strong></div>
+    <div class="lm-bank-card__row"><span>Account name</span><strong>{{ funding_config.account_name }}</strong></div>
+    <div class="lm-bank-card__row"><span>Account number</span><strong>{{ funding_config.account_number }}</strong></div>
+    {% else %}
+    <p style="margin:0;">Contact support for JosRide's bank transfer details.</p>
+    {% endif %}
+    <hr class="lm-summary-divider">
+    <div class="lm-bank-card__row"><span>Amount to send</span><strong>&#8358;{{ '{:,.0f}'.format(amount_ngn) if amount_ngn else '—' }}</strong></div>
+  </div>
+
+  <form method="post" id="lm-manual-form" data-pay-url="{{ pay_url }}">
+    <div class="lm-form-field">
+      <label for="lm-bank-name">Your bank name</label>
+      <input type="text" id="lm-bank-name" name="bank_name" placeholder="e.g. GTBank" required>
+    </div>
+    <div class="lm-form-field">
+      <label for="lm-account-name">Your account name</label>
+      <input type="text" id="lm-account-name" name="account_name" placeholder="Name on the account you sent from" required>
+    </div>
+    <div class="lm-btn-row">
+      <button type="submit" class="lm-btn lm-btn--primary lm-btn--block">I've made the transfer</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/landmark-checkout.js') }}"></script>
+<script>
+  LandmarkCheckout.initManualForm(document.getElementById("lm-manual-form"));
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'landmark_plans' %}
+{% block page_title %}Payment failed{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<section class="lm-page">
+  <div class="lm-status-hero">
+    <div class="lm-status-hero__icon is-failed">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </div>
+    <h1>We couldn't confirm your payment</h1>
+    <p>Your payment did not complete, or is taking longer than expected. If money left your account, it will be reversed by Paystack automatically. You can try again below.</p>
+    <div class="lm-btn-row" style="max-width:320px;margin:0 auto;">
+      <a class="lm-btn lm-btn--primary lm-btn--block" href="{{ retry_url }}">Try again</a>
+      <a class="lm-btn lm-btn--outline lm-btn--block" href="{{ url_for('main.user_landmark_plans') }}">My Ride Plans</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

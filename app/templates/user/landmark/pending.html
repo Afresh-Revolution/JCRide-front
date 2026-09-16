@@ -1,0 +1,25 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'landmark_plans' %}
+{% block page_title %}Payment submitted{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<section class="lm-page">
+  <div class="lm-status-hero">
+    <div class="lm-status-hero__icon is-pending">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    <h1>Payment submitted</h1>
+    <p>We've received your bank transfer details. Your plan will show as <strong>Pending approval</strong> until an admin confirms your payment, then it becomes <strong>Active</strong> automatically.</p>
+    <div class="lm-btn-row" style="max-width:320px;margin:0 auto;">
+      {% if plan_id %}
+      <a class="lm-btn lm-btn--primary lm-btn--block" href="{{ url_for('main.user_landmark_plan_detail', plan_type=plan_type, plan_id=plan_id) }}">View plan</a>
+      {% endif %}
+      <a class="lm-btn lm-btn--outline lm-btn--block" href="{{ url_for('main.user_landmark_plans') }}">My Ride Plans</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

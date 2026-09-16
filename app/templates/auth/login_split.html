@@ -100,6 +100,7 @@
 
         <form method="post" class="auth-login__form" novalidate>
           <input type="hidden" name="portal" value="{{ portal }}">
+          {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
           {% if portal == 'driver' %}
           <label class="auth-login__field">
@@ -132,7 +133,7 @@
         {% if portal != 'driver' %}
         <p class="auth-login__footer-text">
           New to JosRide?
-          <a href="{{ url_for('main.user_register_page') }}" class="auth-login__link auth-login__link--strong auth-loading-trigger auth-loading-link" data-loading-text="Loading…">Create account</a>
+          <a href="{{ url_for('main.user_register_page', next=next_url) if next_url else url_for('main.user_register_page') }}" class="auth-login__link auth-login__link--strong auth-loading-trigger auth-loading-link" data-loading-text="Loading…">Create account</a>
         </p>
         {% else %}
         <p class="auth-login__footer-text">

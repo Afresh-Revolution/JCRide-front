@@ -1,0 +1,83 @@
+{% extends "user/layout.html" %}
+{% set active_page = 'landmark_plans' %}
+{% block page_title %}{{ plan.label }}{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block user_content %}
+<section class="lm-page">
+  <div class="lm-header">
+    <div>
+      <a href="{{ url_for('main.user_landmark_plans') }}" style="color:var(--dash-muted,#64748b);text-decoration:none;font-size:0.85rem;">&larr; My Ride Plans</a>
+      <h1 style="margin-top:6px;">{{ plan.label }}</h1>
+    </div>
+    <span class="lm-badge {{ plan.status_badge_class }}">{{ plan.status_label }}</span>
+  </div>
+
+  <div class="lm-summary">
+    {% if plan_type == 'fixed-route' %}
+    <div class="lm-summary-row"><span>Vehicle</span><strong>{{ plan.service_tier }}</strong></div>
+    <div class="lm-summary-row"><span>Schedule</span><strong>{{ plan.schedule_label }}</strong></div>
+    <div class="lm-summary-row"><span>Plan</span><strong>{{ plan.billing_cycle }}</strong></div>
+    <hr class="lm-summary-divider">
+    <div class="lm-summary-row"><span>Trips</span><strong>{{ plan.trips_used }} / {{ plan.included_trips }} used</strong></div>
+    <div class="lm-progress" style="margin-bottom:8px;"><div class="lm-progress__bar" style="width:{{ plan.progress_percent }}%"></div></div>
+    <div class="lm-summary-row"><span>To-leg balance</span><strong>{{ plan.to_balance_km }} km</strong></div>
+    <div class="lm-summary-row"><span>Fro-leg balance</span><strong>{{ plan.fro_balance_km }} km</strong></div>
+    {% if plan.status == 'active' %}
+    <div class="lm-summary-row"><span>Expires</span><strong>{{ plan.expires_at_display }}</strong></div>
+    {% endif %}
+
+    {% if plan.status == 'active' %}
+    <div class="lm-btn-row">
+      <form method="post" action="{{ url_for('main.user_landmark_book_fixed_route_leg', plan_id=plan.id, leg='to') }}" style="flex:1;">
+        <button type="submit" class="lm-btn lm-btn--primary lm-btn--block">Book: {{ plan.pickup_address }} &rarr; {{ plan.destination_address }}</button>
+      </form>
+    </div>
+    <div class="lm-btn-row">
+      <form method="post" action="{{ url_for('main.user_landmark_book_fixed_route_leg', plan_id=plan.id, leg='fro') }}" style="flex:1;">
+        <button type="submit" class="lm-btn lm-btn--outline lm-btn--block">Book: {{ plan.destination_address }} &rarr; {{ plan.pickup_address }}</button>
+      </form>
+    </div>
+    {% endif %}
+
+    {% elif plan_type == 'km-bundle' %}
+    <div class="lm-summary-row"><span>Total purchased</span><strong>{{ plan.km_total }} km</strong></div>
+    <div class="lm-summary-row"><span>Remaining</span><strong>{{ plan.km_remaining }} km</strong></div>
+    <div class="lm-progress" style="margin-bottom:8px;"><div class="lm-progress__bar lm-progress__bar--km" style="width:{{ plan.progress_percent }}%"></div></div>
+    <div class="lm-summary-row"><span>Remaining value</span><strong>{{ plan.remaining_value_display }}</strong></div>
+    <div class="lm-summary-row"><span>Paid</span><strong>{{ plan.price_display }}</strong></div>
+
+    {% if plan.status == 'active' %}
+    <div class="lm-btn-row">
+      <a class="lm-btn lm-btn--primary lm-btn--block" href="{{ url_for('main.user_landmark_book_km_bundle', plan_id=plan.id) }}">Book a ride with this pack</a>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="lm-btn-row">
+    {% if plan.status == 'active' %}
+    <form method="post" action="{{ url_for('main.user_landmark_plan_pause', plan_type=plan_type, plan_id=plan.id) }}" style="flex:1;">
+      <button type="submit" class="lm-btn lm-btn--outline lm-btn--block">Pause plan</button>
+    </form>
+    {% elif plan.status == 'paused' %}
+    <form method="post" action="{{ url_for('main.user_landmark_plan_resume', plan_type=plan_type, plan_id=plan.id) }}" style="flex:1;">
+      <button type="submit" class="lm-btn lm-btn--primary lm-btn--block">Resume plan</button>
+    </form>
+    {% endif %}
+
+    {% if plan.status in ('expired', 'exhausted') %}
+    <a class="lm-btn lm-btn--primary lm-btn--block" href="{{ url_for('main.user_landmark_fixed_route_new' if plan_type == 'fixed-route' else 'main.user_landmark_km_bundle_new', action='restart') }}">Renew plan</a>
+    {% endif %}
+
+    {% if plan.status in ('active', 'paused', 'pending_payment') %}
+    <form method="post" action="{{ url_for('main.user_landmark_plan_cancel', plan_type=plan_type, plan_id=plan.id) }}" style="flex:1;" onsubmit="return confirm('Cancel this plan? Unused value is not refunded.');">
+      <button type="submit" class="lm-btn lm-btn--outline lm-btn--block">Cancel plan</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

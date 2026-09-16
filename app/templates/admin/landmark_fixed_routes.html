@@ -1,0 +1,90 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'landmark_fixed_routes' %}
+{% block page_title %}Fixed Routes{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-settings.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="settings-page">
+  <div class="settings-header">
+    <div>
+      <h1 class="settings-header__title">Fixed Routes</h1>
+      <p class="settings-header__sub">Configure the fixed-route (to/fro) subscription product.</p>
+    </div>
+  </div>
+
+  <form method="post" class="settings-grid">
+    <article class="dash-card settings-card">
+      <h2 class="settings-card__title">Availability</h2>
+      <div class="settings-fields">
+        <label class="settings-toggle-row">
+          <span><strong>Enable Fixed Route</strong><em>Turn this plan type on for all passengers</em></span>
+          <input type="checkbox" name="fixed_route_enabled" role="switch" value="1" {% if settings.fixed_route_enabled %}checked{% endif %}>
+        </label>
+        <label class="settings-toggle-row">
+          <span><strong>Weekly plans</strong><em>Allow weekly billing</em></span>
+          <input type="checkbox" name="fixed_route_weekly_enabled" role="switch" value="1" {% if settings.fixed_route_weekly_enabled %}checked{% endif %}>
+        </label>
+        <label class="settings-toggle-row">
+          <span><strong>Monthly plans</strong><em>Allow monthly billing</em></span>
+          <input type="checkbox" name="fixed_route_monthly_enabled" role="switch" value="1" {% if settings.fixed_route_monthly_enabled %}checked{% endif %}>
+        </label>
+        <label class="settings-field">
+          <span>Discount percentage</span>
+          <div class="settings-input-suffix"><input type="number" name="fixed_route_discount_percent" min="0" max="100" step="0.1" value="{{ settings.fixed_route_discount_percent }}"><span>%</span></div>
+        </label>
+      </div>
+    </article>
+
+    <article class="dash-card settings-card">
+      <h2 class="settings-card__title">Eligibility</h2>
+      <p class="settings-card__sub">Which vehicle types can be used for fixed-route plans.</p>
+      <div class="settings-fields">
+        {% for v in vehicle_choices %}
+        <label class="settings-toggle-row">
+          <span><strong>{{ v|capitalize }}</strong></span>
+          <input type="checkbox" name="eligible_vehicles" value="{{ v }}" role="switch" {% if v in (settings.fixed_route_eligible_vehicles or []) %}checked{% endif %}>
+        </label>
+        {% endfor %}
+      </div>
+    </article>
+
+    <div class="lm-btn-row" style="grid-column:1/-1;">
+      <button type="submit" class="lm-btn lm-btn--primary">Save changes</button>
+    </div>
+  </form>
+
+  <h2 style="margin-top:32px;">Active &amp; recent plans</h2>
+  <div class="dash-card" style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left;color:var(--dash-muted,#64748b);font-size:0.8rem;">
+          <th style="padding:10px;">Route</th>
+          <th style="padding:10px;">Vehicle</th>
+          <th style="padding:10px;">Billing</th>
+          <th style="padding:10px;">Schedule</th>
+          <th style="padding:10px;">Status</th>
+          <th style="padding:10px;">Expires</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for plan in plans %}
+        <tr style="border-top:1px solid var(--dash-border,#e5e7eb);">
+          <td style="padding:10px;">{{ plan.label }}</td>
+          <td style="padding:10px;">{{ plan.service_tier }}</td>
+          <td style="padding:10px;">{{ plan.billing_cycle }}</td>
+          <td style="padding:10px;">{{ plan.schedule_label }}</td>
+          <td style="padding:10px;"><span class="lm-badge {{ plan.status_badge_class }}">{{ plan.status_label }}</span></td>
+          <td style="padding:10px;">{{ plan.expires_at_display }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="padding:16px;color:var(--dash-muted,#64748b);">No fixed-route plans yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
