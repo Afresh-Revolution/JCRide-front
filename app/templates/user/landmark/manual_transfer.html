@@ -28,7 +28,7 @@
     <div class="lm-bank-card__row"><span>Amount to send</span><strong>&#8358;{{ '{:,.0f}'.format(amount_ngn) if amount_ngn else '—' }}</strong></div>
   </div>
 
-  <form method="post">
+  <form method="post" id="lm-manual-form" data-pay-url="{{ pay_url }}">
     <div class="lm-form-field">
       <label for="lm-bank-name">Your bank name</label>
       <input type="text" id="lm-bank-name" name="bank_name" placeholder="e.g. GTBank" required>
@@ -42,4 +42,11 @@
     </div>
   </form>
 </section>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', filename='js/landmark-checkout.js') }}"></script>
+<script>
+  LandmarkCheckout.initManualForm(document.getElementById("lm-manual-form"));
+</script>
 {% endblock %}

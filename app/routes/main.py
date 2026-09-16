@@ -3787,6 +3787,7 @@ def user_landmark_fixed_route_manual():
         amount_ngn=(quote or {}).get("price_ngn"),
         funding_config=funding_config or {},
         back_url=url_for("main.user_landmark_fixed_route_new"),
+        pay_url=url_for("main.user_api_landmark_fixed_route_pay"),
         **_rider_context(),
     )
 
@@ -3916,7 +3917,120 @@ def user_landmark_km_bundle_manual():
         selected_pack=selected_pack,
         funding_config=funding_config or {},
         back_url=url_for("main.user_landmark_km_bundle_new"),
+        pay_url=url_for("main.user_api_landmark_km_bundle_pay"),
         **_rider_context(),
+    )
+
+
+# -- Landmark payment AJAX endpoints ------------------------------------------
+# Same landmark_subscribe_* calls the server-rendered wizard steps use above,
+# just returned as JSON instead of flash+redirect so the checkout buttons can
+# call them via fetch (matching the wallet Paystack/manual-transfer pattern)
+# instead of a full-page form POST.
+
+@main_bp.route("/user/api/landmark/fixed-route/pay", methods=["POST"])
+def user_api_landmark_fixed_route_pay():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    token = _rider_token()
+    draft = _fixed_wizard()
+    if not draft.get("pickup_address"):
+        return jsonify({"error": "Your plan details expired. Please start again."}), 400
+
+    payload = request.get_json(silent=True) or {}
+    provider = payload.get("provider")
+    subscribe_payload = {
+        "pickup_lat": draft.get("pickup_lat"),
+        "pickup_lng": draft.get("pickup_lng"),
+        "destination_lat": draft.get("destination_lat"),
+        "destination_lng": draft.get("destination_lng"),
+        "service_tier": draft.get("service_tier", "economy"),
+        "vehicle_category": draft.get("vehicle_category", "car"),
+        "billing_cycle": draft.get("billing_cycle", "weekly"),
+        "schedule_type": draft.get("schedule_type", "every_day"),
+        "travel_days": draft.get("travel_days") or None,
+        "label": None,
+        "pickup_address": draft.get("pickup_address"),
+        "destination_address": draft.get("destination_address"),
+        "provider": provider,
+    }
+    if provider == "paystack":
+        subscribe_payload["callback_url"] = url_for("main.user_landmark_payment_processing", _external=True)
+    elif provider == "manual":
+        bank_name = (payload.get("bank_name") or "").strip()
+        account_name = (payload.get("account_name") or "").strip()
+        if not bank_name or not account_name:
+            return jsonify({"error": "Enter the bank name and account name you transferred from."}), 400
+        subscribe_payload["bank_name"] = bank_name
+        subscribe_payload["account_name"] = account_name
+    else:
+        return jsonify({"error": "Choose a payment method."}), 400
+
+    try:
+        result = landmark_subscribe_fixed_route(token, subscribe_payload)
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+    plan = result.get("fixed_route_plan") or {}
+    payment = result.get("payment") or {}
+    _clear_fixed_wizard()
+    if provider == "paystack":
+        session["landmark_pending"] = {"plan_type": "fixed-route", "plan_id": plan.get("id")}
+        return jsonify(
+            {
+                "authorization_url": payment.get("authorization_url"),
+                "processing_url": url_for("main.user_landmark_payment_processing"),
+            }
+        )
+    return jsonify(
+        {"pending_url": url_for("main.user_landmark_pending", plan_type="fixed-route", plan_id=plan.get("id"))}
+    )
+
+
+@main_bp.route("/user/api/landmark/km-bundles/pay", methods=["POST"])
+def user_api_landmark_km_bundle_pay():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    token = _rider_token()
+    draft = _km_wizard()
+    if not draft.get("pack_id"):
+        return jsonify({"error": "Choose a KM Pack to continue."}), 400
+
+    payload = request.get_json(silent=True) or {}
+    provider = payload.get("provider")
+    subscribe_payload = {"pack_id": draft.get("pack_id"), "provider": provider}
+    if provider == "paystack":
+        subscribe_payload["callback_url"] = url_for("main.user_landmark_payment_processing", _external=True)
+    elif provider == "manual":
+        bank_name = (payload.get("bank_name") or "").strip()
+        account_name = (payload.get("account_name") or "").strip()
+        if not bank_name or not account_name:
+            return jsonify({"error": "Enter the bank name and account name you transferred from."}), 400
+        subscribe_payload["bank_name"] = bank_name
+        subscribe_payload["account_name"] = account_name
+    else:
+        return jsonify({"error": "Choose a payment method."}), 400
+
+    try:
+        result = landmark_subscribe_km_bundle(token, subscribe_payload)
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+    sub = result.get("km_bundle_subscription") or {}
+    payment = result.get("payment") or {}
+    _clear_km_wizard()
+    if provider == "paystack":
+        session["landmark_pending"] = {"plan_type": "km-bundle", "plan_id": sub.get("id")}
+        return jsonify(
+            {
+                "authorization_url": payment.get("authorization_url"),
+                "processing_url": url_for("main.user_landmark_payment_processing"),
+            }
+        )
+    return jsonify(
+        {"pending_url": url_for("main.user_landmark_pending", plan_type="km-bundle", plan_id=sub.get("id"))}
     )
 
 

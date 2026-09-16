@@ -60,7 +60,7 @@
     <div class="lm-summary-total"><strong>Total</strong><strong>{{ selected_pack.final_price_display }}</strong></div>
   </div>
 
-  <form method="post">
+  <form method="post" id="lm-checkout-form" data-pay-url="{{ url_for('main.user_api_landmark_km_bundle_pay') }}">
     <input type="hidden" name="step" value="2">
     <div class="lm-btn-row">
       <button type="submit" name="action" value="back" class="lm-btn lm-btn--outline">Choose a different pack</button>
@@ -74,4 +74,13 @@
   </form>
   {% endif %}
 </section>
+{% endblock %}
+
+{% block page_scripts %}
+{% if step == 2 %}
+<script src="{{ url_for('static', filename='js/landmark-checkout.js') }}"></script>
+<script>
+  LandmarkCheckout.initPayForm(document.getElementById("lm-checkout-form"));
+</script>
+{% endif %}
 {% endblock %}

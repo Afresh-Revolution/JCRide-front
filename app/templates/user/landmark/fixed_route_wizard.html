@@ -148,7 +148,7 @@
     {% endif %}
   </div>
 
-  <form method="post">
+  <form method="post" id="lm-checkout-form" data-pay-url="{{ url_for('main.user_api_landmark_fixed_route_pay') }}">
     <input type="hidden" name="step" value="5">
     <div class="lm-btn-row">
       <button type="submit" name="action" value="back" class="lm-btn lm-btn--outline">Edit plan</button>
@@ -201,6 +201,12 @@
     });
   }
 })();
+</script>
+{% endif %}
+{% if step == 5 %}
+<script src="{{ url_for('static', filename='js/landmark-checkout.js') }}"></script>
+<script>
+  LandmarkCheckout.initPayForm(document.getElementById("lm-checkout-form"));
 </script>
 {% endif %}
 {% endblock %}
