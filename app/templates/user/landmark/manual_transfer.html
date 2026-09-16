@@ -12,7 +12,7 @@
     <div>
       <a href="{{ back_url }}" style="color:var(--dash-muted,#64748b);text-decoration:none;font-size:0.85rem;">&larr; Back</a>
       <h1 style="margin-top:6px;">Manual Bank Transfer</h1>
-      <p>Transfer the amount below, then tell us which account you sent it from. Your plan activates once an admin confirms the payment.</p>
+      <p>Transfer the amount below, then upload your receipt and tell us which account you sent it from. Your plan activates once an admin confirms the payment.</p>
     </div>
   </div>
 
@@ -22,13 +22,13 @@
     <div class="lm-bank-card__row"><span>Account name</span><strong>{{ funding_config.account_name }}</strong></div>
     <div class="lm-bank-card__row"><span>Account number</span><strong>{{ funding_config.account_number }}</strong></div>
     {% else %}
-    <p style="margin:0;">Contact support for JosRide's bank transfer details.</p>
+    <p style="margin:0;">{{ landmark_payment_config.config_error or "Bank transfer details are unavailable. Please contact support." }}</p>
     {% endif %}
     <hr class="lm-summary-divider">
     <div class="lm-bank-card__row"><span>Amount to send</span><strong>&#8358;{{ '{:,.0f}'.format(amount_ngn) if amount_ngn else '—' }}</strong></div>
   </div>
 
-  <form method="post" id="lm-manual-form" data-pay-url="{{ pay_url }}">
+  <form method="post" enctype="multipart/form-data" id="lm-manual-form" data-pay-url="{{ pay_url }}">
     <div class="lm-form-field">
       <label for="lm-bank-name">Your bank name</label>
       <input type="text" id="lm-bank-name" name="bank_name" placeholder="e.g. GTBank" required>
@@ -37,8 +37,13 @@
       <label for="lm-account-name">Your account name</label>
       <input type="text" id="lm-account-name" name="account_name" placeholder="Name on the account you sent from" required>
     </div>
+    <div class="lm-form-field">
+      <label for="lm-receipt">Transfer receipt</label>
+      <input type="file" id="lm-receipt" name="receipt" accept="image/jpeg,image/png,application/pdf" required aria-describedby="lm-receipt-help">
+      <small id="lm-receipt-help">Upload a JPG, PNG or PDF (up to 5 MB). An admin will review your receipt before activating the plan.</small>
+    </div>
     <div class="lm-btn-row">
-      <button type="submit" class="lm-btn lm-btn--primary lm-btn--block">I've made the transfer</button>
+      <button type="submit" {% if not landmark_payment_config.manual_enabled or not amount_ngn %}disabled{% endif %} class="lm-btn lm-btn--primary lm-btn--block">I've made the transfer</button>
     </div>
   </form>
 </section>
@@ -47,6 +52,6 @@
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/landmark-checkout.js') }}"></script>
 <script>
-  LandmarkCheckout.initManualForm(document.getElementById("lm-manual-form"));
+  // Multipart form posts retain the receipt for server validation.
 </script>
 {% endblock %}

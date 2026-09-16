@@ -239,3 +239,46 @@ API_URL = get_api_url()
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
+
+
+def get_landmark_payment_config(token: str | None = None) -> dict:
+    """Read public payment settings from the same deployed API as the wallet.
+
+    Secrets belong to the backend environment, not this frontend's .env.
+    Cache only for this request so rendering and submission use one snapshot.
+    """
+    from flask import g, has_request_context, session
+    from app.services.api_client import ApiError, get_wallet_funding_config
+
+    token = token or (session.get("token") if has_request_context() else None)
+    if has_request_context() and getattr(g, "landmark_payment_token", None) == token:
+        cached = getattr(g, "landmark_payment_config", None)
+        if cached is not None:
+            return cached
+    config = {
+        "bank_name": "", "account_name": "", "account_number": "",
+        "manual_enabled": False,
+        # Fail closed: the backend must explicitly report a configured gateway.
+        "paystack_enabled": False,
+        "config_error": "",
+    }
+    if token:
+        try:
+            remote = get_wallet_funding_config(token) or {}
+            for name in ("bank_name", "account_name", "account_number"):
+                config[name] = str(remote.get(name) or "").strip()
+            config["manual_enabled"] = (
+                remote.get("enabled") is not False
+                and remote.get("manual_enabled") is not False
+                and all(config[name] for name in ("bank_name", "account_name", "account_number"))
+            )
+            if "paystack_enabled" in remote:
+                config["paystack_enabled"] = remote["paystack_enabled"] is True
+        except ApiError:
+            config["config_error"] = "Bank details could not be loaded. Please refresh and try again."
+    else:
+        config["paystack_enabled"] = False
+    if has_request_context():
+        g.landmark_payment_token = token
+        g.landmark_payment_config = config
+    return config

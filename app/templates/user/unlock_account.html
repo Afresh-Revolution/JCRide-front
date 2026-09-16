@@ -1,5 +1,5 @@
 {% extends "user/base.html" %}
-{% block title %}Unlock account - JosRide NAIJA{% endblock %}
+{% block title %}Unlock account - JosRide{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/user-unlock.css') }}">
@@ -12,7 +12,7 @@
 {% set balance = policy.get('wallet_balance_ngn') or 0 %}
 <div class="unlock-page">
   <div class="unlock-card">
-    <p class="unlock-card__brand">JosRide NAIJA</p>
+    <p class="unlock-card__brand">JosRide</p>
     <h1 class="unlock-card__title">Account locked</h1>
     <p class="unlock-card__lead">
       Hi {{ user_name }}, a false SOS or accident report was marked against your account.

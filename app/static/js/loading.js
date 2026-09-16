@@ -28,7 +28,7 @@
     if (tag === "BUTTON" || tag === "INPUT") {
       // Remember whether it was already disabled so we don't wrongly re-enable.
       el.dataset.loadingReenable = el.disabled ? "" : "1";
-      el.disabled = true;
+      if (opts.disable !== false) el.disabled = true;
     } else {
       el.setAttribute("aria-disabled", "true");
     }
@@ -101,7 +101,9 @@
       if (btn.hasAttribute("data-no-loading") || isLoading(btn)) return;
 
       // Native submit navigates away, so no reset is required.
-      start(btn);
+      // Keep the submitter enabled until the browser serializes its name/value.
+      // Disabling it here drops actions such as back/choose_manual from the POST.
+      start(btn, { disable: false });
     },
     false
   );
