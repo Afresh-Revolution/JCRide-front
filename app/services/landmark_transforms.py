@@ -69,6 +69,14 @@ def status_badge_class(status: str) -> str:
     return STATUS_BADGE_CLASS.get(status, "is-pending")
 
 
+def subscriber_identity(row: dict) -> dict:
+    from app.admin_ops_transforms import account_display_name
+    person = next((row[key] for key in ("subscriber", "rider", "user") if isinstance(row.get(key), dict)), {})
+    user_id = row.get("user_id") or row.get("rider_id") or row.get("subscriber_id") or person.get("id")
+    name = row.get("subscriber_name") or row.get("user_name") or row.get("rider_name") or account_display_name(person)
+    return {"subscriber_id": user_id, "subscriber_name": name or ""}
+
+
 def fixed_route_plan_to_ui(plan: dict) -> dict:
     to_km = plan.get("to_km") or 0
     fro_km = plan.get("fro_km") or 0
@@ -85,6 +93,7 @@ def fixed_route_plan_to_ui(plan: dict) -> dict:
     trips_used = min(trips_used, included_trips) if included_trips else 0
     progress_percent = int(round((trips_used / included_trips) * 100)) if included_trips else 0
     return {
+        **subscriber_identity(plan),
         "id": plan.get("id"),
         "plan_type": "fixed_route",
         "label": plan.get("label") or f"{plan.get('pickup_address', '')} ↔ {plan.get('destination_address', '')}",
@@ -119,6 +128,7 @@ def km_bundle_subscription_to_ui(sub: dict) -> dict:
     km_remaining = sub.get("km_remaining") or 0
     progress_percent = int(round((km_remaining / km_total) * 100)) if km_total else 0
     return {
+        **subscriber_identity(sub),
         "id": sub.get("id"),
         "plan_type": "km_bundle",
         "label": sub.get("pack_name") or f"{km_total:g} KM Pack",

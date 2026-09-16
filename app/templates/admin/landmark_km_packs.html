@@ -76,5 +76,19 @@
     <p class="lm-empty">No KM Packs yet — add one above.</p>
     {% endfor %}
   </div>
+  <h2 style="margin-top:32px;">KM Pack subscribers</h2>
+  <div class="dash-card" style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr><th style="padding:10px;text-align:left;">Subscriber</th><th style="padding:10px;text-align:left;">Pack</th><th style="padding:10px;text-align:left;">Status</th><th style="padding:10px;text-align:left;">KM remaining</th></tr></thead>
+      <tbody>{% for row in subscriptions %}
+        <tr style="border-top:1px solid var(--dash-border,#e5e7eb);">
+          <td style="padding:10px;min-width:180px;">{% with subscriber = row %}{% include "admin/includes/landmark_subscriber.html" %}{% endwith %}</td>
+          <td style="padding:10px;">{{ row.label }}</td>
+          <td style="padding:10px;"><span class="lm-badge {{ row.status_badge_class }}">{{ row.status_label }}</span></td>
+          <td style="padding:10px;">{{ row.km_remaining }}</td>
+        </tr>
+      {% else %}<tr><td colspan="4" style="padding:16px;">No KM Pack subscribers yet.</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
 </section>
 {% endblock %}

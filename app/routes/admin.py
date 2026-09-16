@@ -482,6 +482,32 @@ def settings_page():
 # Landmark booking: Fixed Routes, KM Packs, Subscriptions, Transactions.
 # ---------------------------------------------------------------------------
 
+def _landmark_subscribers(rows, token):
+    """Resolve names once per unique subscriber; never use a pack/bank name."""
+    from concurrent.futures import ThreadPoolExecutor, wait
+    from app.services.landmark_transforms import subscriber_identity
+    for row in rows:
+        row.update(subscriber_identity(row))
+    missing = {str(row["subscriber_id"]) for row in rows if row.get("subscriber_id") and not row.get("subscriber_name")}
+    def lookup(user_id):
+        try:
+            return user_id, account_display_name(get_admin_user(token, user_id, timeout=(2, 3), max_attempts=1))
+        except ApiError:
+            return user_id, ""
+    names = {}
+    if missing:
+        executor = ThreadPoolExecutor(max_workers=4)
+        futures = [executor.submit(lookup, user_id) for user_id in missing]
+        try:
+            completed, _ = wait(futures, timeout=4)
+            names = dict(future.result() for future in completed)
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
+    for row in rows:
+        row["subscriber_name"] = row.get("subscriber_name") or names.get(str(row.get("subscriber_id"))) or "Name unavailable"
+    return rows
+
+
 @admin_bp.route("/landmark/fixed-routes", methods=["GET", "POST"])
 @admin_required
 def landmark_fixed_routes():
@@ -511,7 +537,7 @@ def landmark_fixed_routes():
     plans = []
     try:
         rows = get_admin_landmark_fixed_route_plans(token)
-        plans = [fixed_route_plan_to_ui(p) for p in (rows or [])]
+        plans = _landmark_subscribers([fixed_route_plan_to_ui(p) for p in (rows or [])], token)
     except ApiError as exc:
         flash(exc.message, "error")
 
@@ -568,8 +594,17 @@ def landmark_km_packs():
     except ApiError:
         settings_data = {}
 
+    subscriptions = []
+    try:
+        subscriptions = _landmark_subscribers([
+            km_bundle_subscription_to_ui(row)
+            for row in (get_admin_landmark_km_bundle_subscriptions(token) or [])
+        ], token)
+    except ApiError as exc:
+        flash(exc.message, "error")
     return render_template(
         "admin/landmark_km_packs.html",
+        subscriptions=subscriptions,
         active_page="landmark_km_packs",
         packs=packs,
         settings=settings_data,
@@ -613,6 +648,7 @@ def landmark_subscriptions():
     except ApiError as exc:
         flash(exc.message, "error")
 
+    _landmark_subscribers(rows, token)
     order = {"active": 0, "paused": 1, "pending_payment": 2, "expired": 3, "exhausted": 3, "cancelled": 4}
     rows.sort(key=lambda item: order.get(item["status"], 5))
 
@@ -629,7 +665,13 @@ def landmark_transactions():
     token = _admin_token()
     payments = []
     try:
-        payments = get_admin_landmark_pending_payments(token) or []
+        payments = _landmark_subscribers(get_admin_landmark_pending_payments(token) or [], token)
+        from app.services.plan_receipts import receipt_filename
+        for payment in payments:
+            receipt_id = payment.get("id")
+            if not receipt_filename(receipt_id):
+                receipt_id = payment.get("reference")
+            payment["receipt_id"] = receipt_id if receipt_filename(receipt_id) else None
     except ApiError as exc:
         flash(exc.message, "error")
     return render_template(
@@ -1681,3 +1723,17 @@ def logout():
     revoke_admin_entry()
     flash("Signed out of admin portal.", "success")
     return redirect(url_for("main.home"))
+
+
+@admin_bp.route("/landmark/transactions/<payment_id>/receipt")
+@admin_required
+def landmark_transaction_receipt(payment_id):
+    from flask import abort, send_from_directory
+    from app.services.plan_receipts import receipt_dir, receipt_filename
+    filename = receipt_filename(payment_id)
+    if not filename:
+        abort(404)
+    response = send_from_directory(receipt_dir(), filename, as_attachment=True, download_name="transfer-receipt" + __import__("pathlib").Path(filename).suffix)
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response

@@ -19,8 +19,8 @@ from app.services.api_client import (
     landmark_quote_fixed_route,
     landmark_resume_fixed_route,
     landmark_resume_km_bundle,
-    landmark_subscribe_fixed_route,
-    landmark_subscribe_km_bundle,
+    landmark_subscribe_fixed_route as _subscribe_fixed_route,
+    landmark_subscribe_km_bundle as _subscribe_km_bundle,
     cancel_ride,
     cancel_scheduled_ride,
     change_password,
@@ -3371,6 +3371,16 @@ def user_api_delete_saved_location(location_id):
 
 LANDMARK_FIXED_WIZARD_KEY = "landmark_fixed_wizard"
 LANDMARK_KM_WIZARD_KEY = "landmark_km_wizard"
+def landmark_subscribe_fixed_route(token, payload):
+    from app.services.plan_receipts import subscribe_with_receipt
+    return subscribe_with_receipt(_subscribe_fixed_route, token, payload)
+
+
+def landmark_subscribe_km_bundle(token, payload):
+    from app.services.plan_receipts import subscribe_with_receipt
+    return subscribe_with_receipt(_subscribe_km_bundle, token, payload)
+
+
 LANDMARK_PLAN_TYPES = ("fixed-route", "km-bundle")
 
 VEHICLE_TIER_OPTIONS = [
@@ -3605,8 +3615,13 @@ def user_landmark_fixed_route_new():
             pickup_lng = request.form.get("pickup_lng", type=float)
             dest_lat = request.form.get("destination_lat", type=float)
             dest_lng = request.form.get("destination_lng", type=float)
-            if not pickup or not dropoff or None in (pickup_lat, pickup_lng, dest_lat, dest_lng):
-                flash("Select both locations from the suggestions so we can route your trip.", "error")
+            import math
+            valid_coords = all(
+                value is not None and math.isfinite(value) and abs(value) <= limit
+                for value, limit in ((pickup_lat, 90), (pickup_lng, 180), (dest_lat, 90), (dest_lng, 180))
+            )
+            if not pickup or not dropoff or not valid_coords:
+                flash("Select both locations from Google search or choose them on the map.", "error")
                 return redirect(url_for("main.user_landmark_fixed_route_new"))
             draft.update(
                 {
@@ -3761,7 +3776,8 @@ def user_landmark_fixed_route_manual():
             flash(exc.message, "error")
             return redirect(url_for("main.user_landmark_fixed_route_manual"))
 
-    funding_config, ok = _safe_rider_api(get_wallet_funding_config, {})
+    from app.config import get_landmark_payment_config
+    funding_config = get_landmark_payment_config()
     quote, _ok2 = _safe_rider_api(
         lambda tok: landmark_quote_fixed_route(
             tok,
@@ -3903,7 +3919,8 @@ def user_landmark_km_bundle_manual():
             flash(exc.message, "error")
             return redirect(url_for("main.user_landmark_km_bundle_manual"))
 
-    funding_config, ok = _safe_rider_api(get_wallet_funding_config, {})
+    from app.config import get_landmark_payment_config
+    funding_config = get_landmark_payment_config()
     packs_payload, _ok2 = _safe_rider_api(lambda tok: landmark_list_km_bundle_packs(), {})
     packs = [km_bundle_pack_to_ui(p) for p in (packs_payload or {}).get("packs") or []]
     selected_pack = next((p for p in packs if str(p["id"]) == str(draft.get("pack_id"))), None)
@@ -3938,7 +3955,7 @@ def user_api_landmark_fixed_route_pay():
     if not draft.get("pickup_address"):
         return jsonify({"error": "Your plan details expired. Please start again."}), 400
 
-    payload = request.get_json(silent=True) or {}
+    payload = request.form if request.mimetype == "multipart/form-data" else (request.get_json(silent=True) or {})
     provider = payload.get("provider")
     subscribe_payload = {
         "pickup_lat": draft.get("pickup_lat"),
@@ -3998,7 +4015,7 @@ def user_api_landmark_km_bundle_pay():
     if not draft.get("pack_id"):
         return jsonify({"error": "Choose a KM Pack to continue."}), 400
 
-    payload = request.get_json(silent=True) or {}
+    payload = request.form if request.mimetype == "multipart/form-data" else (request.get_json(silent=True) or {})
     provider = payload.get("provider")
     subscribe_payload = {"pack_id": draft.get("pack_id"), "provider": provider}
     if provider == "paystack":
