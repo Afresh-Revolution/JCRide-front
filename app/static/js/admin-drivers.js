@@ -285,15 +285,66 @@
     });
   }
 
+  function safeHref(url) {
+    const raw = String(url || "").trim();
+    return /^https?:\/\//i.test(raw) ? raw : "";
+  }
+
+  function isHeicUrl(url) {
+    return /\.hei[cf](\?|#|$)/i.test(url);
+  }
+
+  function isImageUrl(url) {
+    return /\.(jpe?g|png|gif|webp|bmp|hei[cf])(\?|#|$)/i.test(url) || /\/image\/upload\//i.test(url);
+  }
+
+  function previewSrc(url) {
+    if (!isHeicUrl(url) || !/res\.cloudinary\.com/i.test(url) || /\/upload\/f_jpg\//i.test(url)) return url;
+    return url.replace("/upload/", "/upload/f_jpg/");
+  }
+
+  function documentLabel(type) {
+    const labels = {
+      license: "License",
+      vehicle_papers: "Vehicle papers",
+      nin: "NIN",
+      insurance: "Insurance",
+      profile_photo: "Profile photo",
+      vehicle_photo: "Vehicle photo",
+    };
+    return labels[type] || String(type || "Document").replace(/_/g, " ");
+  }
+
+  function renderDocument(doc) {
+    const href = safeHref(doc.file_url);
+    const label = documentLabel(doc.document_type);
+    const status = String(doc.verification_status || "").replace(/_/g, " ");
+    const viewHref = previewSrc(href);
+    const preview = href
+      ? (isImageUrl(href)
+        ? '<img src="' + escapeHtml(viewHref) + '" alt="' + escapeHtml(label) + '">'
+        : '<span class="drivers-upload-file">Open file</span>')
+      : '<span class="drivers-upload-missing">No file</span>';
+    const link = href
+      ? '<a class="drivers-upload" href="' + escapeHtml(viewHref) + '" target="_blank" rel="noopener noreferrer">' + preview + "</a>"
+      : preview;
+    return (
+      '<article class="driver-document">' +
+      link +
+      "<div><strong>" + escapeHtml(label) + "</strong>" +
+      "<span>" + escapeHtml(status || "submitted") + "</span></div></article>"
+    );
+  }
+
   function viewDriver(driverId) {
     apiRequest("/admin/api/drivers/" + encodeURIComponent(driverId))
       .then(function (driver) {
         const normalized = normalizeDriver(driver);
         const docs = driver.documents && driver.documents.length
           ? driver.documents.map(function (doc) {
-              return doc.document_type + " (" + doc.verification_status + ")";
-            }).join(", ")
-          : "-";
+              return renderDocument(doc);
+            }).join("")
+          : '<p class="drivers-upload-missing">No documents uploaded.</p>';
         detailBody.innerHTML =
           "<div class=\"driver-detail-header\">" +
           "<span class=\"drivers-avatar\">" + escapeHtml(normalized.initials) + "</span>" +
@@ -307,9 +358,9 @@
           "<div><dt>Total trips</dt><dd>" + escapeHtml(normalized.trip_count) + "</dd></div>" +
           "<div><dt>Earnings</dt><dd>" + escapeHtml(normalized.earnings_display) + "</dd></div>" +
           "<div><dt>Rating</dt><dd>" + escapeHtml(normalized.rating_display) + "</dd></div>" +
-          "<div><dt>Documents</dt><dd>" + escapeHtml(docs) + "</dd></div>" +
           "<div><dt>Status</dt><dd><span class=\"" + statusClass(normalized.status) + "\">" + escapeHtml(normalized.status_label) + "</span></dd></div>" +
-          "</dl>";
+          "</dl>" +
+          "<section class=\"driver-documents\"><h3>Documents</h3><div class=\"driver-documents__grid\">" + docs + "</div></section>";
         detailModal.hidden = false;
         document.body.style.overflow = "hidden";
       })

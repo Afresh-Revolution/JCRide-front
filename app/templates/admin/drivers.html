@@ -79,12 +79,13 @@
           <tr>
             <th scope="col">Driver</th>
             <th scope="col">Document</th>
+            <th scope="col">Upload</th>
             <th scope="col">Submitted</th>
             <th scope="col"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody id="document-edits-table-body">
-          <tr class="drivers-table__loading"><td colspan="4">Loading document edits…</td></tr>
+          <tr class="drivers-table__loading"><td colspan="5">Loading document edits…</td></tr>
         </tbody>
       </table>
     </div>
@@ -134,7 +135,7 @@
 </section>
 
 <div class="drivers-modal-overlay" id="driver-detail-modal" hidden>
-  <div class="drivers-modal" role="dialog" aria-labelledby="driver-detail-title" aria-modal="true">
+  <div class="drivers-modal drivers-modal--wide" role="dialog" aria-labelledby="driver-detail-title" aria-modal="true">
     <div class="drivers-modal__header">
       <h2 id="driver-detail-title">Driver details</h2>
       <button type="button" class="drivers-modal__close" data-close-modal aria-label="Close">&times;</button>
