@@ -190,6 +190,7 @@
         setField("driver_search_radius_km", data.driver_search_radius_km);
         setField("driver_support_phone", data.driver_support_phone || "");
         setField("emergency_phone", data.emergency_phone || "112");
+        setField("vehicle_inspection_location", data.vehicle_inspection_location || "Afresh Center");
 
         operationalZones = Array.isArray(data.operational_zones) ? data.operational_zones.slice() : [];
         platformSettingsLoaded = true;
@@ -239,6 +240,10 @@
     if (supportPhoneInput) payload.driver_support_phone = String(supportPhoneInput.value || "").trim();
     const emergencyPhoneInput = form.querySelector('[name="emergency_phone"]');
     if (emergencyPhoneInput) payload.emergency_phone = String(emergencyPhoneInput.value || "").trim();
+    const inspectionLocationInput = form.querySelector('[name="vehicle_inspection_location"]');
+    if (inspectionLocationInput) {
+      payload.vehicle_inspection_location = String(inspectionLocationInput.value || "").trim() || "Afresh Center";
+    }
 
     const docsRaw = (form.querySelector('[name="required_documents"]') || {}).value || "";
     const docs = docsRaw.split(",").map(function (part) { return part.trim(); }).filter(Boolean);
