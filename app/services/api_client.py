@@ -1503,6 +1503,26 @@ def reject_admin_vehicle_change(token, request_id, reason=None):
     )
 
 
+def get_admin_vehicle_inspections(token, status="pending", page=1, limit=20):
+    params = {"page": page, "limit": limit}
+    if status:
+        params["status"] = status
+    return _request("GET", f"{API_PREFIX}/admin/vehicle-inspections", token=token, params=params)
+
+
+def get_admin_vehicle_inspection(token, request_id):
+    return _request("GET", f"{API_PREFIX}/admin/vehicle-inspections/{request_id}", token=token)
+
+
+def complete_admin_vehicle_inspection(token, request_id, service_tier):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/vehicle-inspections/{request_id}/complete",
+        token=token,
+        json={"service_tier": service_tier},
+    )
+
+
 def get_admin_document_edits(token, status="pending_review", page=1, limit=20, vehicle_category=None):
     params = {"page": page, "limit": limit}
     if status:

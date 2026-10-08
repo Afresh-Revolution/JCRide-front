@@ -1263,6 +1263,53 @@ def api_reject_vehicle_change(request_id):
         return jsonify({"message": exc.message}), exc.status_code
 
 
+@admin_bp.route("/api/vehicle-inspections")
+@admin_required
+def api_vehicle_inspections():
+    try:
+        from app.services.api_client import get_admin_vehicle_inspections
+
+        return jsonify(
+            get_admin_vehicle_inspections(
+                _admin_token(),
+                status=request.args.get("status", "pending"),
+                page=int(request.args.get("page", 1)),
+                limit=int(request.args.get("limit", 20)),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/vehicle-inspections/<request_id>")
+@admin_required
+def api_vehicle_inspection_detail(request_id):
+    try:
+        from app.services.api_client import get_admin_vehicle_inspection
+
+        return jsonify(get_admin_vehicle_inspection(_admin_token(), request_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/vehicle-inspections/<request_id>/complete", methods=["POST"])
+@admin_required
+def api_complete_vehicle_inspection(request_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        from app.services.api_client import complete_admin_vehicle_inspection
+
+        return jsonify(
+            complete_admin_vehicle_inspection(
+                _admin_token(),
+                request_id,
+                service_tier=payload.get("service_tier"),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
 @admin_bp.route("/api/document-edits")
 @admin_required
 def api_document_edits():

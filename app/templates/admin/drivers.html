@@ -38,6 +38,13 @@
       </div>
       <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" id="vehicle-changes-scroll">Review</button>
     </article>
+    <article class="drivers-kpi-card">
+      <div class="drivers-kpi-card__body">
+        <span class="drivers-kpi-card__label">Inspections pending</span>
+        <span class="drivers-kpi-card__value" id="kpi-inspections">-</span>
+      </div>
+      <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" id="vehicle-inspections-scroll">Review</button>
+    </article>
   </div>
 
   <section class="drivers-card dash-card drivers-vehicle-changes" id="vehicle-changes-section" aria-label="Vehicle change requests">
@@ -60,6 +67,31 @@
         </thead>
         <tbody id="vehicle-changes-table-body">
           <tr class="drivers-table__loading"><td colspan="5">Loading vehicle changes…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="drivers-card dash-card drivers-vehicle-changes" id="vehicle-inspections-section" aria-label="Vehicle inspections">
+    <div class="drivers-vehicle-changes__header">
+      <div>
+        <h2 class="drivers-vehicle-changes__title">Vehicle inspections</h2>
+        <p class="drivers-vehicle-changes__sub">Confirm the physical review, then assign Eco, Comfort, or Premium. That class is saved on the driver account so they can go online.</p>
+      </div>
+    </div>
+    <div class="drivers-table-wrap">
+      <table class="drivers-table" aria-label="Vehicle inspections">
+        <thead>
+          <tr>
+            <th scope="col">Driver</th>
+            <th scope="col">Vehicle</th>
+            <th scope="col">Preferred slot</th>
+            <th scope="col">Submitted</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody id="vehicle-inspections-table-body">
+          <tr class="drivers-table__loading"><td colspan="5">Loading inspections…</td></tr>
         </tbody>
       </table>
     </div>
@@ -162,11 +194,26 @@
   </div>
 </div>
 
+<div class="drivers-modal-overlay" id="vehicle-inspection-modal" hidden>
+  <div class="drivers-modal" role="dialog" aria-labelledby="vehicle-inspection-title" aria-modal="true">
+    <div class="drivers-modal__header">
+      <h2 id="vehicle-inspection-title">Assign vehicle class</h2>
+      <button type="button" class="drivers-modal__close" data-close-inspection-modal aria-label="Close">&times;</button>
+    </div>
+    <div class="drivers-modal__body" id="vehicle-inspection-body"></div>
+    <div class="drivers-modal__footer">
+      <button type="button" class="drivers-btn drivers-btn--ghost" data-close-inspection-modal>Close</button>
+      <button type="button" class="drivers-btn drivers-btn--primary" id="vehicle-inspection-save-btn">Save class</button>
+    </div>
+  </div>
+</div>
+
 <div class="drivers-toast" id="drivers-toast" hidden role="status"></div>
 {% endblock %}
 
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/admin-drivers.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin-vehicle-changes.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin-vehicle-inspections.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin-document-edits.js') }}"></script>
 {% endblock %}
