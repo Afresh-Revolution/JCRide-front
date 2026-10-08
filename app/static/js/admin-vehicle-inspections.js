@@ -8,8 +8,11 @@
   var kpi = document.getElementById("kpi-inspections");
   var scrollBtn = document.getElementById("vehicle-inspections-scroll");
   var section = document.getElementById("vehicle-inspections-section");
+  var locationInput = document.getElementById("vehicle-inspection-location");
+  var locationSaveBtn = document.getElementById("vehicle-inspection-location-save");
   var toast = document.getElementById("drivers-toast");
   var activeRequestId = null;
+  var inspectionLocation = "Afresh Center";
 
   if (!tbody) return;
 
@@ -83,6 +86,7 @@
       escapeHtml(item.driver_email || "") + (item.driver_phone ? "<br>" + escapeHtml(item.driver_phone) : "") + "</p>" +
       "<p>" + escapeHtml(vehicleLabel(item)) + "</p>" +
       "<p>Preferred: " + escapeHtml(slotLabel(item)) + "</p>" +
+      "<p>Location: " + escapeHtml(item.location || inspectionLocation) + "</p>" +
       (item.notes ? "<p>Notes: " + escapeHtml(item.notes) + "</p>" : "") +
       '<label class="drivers-field"><span>Car class after inspection</span>' +
       '<select id="inspection-service-tier" required>' +
@@ -101,15 +105,47 @@
     activeRequestId = null;
   }
 
+  function setLocationInput(value) {
+    inspectionLocation = String(value || "").trim() || "Afresh Center";
+    if (locationInput && document.activeElement !== locationInput) {
+      locationInput.value = inspectionLocation;
+    }
+  }
+
   function loadInspections() {
     return apiRequest("/admin/api/vehicle-inspections?status=pending&limit=50")
       .then(function (data) {
         var requests = data.requests || [];
         if (kpi) kpi.textContent = String(data.total || requests.length || 0);
+        setLocationInput(data.location);
         renderTable(requests);
       })
       .catch(function (err) {
         tbody.innerHTML = '<tr class="drivers-table__empty"><td colspan="5">' + escapeHtml(err.message) + "</td></tr>";
+      });
+  }
+
+  function saveLocation() {
+    var location = locationInput ? String(locationInput.value || "").trim() : "";
+    if (!location) {
+      showToast("Enter an inspection location", true);
+      return;
+    }
+    if (window.ButtonLoading) window.ButtonLoading.start(locationSaveBtn, { text: "Saving…" });
+    apiRequest("/admin/api/settings/platform", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vehicle_inspection_location: location }),
+    })
+      .then(function (data) {
+        setLocationInput(data.vehicle_inspection_location || location);
+        showToast("Inspection location saved.");
+      })
+      .catch(function (err) {
+        showToast(err.message, true);
+      })
+      .finally(function () {
+        if (window.ButtonLoading) window.ButtonLoading.stop(locationSaveBtn);
       });
   }
 
@@ -155,6 +191,15 @@
   });
 
   if (saveBtn) saveBtn.addEventListener("click", saveClass);
+  if (locationSaveBtn) locationSaveBtn.addEventListener("click", saveLocation);
+  if (locationInput) {
+    locationInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        saveLocation();
+      }
+    });
+  }
   document.querySelectorAll("[data-close-inspection-modal]").forEach(function (btn) {
     btn.addEventListener("click", closeModal);
   });
