@@ -168,14 +168,26 @@
 
   function rejectRequest() {
     if (!activeRequestId) return;
-    var reason = window.prompt("Optional reason for the driver:");
-    if (reason === null) return;
-    if (window.ButtonLoading) window.ButtonLoading.start(rejectBtn, { text: "Rejecting…" });
-    apiRequest("/admin/api/vehicle-changes/" + encodeURIComponent(activeRequestId) + "/reject", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: reason || undefined }),
-    })
+    var ask = window.AdminConfirm && window.AdminConfirm.promptNote
+      ? window.AdminConfirm.promptNote({
+          title: "Reject vehicle change",
+          message: "The driver keeps their current vehicle. Add the reason they will see.",
+          confirmLabel: "Reject",
+          variant: "danger",
+          inputLabel: "Reason for rejection",
+          placeholder: "Explain why this vehicle change is being rejected",
+        })
+      : Promise.resolve({ confirmed: false, value: "" });
+    ask.then(function (result) {
+      if (!result || !result.confirmed) return;
+      var reason = String(result.value || "").trim();
+      if (reason.length < 2) return;
+      if (window.ButtonLoading) window.ButtonLoading.start(rejectBtn, { text: "Rejecting…" });
+      apiRequest("/admin/api/vehicle-changes/" + encodeURIComponent(activeRequestId) + "/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason }),
+      })
       .then(function () {
         showToast("Vehicle change rejected.");
         closeModal();
@@ -187,6 +199,7 @@
       .finally(function () {
         if (window.ButtonLoading) window.ButtonLoading.stop(rejectBtn);
       });
+    });
   }
 
   tbody.addEventListener("click", function (event) {

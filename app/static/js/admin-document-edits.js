@@ -131,18 +131,33 @@
         });
     }
     if (rejectId) {
-      apiRequest("/admin/api/document-edits/" + encodeURIComponent(rejectId) + "/reject", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: "Rejected by admin" }),
-      })
-        .then(function () {
-          showToast("Document update rejected");
-          load();
+      const ask = window.AdminConfirm && window.AdminConfirm.promptNote
+        ? window.AdminConfirm.promptNote({
+            title: "Reject document update",
+            message: "The current document stays in effect. Add the reason the driver will see.",
+            confirmLabel: "Reject",
+            variant: "danger",
+            inputLabel: "Reason for rejection",
+            placeholder: "Explain why this document was not approved",
+          })
+        : Promise.resolve({ confirmed: false, value: "" });
+      ask.then(function (result) {
+        if (!result || !result.confirmed) return;
+        const reason = String(result.value || "").trim();
+        if (reason.length < 2) return;
+        apiRequest("/admin/api/document-edits/" + encodeURIComponent(rejectId) + "/reject", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: reason }),
         })
-        .catch(function (err) {
-          showToast(err.message, true);
-        });
+          .then(function () {
+            showToast("Document update rejected");
+            load();
+          })
+          .catch(function (err) {
+            showToast(err.message, true);
+          });
+      });
     }
   });
 

@@ -44,7 +44,8 @@
               <form method="post" action="{{ url_for('admin.landmark_transaction_approve', payment_id=p.id) }}">
                 <button type="submit" class="lm-btn lm-btn--primary" style="padding:8px 14px;">Approve</button>
               </form>
-              <form method="post" action="{{ url_for('admin.landmark_transaction_reject', payment_id=p.id) }}" onsubmit="return confirm('Reject this payment? The plan will be cancelled.');">
+              <form method="post" action="{{ url_for('admin.landmark_transaction_reject', payment_id=p.id) }}" class="js-reject-with-note" data-reject-title="Reject landmark payment" data-reject-message="The plan will be cancelled. Add the reason the subscriber will see.">
+                <input type="hidden" name="reason" value="">
                 <button type="submit" class="lm-btn lm-btn--outline" style="padding:8px 14px;">Reject</button>
               </form>
             </div>

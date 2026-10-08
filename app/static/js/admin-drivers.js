@@ -229,12 +229,14 @@
     loadDrivers();
   }
 
-  function updateDriverStatus(driverId, status, message, driver, button) {
+  function updateDriverStatus(driverId, status, message, driver, button, reason) {
     if (button && window.ButtonLoading) window.ButtonLoading.start(button);
+    const payload = { status: status };
+    if (reason) payload.reason = reason;
     return apiRequest("/admin/api/drivers/" + encodeURIComponent(driverId) + "/status", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: status }),
+      body: JSON.stringify(payload),
     })
       .then(function (updated) {
         const normalized = normalizeDriver(updated);
@@ -424,14 +426,17 @@
             }
           });
         } else if (action === "reject") {
-          showConfirmDialog({
+          window.AdminConfirm.promptNote({
             title: "Reject application",
             message: "Reject " + driver.full_name + "'s driver application? This cannot be undone.",
             confirmLabel: "Reject",
             variant: "danger",
-          }).then(function (confirmed) {
-            if (confirmed) {
-              updateDriverStatus(id, "rejected", driver.full_name + " rejected", driver, btn);
+            inputLabel: "Reason for rejection",
+            placeholder: "Explain why this application is being rejected",
+            hint: "The driver sees this note in the app and by email.",
+          }).then(function (result) {
+            if (result && result.confirmed) {
+              updateDriverStatus(id, "rejected", driver.full_name + " rejected", driver, btn, result.value.trim());
             }
           });
         } else if (action === "suspend") {

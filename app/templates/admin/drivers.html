@@ -80,11 +80,25 @@
       </div>
     </div>
     <div class="drivers-inspection-location">
-      <label class="drivers-field">
-        <span>Inspection location</span>
-        <input id="vehicle-inspection-location" type="text" maxlength="200" placeholder="Afresh Center" autocomplete="off">
-      </label>
-      <button type="button" class="drivers-btn drivers-btn--primary" id="vehicle-inspection-location-save">Save location</button>
+      <div class="drivers-inspection-location__lead">
+        <span class="drivers-inspection-location__pin" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"></path>
+            <circle cx="12" cy="10" r="2.5"></circle>
+          </svg>
+        </span>
+        <div>
+          <p class="drivers-inspection-location__title">Inspection location</p>
+          <p class="drivers-inspection-location__hint">Drivers are told to bring their car here for the physical review. Update it before they schedule.</p>
+        </div>
+      </div>
+      <div class="drivers-inspection-location__controls">
+        <label class="drivers-field" for="vehicle-inspection-location">
+          <span class="sr-only">Inspection location</span>
+          <input id="vehicle-inspection-location" type="text" maxlength="200" placeholder="Afresh Center, Jos" autocomplete="off">
+        </label>
+        <button type="button" class="drivers-btn drivers-btn--primary" id="vehicle-inspection-location-save">Save location</button>
+      </div>
     </div>
     <div class="drivers-table-wrap">
       <table class="drivers-table" aria-label="Vehicle inspections">

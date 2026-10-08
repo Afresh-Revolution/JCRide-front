@@ -698,7 +698,10 @@ def landmark_transaction_approve(payment_id):
 def landmark_transaction_reject(payment_id):
     token = _admin_token()
     try:
-        reason = request.form.get("reason") or None
+        reason = (request.form.get("reason") or "").strip()
+        if len(reason) < 2:
+            flash("Enter a reason for this rejection.", "error")
+            return redirect(url_for("admin.landmark_transactions"))
         reject_admin_landmark_payment(token, payment_id, reason)
         flash("Payment rejected.", "success")
     except ApiError as exc:
@@ -1189,7 +1192,14 @@ def api_driver_detail(driver_id):
 def api_driver_status(driver_id):
     payload = request.get_json(silent=True) or {}
     try:
-        return jsonify(update_admin_driver_status(_admin_token(), driver_id, payload.get("status")))
+        return jsonify(
+            update_admin_driver_status(
+                _admin_token(),
+                driver_id,
+                payload.get("status"),
+                reason=payload.get("reason"),
+            )
+        )
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
@@ -1437,7 +1447,12 @@ def api_bike_delivery_rider_status(rider_id):
     try:
         return jsonify(
             normalize_bike_rider(
-                update_admin_bike_rider_status(_admin_token(), rider_id, payload.get("status"))
+                update_admin_bike_rider_status(
+                    _admin_token(),
+                    rider_id,
+                    payload.get("status"),
+                    reason=payload.get("reason"),
+                )
             )
         )
     except ApiError as exc:
