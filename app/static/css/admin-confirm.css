@@ -87,7 +87,8 @@
   font-weight: 600;
 }
 
-.admin-confirm__field input {
+.admin-confirm__field input,
+.admin-confirm__field textarea {
   width: 100%;
   min-height: 42px;
   padding: 0.5rem 0.75rem;
@@ -95,7 +96,26 @@
   border-radius: 10px;
   background: var(--dash-input-bg, #fff);
   color: var(--dash-text, #111827);
-  font-size: 1rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  resize: vertical;
+}
+
+.admin-confirm__field textarea {
+  min-height: 96px;
+  line-height: 1.45;
+}
+
+.admin-confirm__error {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.admin-confirm__error[hidden] {
+  display: none;
 }
 
 .admin-confirm__footer {

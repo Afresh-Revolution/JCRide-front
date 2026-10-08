@@ -1457,12 +1457,15 @@ def get_admin_driver(token, driver_id):
     return _request("GET", f"{API_PREFIX}/admin/drivers/{driver_id}", token=token)
 
 
-def update_admin_driver_status(token, driver_id, status):
+def update_admin_driver_status(token, driver_id, status, reason=None):
+    payload = {"status": status}
+    if reason:
+        payload["reason"] = reason
     return _request(
         "PATCH",
         f"{API_PREFIX}/admin/drivers/{driver_id}/status",
         token=token,
-        json={"status": status},
+        json=payload,
     )
 
 
@@ -1582,12 +1585,15 @@ def onboard_admin_bike_rider(token, payload):
     )
 
 
-def update_admin_bike_rider_status(token, rider_id, status):
+def update_admin_bike_rider_status(token, rider_id, status, reason=None):
+    payload = {"status": status}
+    if reason:
+        payload["reason"] = reason
     return _request(
         "PATCH",
         f"{API_PREFIX}/admin/bike-delivery/riders/{rider_id}/status",
         token=token,
-        json={"status": status},
+        json=payload,
     )
 
 

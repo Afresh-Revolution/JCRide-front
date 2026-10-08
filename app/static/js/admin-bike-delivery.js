@@ -345,11 +345,13 @@
     loadRiders();
   }
 
-  function updateRiderStatus(riderId, status, message) {
+  function updateRiderStatus(riderId, status, message, reason) {
+    const payload = { status: status };
+    if (reason) payload.reason = reason;
     return apiRequest(API.riderStatus(riderId), {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: status }),
+      body: JSON.stringify(payload),
     })
       .then(function (updated) {
         const normalized = normalizeRider(updated);
@@ -462,13 +464,18 @@
             if (confirmed) updateRiderStatus(id, "approved", rider.full_name + " approved");
           });
         } else if (action === "reject") {
-          window.AdminConfirm.show({
+          window.AdminConfirm.promptNote({
             title: "Reject application",
             message: "Reject " + rider.full_name + "'s bike delivery application?",
             confirmLabel: "Reject",
             variant: "danger",
-          }).then(function (confirmed) {
-            if (confirmed) updateRiderStatus(id, "rejected", rider.full_name + " rejected");
+            inputLabel: "Reason for rejection",
+            placeholder: "Explain why this application is being rejected",
+            hint: "The rider sees this note in the app and by email.",
+          }).then(function (result) {
+            if (result && result.confirmed) {
+              updateRiderStatus(id, "rejected", rider.full_name + " rejected", result.value.trim());
+            }
           });
         } else if (action === "suspend") {
           window.AdminConfirm.show({
