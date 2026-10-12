@@ -65,6 +65,7 @@ from app.services.api_client import (
     update_admin_support_ticket,
     get_admin_ops_notifications,
     mark_admin_ops_notifications_read,
+    send_admin_announcement,
     get_admin_ops_notification_settings,
     update_admin_ops_notification_settings,
     get_admin_platform_settings,
@@ -440,6 +441,22 @@ def wallets():
 @admin_required
 def support():
     return render_template("admin/support.html", active_page="support")
+
+
+@admin_bp.route("/announcements")
+@admin_required
+def announcements():
+    return render_template("admin/announcements.html", active_page="announcements")
+
+
+@admin_bp.route("/api/announcements", methods=["POST"])
+@admin_required
+def api_announcements():
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(send_admin_announcement(_admin_token(), payload))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
 
 
 @admin_bp.route("/notifications")

@@ -158,11 +158,7 @@
         setField("fixed_destination_amount_ngn", data.fixed_destination_location ? (data.fixed_destination_amount_ngn ?? 0) : "");
         if (window.AdminLocationSearch) window.AdminLocationSearch.loaded(data.fixed_destination_location || "");
         setField("economy_base_fare_ngn", data.economy_base_fare_ngn);
-        setField("comfort_base_fare_ngn", data.comfort_base_fare_ngn);
-        setField("premium_base_fare_ngn", data.premium_base_fare_ngn);
         setField("economy_per_km_ngn", data.economy_per_km_ngn);
-        setField("comfort_per_km_ngn", data.comfort_per_km_ngn);
-        setField("premium_per_km_ngn", data.premium_per_km_ngn);
         setField("tricycle_base_fare_ngn", data.tricycle_base_fare_ngn);
         setField("tricycle_per_km_ngn", data.tricycle_per_km_ngn);
         setField("waiting_time_per_minute_ngn", data.waiting_time_per_minute_ngn);
@@ -217,12 +213,14 @@
       payload.fixed_destination_location = parseOptionalString("fixed_destination_location") || "";
       payload.fixed_destination_amount_ngn = parseOptionalNumber("fixed_destination_amount_ngn") ?? 0;
     }
-    assignIfDefined(payload, "economy_base_fare_ngn", parseOptionalNumber("economy_base_fare_ngn"));
-    assignIfDefined(payload, "comfort_base_fare_ngn", parseOptionalNumber("comfort_base_fare_ngn"));
-    assignIfDefined(payload, "premium_base_fare_ngn", parseOptionalNumber("premium_base_fare_ngn"));
-    assignIfDefined(payload, "economy_per_km_ngn", parseOptionalNumber("economy_per_km_ngn"));
-    assignIfDefined(payload, "comfort_per_km_ngn", parseOptionalNumber("comfort_per_km_ngn"));
-    assignIfDefined(payload, "premium_per_km_ngn", parseOptionalNumber("premium_per_km_ngn"));
+    const carBaseFare = parseOptionalNumber("economy_base_fare_ngn");
+    const carPerKm = parseOptionalNumber("economy_per_km_ngn");
+    assignIfDefined(payload, "economy_base_fare_ngn", carBaseFare);
+    assignIfDefined(payload, "comfort_base_fare_ngn", carBaseFare);
+    assignIfDefined(payload, "premium_base_fare_ngn", carBaseFare);
+    assignIfDefined(payload, "economy_per_km_ngn", carPerKm);
+    assignIfDefined(payload, "comfort_per_km_ngn", carPerKm);
+    assignIfDefined(payload, "premium_per_km_ngn", carPerKm);
     assignIfDefined(payload, "tricycle_base_fare_ngn", parseOptionalNumber("tricycle_base_fare_ngn"));
     assignIfDefined(payload, "tricycle_per_km_ngn", parseOptionalNumber("tricycle_per_km_ngn"));
     assignIfDefined(payload, "waiting_time_per_minute_ngn", parseOptionalNumber("waiting_time_per_minute_ngn"));

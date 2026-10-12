@@ -73,7 +73,7 @@
         '<td data-label="Vehicle">' + escapeHtml(vehicleLabel(item)) + "</td>" +
         '<td data-label="Preferred slot">' + escapeHtml(slotLabel(item)) + "</td>" +
         '<td data-label="Submitted">' + escapeHtml(formatDate(item.submitted_at)) + "</td>" +
-        '<td class="drivers-table__actions" data-label="Actions"><button type="button" class="drivers-btn drivers-btn--ghost" data-inspect-id="' + escapeHtml(item.id) + '">Assign class</button></td>' +
+        '<td class="drivers-table__actions" data-label="Actions"><button type="button" class="drivers-btn drivers-btn--ghost" data-inspect-id="' + escapeHtml(item.id) + '">Review account</button></td>' +
         "</tr>"
       );
     }).join("");
@@ -88,12 +88,7 @@
       "<p>Preferred: " + escapeHtml(slotLabel(item)) + "</p>" +
       "<p>Location: " + escapeHtml(item.location || inspectionLocation) + "</p>" +
       (item.notes ? "<p>Notes: " + escapeHtml(item.notes) + "</p>" : "") +
-      '<label class="drivers-field"><span>Car class after inspection</span>' +
-      '<select id="inspection-service-tier" required>' +
-      '<option value="economy">Economy</option>' +
-      '<option value="comfort">Comfort</option>' +
-      '<option value="premium">Premium</option>' +
-      "</select></label>";
+      "<p>Completing this review opens the driver's wallet. It does not assign a car class.</p>";
   }
 
   function openModal() {
@@ -163,16 +158,14 @@
 
   function saveClass() {
     if (!activeRequestId) return;
-    var select = document.getElementById("inspection-service-tier");
-    var tier = select ? select.value : "economy";
     if (window.ButtonLoading) window.ButtonLoading.start(saveBtn, { text: "Saving…" });
     apiRequest("/admin/api/vehicle-inspections/" + encodeURIComponent(activeRequestId) + "/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service_tier: tier }),
+      body: JSON.stringify({}),
     })
       .then(function () {
-        showToast("Vehicle class saved. The driver can go online.");
+        showToast("Account review complete. The driver wallet is now open.");
         closeModal();
         loadInspections();
       })

@@ -1733,6 +1733,10 @@ def mark_admin_ops_notifications_read(token):
     return _request("POST", f"{API_PREFIX}/admin/notifications/ops/mark-all-read", token=token)
 
 
+def send_admin_announcement(token, payload):
+    return _request("POST", f"{API_PREFIX}/admin/announcements", token=token, json=payload)
+
+
 def get_admin_ops_notification_settings(token):
     return _request("GET", f"{API_PREFIX}/admin/notifications/ops/settings", token=token)
 
