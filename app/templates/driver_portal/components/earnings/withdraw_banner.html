@@ -17,6 +17,21 @@
   </header>
 
   <form method="post" action="{{ url_for('driver_portal.withdraw_earnings') }}" class="earnings-withdraw-form">
+    {% if manual_withdrawal_enabled %}
+    <fieldset class="earnings-withdraw-form__fields">
+      <label class="earnings-withdraw-field">
+        <span class="earnings-withdraw-field__label">Paystack</span>
+        <input type="radio" name="method" value="paystack" checked>
+      </label>
+      <label class="earnings-withdraw-field">
+        <span class="earnings-withdraw-field__label">Manual review</span>
+        <input type="radio" name="method" value="manual">
+      </label>
+      <p class="earnings-withdraw-card__meta">Manual requests use these bank details. An admin transfers the money, then approves. Your wallet is charged only after approval.</p>
+    </fieldset>
+    {% else %}
+    <input type="hidden" name="method" value="paystack">
+    {% endif %}
     <fieldset class="earnings-withdraw-form__fields"{% if vehicle_change and vehicle_change.vehicle_change_locked %} disabled{% endif %}>
       <label class="earnings-withdraw-field">
         <span class="earnings-withdraw-field__label">Bank name</span>

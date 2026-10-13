@@ -76,11 +76,14 @@ def normalize_withdrawal_list(data: dict) -> dict:
         if not isinstance(row, dict):
             continue
         status = str(row.get("status") or "pending")
+        provider = str(row.get("provider") or "paystack").lower()
+        manual_pending = provider == "manual" and status == "pending"
         items.append(
             {
                 "id": row.get("id"),
                 "user_id": row.get("user_id"),
-                "user_short": _short_id(row.get("user_id")),
+                "user_short": row.get("user_name") or _short_id(row.get("user_id")),
+                "user_role": row.get("user_role") or "",
                 "amount_ngn": float(row.get("amount_ngn") or 0),
                 "withdrawal_fee_ngn": float(row.get("withdrawal_fee_ngn") or 0),
                 "net_amount_ngn": float(row.get("net_amount_ngn") or 0),
@@ -88,10 +91,11 @@ def normalize_withdrawal_list(data: dict) -> dict:
                 "account_number": row.get("account_number") or "-",
                 "account_name": row.get("account_name") or "-",
                 "reference": row.get("reference") or "-",
+                "provider": provider,
                 "status": status,
-                "can_approve": False,
+                "can_approve": manual_pending,
                 "can_mark_paid": False,
-                "can_reject": False,
+                "can_reject": manual_pending,
                 "rejection_reason": row.get("rejection_reason"),
                 "created_at": row.get("created_at"),
                 "reviewed_at": row.get("reviewed_at"),

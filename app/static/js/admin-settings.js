@@ -181,6 +181,7 @@
         setField("api_secret", "");
 
         setField("referral_bonus_ngn", data.referral_bonus_ngn);
+        setCheckbox("manual_withdrawal_enabled", data.manual_withdrawal_enabled === true);
         setCheckbox("referral_enabled", data.referral_enabled !== false);
         setCheckbox("referral_require_first_ride", data.referral_require_first_ride !== false);
         setField("driver_search_radius_km", data.driver_search_radius_km);
@@ -232,6 +233,7 @@
     assignIfDefined(payload, "background_check_provider", parseOptionalString("background_check_provider"));
     assignIfDefined(payload, "referral_bonus_ngn", parseOptionalNumber("referral_bonus_ngn"));
     assignIfDefined(payload, "driver_search_radius_km", parseOptionalNumber("driver_search_radius_km"));
+    payload.manual_withdrawal_enabled = parseCheckbox("manual_withdrawal_enabled", false);
     payload.referral_enabled = parseCheckbox("referral_enabled", true);
     payload.referral_require_first_ride = parseCheckbox("referral_require_first_ride", true);
     const supportPhoneInput = form.querySelector('[name="driver_support_phone"]');

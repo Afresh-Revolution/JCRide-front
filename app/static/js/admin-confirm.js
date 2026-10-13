@@ -63,7 +63,7 @@
     if (resolveFn) {
       const resolve = resolveFn;
       resolveFn = null;
-      if (mode === "prompt") {
+      if (mode === "prompt" || mode === "note") {
         resolve({ confirmed: Boolean(confirmed), value: value });
       } else {
         resolve(Boolean(confirmed));

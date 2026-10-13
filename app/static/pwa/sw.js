@@ -1,6 +1,6 @@
 /* JosRide service worker - production caching v1 */
 
-var CACHE_VERSION = "josride-pwa-v5";
+var CACHE_VERSION = "josride-pwa-v6";
 var STATIC_CACHE = CACHE_VERSION + "-static";
 var RUNTIME_CACHE = CACHE_VERSION + "-runtime";
 var OFFLINE_URL = "/offline";
@@ -111,9 +111,16 @@ self.addEventListener("fetch", function (event) {
   }
 });
 
+function offlinePage() {
+  return caches.match(OFFLINE_URL).then(function (offline) {
+    if (offline) return offline;
+    return caches.match("/static/pwa/offline.html");
+  });
+}
+
 function networkFirstNavigation(request) {
-  return fetch(request)
-    .then(function (response) {
+  function fromNetwork() {
+    return fetch(request).then(function (response) {
       if (response && response.ok) {
         var copy = response.clone();
         caches.open(RUNTIME_CACHE).then(function (cache) {
@@ -121,16 +128,22 @@ function networkFirstNavigation(request) {
         });
       }
       return response;
-    })
-    .catch(function () {
-      return caches.match(request).then(function (cached) {
-        if (cached) return cached;
-        return caches.match(OFFLINE_URL).then(function (offline) {
-          if (offline) return offline;
-          return caches.match("/static/pwa/offline.html");
-        });
-      });
     });
+  }
+
+  return fromNetwork().catch(function () {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, 600);
+    }).then(fromNetwork);
+  }).catch(function () {
+    return caches.match(request).then(function (cached) {
+      if (cached) return cached;
+      if (self.navigator && self.navigator.onLine) {
+        return Promise.reject(new Error("navigation failed"));
+      }
+      return offlinePage();
+    });
+  });
 }
 
 function networkFirstApi(request) {

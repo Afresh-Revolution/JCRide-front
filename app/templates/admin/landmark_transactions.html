@@ -22,6 +22,7 @@
         <tr style="text-align:left;color:var(--dash-muted,#64748b);font-size:0.8rem;">
           <th style="padding:10px;">Subscriber</th>
           <th style="padding:10px;">Reference</th>
+          <th style="padding:10px;">Time</th>
           <th style="padding:10px;">Plan type</th>
           <th style="padding:10px;">Provider</th>
           <th style="padding:10px;">Amount</th>
@@ -32,8 +33,12 @@
       <tbody>
         {% for p in payments %}
         <tr style="border-top:1px solid var(--dash-border,#e5e7eb);">
-          <td style="padding:10px;min-width:180px;">{% with subscriber = p %}{% include "admin/includes/landmark_subscriber.html" %}{% endwith %}</td>
+          <td style="padding:10px;min-width:200px;">
+            <strong>{{ p.subscriber_name }}</strong>
+            {% if p.subscriber_email %}<small style="display:block;color:var(--dash-muted,#94a3b8);overflow-wrap:anywhere;">{{ p.subscriber_email }}</small>{% endif %}
+          </td>
           <td style="padding:10px;">{{ p.reference }}</td>
+          <td style="padding:10px;white-space:nowrap;">{{ p.created_at_display }}</td>
           <td style="padding:10px;">{{ 'Fixed Route' if p.plan_type == 'fixed_route' else 'KM Pack' }}</td>
           <td style="padding:10px;">{{ p.provider|capitalize }}</td>
           <td style="padding:10px;">&#8358;{{ '{:,.0f}'.format(p.amount_ngn) }}</td>
@@ -52,7 +57,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="7" style="padding:16px;color:var(--dash-muted,#64748b);">Nothing pending review.</td></tr>
+        <tr><td colspan="8" style="padding:16px;color:var(--dash-muted,#64748b);">Nothing pending review.</td></tr>
         {% endfor %}
       </tbody>
     </table>

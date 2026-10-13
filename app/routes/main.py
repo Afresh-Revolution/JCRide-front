@@ -110,6 +110,8 @@ from app.services.api_client import (
     upload_driver_document,
     verify_otp,
     verify_paystack,
+    get_withdraw_options,
+    list_saved_bank_accounts,
     withdraw_wallet,
 )
 from app.config import (
@@ -2953,6 +2955,28 @@ def user_api_wallet_banks_resolve():
         return _user_api_error(exc)
 
 
+@main_bp.route("/user/api/wallet/withdraw-options")
+def user_api_wallet_withdraw_options():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(get_withdraw_options(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
+@main_bp.route("/user/api/wallet/bank-accounts")
+def user_api_wallet_bank_accounts():
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(list_saved_bank_accounts(_rider_token()))
+    except ApiError as exc:
+        return _user_api_error(exc)
+
+
 @main_bp.route("/user/api/wallet/withdraw", methods=["POST"])
 def user_api_wallet_withdraw():
     guard = _require_rider_api()
@@ -2968,6 +2992,7 @@ def user_api_wallet_withdraw():
                 payload.get("account_number", ""),
                 payload.get("account_name", ""),
                 payload.get("bank_code") or None,
+                payload.get("method") or None,
             )
         )
     except ApiError as exc:

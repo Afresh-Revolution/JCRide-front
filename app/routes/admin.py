@@ -39,6 +39,8 @@ from app.services.api_client import (
     get_admin_driver,
     get_admin_driver_stats,
     update_admin_driver_status,
+    unlock_admin_driver,
+    get_admin_service_fees,
     delete_admin_driver,
     get_admin_bike_delivery_stats,
     get_admin_bike_delivery_pricing,
@@ -431,6 +433,21 @@ def payments():
     return render_template("admin/payments.html", active_page="payments")
 
 
+@admin_bp.route("/service-fees")
+@admin_required
+def service_fees():
+    return render_template("admin/service_fees.html", active_page="service_fees")
+
+
+@admin_bp.route("/api/service-fees")
+@admin_required
+def api_service_fees():
+    try:
+        return jsonify(get_admin_service_fees(_admin_token(), status=request.args.get("status")))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
 @admin_bp.route("/wallets")
 @admin_required
 def wallets():
@@ -500,29 +517,64 @@ def settings_page():
 # ---------------------------------------------------------------------------
 
 def _landmark_subscribers(rows, token):
-    """Resolve names once per unique subscriber; never use a pack/bank name."""
+    """Resolve names and emails once per unique subscriber; never use a pack/bank name."""
     from concurrent.futures import ThreadPoolExecutor, wait
-    from app.services.landmark_transforms import subscriber_identity
+    from app.services.landmark_transforms import account_email, subscriber_identity
     for row in rows:
         row.update(subscriber_identity(row))
-    missing = {str(row["subscriber_id"]) for row in rows if row.get("subscriber_id") and not row.get("subscriber_name")}
+    missing = {
+        str(row["subscriber_id"])
+        for row in rows
+        if row.get("subscriber_id") and (not row.get("subscriber_name") or not row.get("subscriber_email"))
+    }
+
     def lookup(user_id):
         try:
-            return user_id, account_display_name(get_admin_user(token, user_id, timeout=(2, 3), max_attempts=1))
+            account = get_admin_user(token, user_id, timeout=(2, 4), max_attempts=1)
+            return user_id, {
+                "name": account_display_name(account),
+                "email": account_email(account),
+            }
         except ApiError:
-            return user_id, ""
-    names = {}
+            return user_id, {"name": "", "email": ""}
+
+    found = {}
     if missing:
         executor = ThreadPoolExecutor(max_workers=4)
         futures = [executor.submit(lookup, user_id) for user_id in missing]
         try:
-            completed, _ = wait(futures, timeout=4)
-            names = dict(future.result() for future in completed)
+            completed, _ = wait(futures, timeout=6)
+            found = dict(future.result() for future in completed)
         finally:
             executor.shutdown(wait=False, cancel_futures=True)
     for row in rows:
-        row["subscriber_name"] = row.get("subscriber_name") or names.get(str(row.get("subscriber_id"))) or "Name unavailable"
+        info = found.get(str(row.get("subscriber_id"))) or {}
+        row["subscriber_name"] = row.get("subscriber_name") or info.get("name") or "Name unavailable"
+        row["subscriber_email"] = row.get("subscriber_email") or info.get("email") or ""
     return rows
+
+
+def _payment_user_ids(payments, token):
+    """Pending payments from older API builds omit user_id; the plan rows still have it."""
+    if not payments or all(row.get("user_id") or row.get("subscriber_id") for row in payments):
+        return
+    plan_users = {}
+    try:
+        for plan in get_admin_landmark_fixed_route_plans(token) or []:
+            if isinstance(plan, dict) and plan.get("id") and plan.get("user_id"):
+                plan_users[str(plan["id"])] = plan["user_id"]
+    except ApiError:
+        pass
+    try:
+        for plan in get_admin_landmark_km_bundle_subscriptions(token) or []:
+            if isinstance(plan, dict) and plan.get("id") and plan.get("user_id"):
+                plan_users[str(plan["id"])] = plan["user_id"]
+    except ApiError:
+        pass
+    for payment in payments:
+        if payment.get("user_id") or payment.get("subscriber_id"):
+            continue
+        payment["user_id"] = plan_users.get(str(payment.get("plan_id") or ""))
 
 
 @admin_bp.route("/landmark/fixed-routes", methods=["GET", "POST"])
@@ -682,7 +734,12 @@ def landmark_transactions():
     token = _admin_token()
     payments = []
     try:
-        payments = _landmark_subscribers(get_admin_landmark_pending_payments(token) or [], token)
+        from app.services.landmark_transforms import format_datetime
+        payments = get_admin_landmark_pending_payments(token) or []
+        _payment_user_ids(payments, token)
+        payments = _landmark_subscribers(payments, token)
+        for payment in payments:
+            payment["created_at_display"] = format_datetime(payment.get("created_at"))
         from app.services.plan_receipts import receipt_filename
         for payment in payments:
             receipt_id = payment.get("id")
@@ -1221,6 +1278,15 @@ def api_driver_status(driver_id):
         return jsonify({"message": exc.message}), exc.status_code
 
 
+@admin_bp.route("/api/drivers/<driver_id>/unlock", methods=["POST"])
+@admin_required
+def api_driver_unlock(driver_id):
+    try:
+        return jsonify(unlock_admin_driver(_admin_token(), driver_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
 @admin_bp.route("/api/drivers/<driver_id>", methods=["DELETE"])
 @admin_required
 def api_delete_driver(driver_id):
@@ -1520,7 +1586,14 @@ def api_user_detail(user_id):
 def api_user_status(user_id):
     payload = request.get_json(silent=True) or {}
     try:
-        return jsonify(update_admin_user_status(_admin_token(), user_id, payload.get("status")))
+        return jsonify(
+            update_admin_user_status(
+                _admin_token(),
+                user_id,
+                payload.get("status"),
+                reason=payload.get("reason"),
+            )
+        )
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 

@@ -216,11 +216,13 @@
       });
   }
 
-  function updateUserStatus(userId, status, message, user) {
+  function updateUserStatus(userId, status, message, user, reason) {
+    const payload = { status: status };
+    if (reason) payload.reason = reason;
     return apiRequest("/admin/api/users/" + encodeURIComponent(userId) + "/status", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: status }),
+      body: JSON.stringify(payload),
     })
       .then(function (updatedUser) {
         const idx = state.users.findIndex(function (u) {
@@ -233,8 +235,12 @@
           return loadUsers();
         }
         let toastMessage = message;
-        if (status === "verified" && user && user.email) {
+        if (status === "verified" && user && user.status === "suspended") {
+          toastMessage += user.email ? " - unlock email sent to " + user.email : "";
+        } else if (status === "verified" && user && user.email) {
           toastMessage += " - approval email sent to " + user.email;
+        } else if (status === "suspended" && user && user.email) {
+          toastMessage += " - suspension email sent to " + user.email;
         }
         showToast(toastMessage);
       })
@@ -267,7 +273,13 @@
   function buildActionsMenu(user) {
     const items = [];
 
-    if (user.status !== "verified") {
+    if (user.status === "suspended") {
+      items.push({
+        label: "Unlock",
+        action: "unlock",
+        icon: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><rect x=\"3\" y=\"11\" width=\"18\" height=\"11\" rx=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 9.9-1\"/></svg>",
+      });
+    } else if (user.status !== "verified") {
       items.push({
         label: "Approve",
         action: "approve",
@@ -335,15 +347,30 @@
       });
       return;
     }
-    if (action === "suspend") {
+    if (action === "unlock") {
       window.AdminConfirm.show({
-        title: "Suspend user",
-        message: "Suspend " + user.full_name + "? They will not be able to request rides until reinstated.",
-        confirmLabel: "Suspend",
-        variant: "danger",
+        title: "Unlock user",
+        message: "Confirm the suspension reason for " + user.full_name + " is settled. They will be able to sign in again.",
+        confirmLabel: "Unlock",
       }).then(function (confirmed) {
         if (confirmed) {
-          updateUserStatus(user.id, "suspended", user.full_name + " suspended");
+          updateUserStatus(user.id, "verified", user.full_name + " unlocked", user);
+        }
+      });
+      return;
+    }
+    if (action === "suspend") {
+      window.AdminConfirm.promptNote({
+        title: "Suspend user",
+        message: "Suspend " + user.full_name + "? They will not be able to sign in until you unlock the account.",
+        confirmLabel: "Suspend",
+        variant: "danger",
+        inputLabel: "Reason for suspension",
+        placeholder: "Explain why this account is being suspended",
+        hint: "This reason is emailed to the user. Only an admin can unlock the account after it is settled.",
+      }).then(function (result) {
+        if (result && result.confirmed) {
+          updateUserStatus(user.id, "suspended", user.full_name + " suspended", user, result.value.trim());
         }
       });
       return;

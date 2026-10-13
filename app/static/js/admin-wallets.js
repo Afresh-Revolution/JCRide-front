@@ -253,20 +253,38 @@
     const tbody = document.getElementById("withdrawals-table-body");
     if (!tbody) return;
     if (!withdrawalState.items.length) {
-      tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="6">No withdrawals found.</td></tr>';
+      tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="8">No withdrawals found.</td></tr>';
       return;
     }
     tbody.innerHTML = withdrawalState.items
       .map(function (item) {
+        var manual = String(item.provider || "") === "manual";
+        var account = manual ? String(item.account_number || "") : maskAccount(item.account_number);
+        var roleName = item.user_role === "customer" ? "passenger" : item.user_role;
+        var role = roleName ? " · " + escapeHtml(roleName) : "";
+        var actions = "—";
+        if (item.can_approve || item.can_reject) {
+          actions =
+            '<div class="queue-actions">' +
+            (item.can_approve
+              ? '<button type="button" class="queue-btn queue-btn--approve" data-withdraw-approve="' + escapeHtml(item.id) + '">Approve</button>'
+              : "") +
+            (item.can_reject
+              ? '<button type="button" class="queue-btn queue-btn--reject" data-withdraw-reject="' + escapeHtml(item.id) + '">Reject</button>'
+              : "") +
+            "</div>";
+        }
         return (
           "<tr>" +
           '<td><span class="queue-ref">' + escapeHtml(item.reference) + "</span></td>" +
-          "<td>" + escapeHtml(item.user_short) + "</td>" +
+          "<td>" + escapeHtml(item.user_short) + role + "</td>" +
           '<td class="queue-amount">' + escapeHtml(formatNairaFull(item.net_amount_ngn)) +
           '<div style="font-size:0.75rem;color:var(--dash-muted);font-weight:400;">Fee ' + escapeHtml(formatNairaFull(item.withdrawal_fee_ngn)) + "</div></td>" +
-          "<td>" + escapeHtml(item.bank_name) + " · " + escapeHtml(maskAccount(item.account_number)) + " · " + escapeHtml(item.account_name) + "</td>" +
+          "<td>" + escapeHtml(item.bank_name) + " · " + escapeHtml(account) + " · " + escapeHtml(item.account_name) + "</td>" +
+          "<td>" + escapeHtml(manual ? "Manual" : "Paystack") + "</td>" +
           '<td><span class="' + queueStatusClass(item.status) + '">' + escapeHtml(item.status) + "</span></td>" +
           "<td>" + escapeHtml(formatDate(item.created_at)) + "</td>" +
+          "<td>" + actions + "</td>" +
           "</tr>"
         );
       })
@@ -291,7 +309,7 @@
   function loadWithdrawals() {
     const tbody = document.getElementById("withdrawals-table-body");
     if (tbody) {
-      tbody.innerHTML = '<tr class="queue-table__loading"><td colspan="7">Loading withdrawals…</td></tr>';
+      tbody.innerHTML = '<tr class="queue-table__loading"><td colspan="8">Loading withdrawals…</td></tr>';
     }
     const params = new URLSearchParams();
     params.set("page", String(withdrawalState.page));
@@ -307,7 +325,7 @@
       })
       .catch(function (err) {
         if (tbody) {
-          tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="6">' + escapeHtml(err.message) + "</td></tr>";
+          tbody.innerHTML = '<tr class="queue-table__empty"><td colspan="8">' + escapeHtml(err.message) + "</td></tr>";
         }
         showToast(err.message, true);
       });
@@ -341,6 +359,63 @@
           withdrawalState.page += 1;
           loadWithdrawals();
         }
+      });
+    }
+
+    var table = document.getElementById("withdrawals-table-body");
+    if (table) {
+      table.addEventListener("click", function (event) {
+        var approve = event.target.closest("[data-withdraw-approve]");
+        var reject = event.target.closest("[data-withdraw-reject]");
+        if (approve) {
+          var approveId = approve.getAttribute("data-withdraw-approve");
+          window.AdminConfirm.show({
+            title: "Approve withdrawal",
+            message: "Confirm you already transferred this amount. Approving deducts it from the wallet.",
+            confirmLabel: "Approve",
+          }).then(function (confirmed) {
+            if (!confirmed) return;
+            approve.disabled = true;
+            apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(approveId) + "/approve", { method: "POST" })
+              .then(function () {
+                showToast("Withdrawal approved and deducted.");
+                loadWithdrawals();
+              })
+              .catch(function (err) {
+                approve.disabled = false;
+                showToast(err.message, true);
+              });
+          });
+          return;
+        }
+        if (!reject) return;
+        var rejectId = reject.getAttribute("data-withdraw-reject");
+        window.AdminConfirm.promptNote({
+          title: "Reject withdrawal",
+          message: "The rider keeps this balance. Add the reason they will see.",
+          confirmLabel: "Reject",
+          variant: "danger",
+          inputLabel: "Reason for rejection",
+          hint: "This note is sent with the rejection.",
+        }).then(function (result) {
+          if (!result || !result.confirmed) return;
+          var reason = String(result.value || "").trim();
+          if (reason.length < 2) return;
+          reject.disabled = true;
+          apiRequest("/admin/api/payments/withdrawals/" + encodeURIComponent(rejectId) + "/reject", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: reason }),
+          })
+            .then(function () {
+              showToast("Withdrawal rejected.");
+              loadWithdrawals();
+            })
+            .catch(function (err) {
+              reject.disabled = false;
+              showToast(err.message, true);
+            });
+        });
       });
     }
   }
