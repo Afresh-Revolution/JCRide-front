@@ -1,0 +1,46 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'service_fees' %}
+
+{% block page_title %}Service fees{% endblock %}
+
+{% block page_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-drivers.css') }}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="drivers-page" aria-label="Pending driver service fees">
+  <section class="drivers-card dash-card">
+    <div class="drivers-vehicle-changes__header">
+      <div>
+        <h2 class="drivers-vehicle-changes__title">Pending service fees</h2>
+        <p class="drivers-vehicle-changes__sub">Cash trips leave the fare with the driver. The platform fee stays here until month-end, until the driver pays from their wallet, or until the 10-day bank window ends and the account is suspended.</p>
+      </div>
+    </div>
+    <div class="drivers-filter-tabs" role="tablist" aria-label="Fee status">
+      <button type="button" class="drivers-filter-tab is-active" data-status="open" role="tab">Open</button>
+      <button type="button" class="drivers-filter-tab" data-status="pending" role="tab">Month end</button>
+      <button type="button" class="drivers-filter-tab" data-status="bank_due" role="tab">Bank due</button>
+      <button type="button" class="drivers-filter-tab" data-status="overdue" role="tab">Suspended</button>
+      <button type="button" class="drivers-filter-tab" data-status="paid" role="tab">Paid</button>
+    </div>
+    <div class="drivers-table-wrap">
+      <table class="drivers-table" aria-label="Driver service fees">
+        <thead>
+          <tr>
+            <th scope="col">Driver</th>
+            <th scope="col">Trip</th>
+            <th scope="col">Fare</th>
+            <th scope="col">Fee</th>
+            <th scope="col">Due</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody id="service-fees-body">
+          <tr class="drivers-table__loading"><td colspan="6">Loading service fees…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</section>
+<script src="{{ url_for('static', filename='js/admin-service-fees.js') }}"></script>
+{% endblock %}

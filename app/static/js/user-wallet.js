@@ -420,6 +420,70 @@
     });
   }
 
+  var withdrawMethod = "paystack";
+  var savedPayout = null;
+  var withdrawMethods = document.getElementById("wallet-withdraw-methods");
+  var withdrawSaved = document.getElementById("wallet-withdraw-saved");
+  var withdrawSubtitle = document.getElementById("wallet-withdraw-subtitle");
+
+  function applyWithdrawMethod(method) {
+    withdrawMethod = method === "manual" ? "manual" : "paystack";
+    if (withdrawMethods) {
+      withdrawMethods.querySelectorAll("[data-method]").forEach(function (button) {
+        button.classList.toggle("is-active", button.getAttribute("data-method") === withdrawMethod);
+      });
+    }
+    if (withdrawSubtitle) {
+      withdrawSubtitle.textContent = withdrawMethod === "manual"
+        ? "Manual review uses your saved payout details. An admin transfers the money, then approves. Your wallet is charged only after approval."
+        : "Minimum ₦1,000. Paystack sends the money to your bank. Your wallet is deducted now and refunded if the transfer fails.";
+    }
+    if (withdrawMethod === "manual" && savedPayout && withdrawBankInput) {
+      withdrawBankInput.value = savedPayout.bank_name || "";
+      if (withdrawBankCodeInput) withdrawBankCodeInput.value = savedPayout.bank_code || "";
+      if (withdrawAccountNumber) withdrawAccountNumber.value = savedPayout.account_number || "";
+      if (withdrawAccountName) withdrawAccountName.value = savedPayout.account_name || "";
+      selectedBank = { name: savedPayout.bank_name || "", code: savedPayout.bank_code || "" };
+    }
+    if (withdrawSaved) {
+      if (withdrawMethod === "manual" && savedPayout) {
+        withdrawSaved.hidden = false;
+        withdrawSaved.textContent =
+          (savedPayout.account_name || "Saved account") +
+          " · " +
+          (savedPayout.bank_name || "") +
+          " · " +
+          (savedPayout.account_number || "");
+      } else {
+        withdrawSaved.hidden = true;
+        withdrawSaved.textContent = "";
+      }
+    }
+  }
+
+  if (withdrawMethods) {
+    withdrawMethods.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-method]");
+      if (!button) return;
+      applyWithdrawMethod(button.getAttribute("data-method"));
+    });
+  }
+
+  if (window.UserApi && window.UserApi.get) {
+    window.UserApi.get("/user/api/wallet/withdraw-options")
+      .then(function (data) {
+        if (data && data.manual_enabled && withdrawMethods) withdrawMethods.hidden = false;
+      })
+      .catch(function () {});
+    window.UserApi.get("/user/api/wallet/bank-accounts")
+      .then(function (data) {
+        var accounts = Array.isArray(data) ? data : (data && data.accounts) || [];
+        savedPayout = accounts[0] || null;
+        if (withdrawMethod === "manual") applyWithdrawMethod("manual");
+      })
+      .catch(function () {});
+  }
+
   var withdrawSubmit = document.getElementById("wallet-withdraw-submit");
   if (withdrawSubmit) {
     withdrawSubmit.addEventListener("click", function () {
@@ -434,8 +498,12 @@
         alert("Minimum withdrawal is ₦1,000.");
         return;
       }
-      if (!bankCode || accountNumber.length < 10 || !accountName) {
+      if (withdrawMethod !== "manual" && (!bankCode || accountNumber.length < 10 || !accountName)) {
         alert("Select a bank, then enter account number so we can fill the account name.");
+        return;
+      }
+      if (withdrawMethod === "manual" && accountNumber.length < 10) {
+        alert("Save a payout account, or enter the bank details for this request.");
         return;
       }
       setBusy(withdrawSubmit, true);
@@ -445,9 +513,14 @@
         bank_code: bankCode,
         account_number: accountNumber,
         account_name: accountName,
+        method: withdrawMethod,
       })
         .then(function () {
-          alert("Paystack is sending this to your bank. Your wallet is deducted now, and the amount is refunded if the transfer fails.");
+          alert(
+            withdrawMethod === "manual"
+              ? "Withdrawal submitted. An admin will transfer the money and approve it. Your wallet is charged only after approval."
+              : "Paystack is sending this to your bank. Your wallet is deducted now, and the amount is refunded if the transfer fails."
+          );
           window.location.reload();
         })
         .catch(function (err) {

@@ -247,7 +247,10 @@
     tbody.innerHTML = state.riders.map(function (rider) {
       const isPending = rider.backend_status === "pending" || rider.backend_status === "pending_approval";
       const isApproved = rider.backend_status === "approved";
-      const canApprove = isPending || rider.backend_status === "suspended";
+      const isSuspended = rider.backend_status === "suspended";
+      const canApprove = isPending;
+      const positiveAction = isSuspended ? "unlock" : "approve";
+      const positiveLabel = isSuspended ? "Unlock rider" : "Approve rider";
       const declineAction = isPending ? "reject" : (isApproved ? "suspend" : null);
       const declineLabel = isPending ? "Reject rider" : "Suspend rider";
       const declineDisabled = !declineAction;
@@ -268,7 +271,7 @@
         "<td><div class=\"bike-delivery-actions\">" +
         "<button type=\"button\" class=\"bike-delivery-action-btn\" data-action=\"view\" data-id=\"" + escapeHtml(rider.id) + "\" aria-label=\"View rider\">" +
         "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></button>" +
-        "<button type=\"button\" class=\"bike-delivery-action-btn bike-delivery-action-btn--approve\" data-action=\"approve\" data-id=\"" + escapeHtml(rider.id) + "\" aria-label=\"Approve rider\"" + (canApprove ? "" : " disabled") + ">" +
+        "<button type=\"button\" class=\"bike-delivery-action-btn bike-delivery-action-btn--approve\" data-action=\"" + positiveAction + "\" data-id=\"" + escapeHtml(rider.id) + "\" aria-label=\"" + escapeHtml(positiveLabel) + "\"" + ((isSuspended || canApprove) ? "" : " disabled") + ">" +
         "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"20 6 9 17 4 12\"/></svg></button>" +
         "<button type=\"button\" class=\"bike-delivery-action-btn bike-delivery-action-btn--reject\" data-action=\"" + (declineAction || "decline") + "\" data-id=\"" + escapeHtml(rider.id) + "\" aria-label=\"" + escapeHtml(declineLabel) + "\"" + (declineDisabled ? " disabled" : "") + ">" +
         "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg></button>" +
@@ -455,6 +458,22 @@
 
         if (action === "view") {
           viewRider(id);
+        } else if (action === "unlock") {
+          window.AdminConfirm.show({
+            title: "Unlock rider",
+            message: "Confirm the suspension reason for " + rider.full_name + " is settled. They will be able to sign in again.",
+            confirmLabel: "Unlock",
+          }).then(function (confirmed) {
+            if (!confirmed) return;
+            apiRequest("/admin/api/drivers/" + encodeURIComponent(id) + "/unlock", { method: "POST" })
+              .then(function () {
+                showToast(rider.full_name + " unlocked");
+                return loadRiders();
+              })
+              .catch(function (err) {
+                showToast(err.message, true);
+              });
+          });
         } else if (action === "approve") {
           window.AdminConfirm.show({
             title: "Approve rider",
@@ -478,13 +497,18 @@
             }
           });
         } else if (action === "suspend") {
-          window.AdminConfirm.show({
+          window.AdminConfirm.promptNote({
             title: "Suspend rider",
-            message: "Suspend " + rider.full_name + "? They will not receive new deliveries.",
+            message: "Suspend " + rider.full_name + "? They will not be able to sign in until you unlock the account.",
             confirmLabel: "Suspend",
             variant: "danger",
-          }).then(function (confirmed) {
-            if (confirmed) updateRiderStatus(id, "suspended", rider.full_name + " suspended");
+            inputLabel: "Reason for suspension",
+            placeholder: "Explain why this account is being suspended",
+            hint: "This reason is emailed to the rider. Only an admin can unlock the account after it is settled.",
+          }).then(function (result) {
+            if (result && result.confirmed) {
+              updateRiderStatus(id, "suspended", rider.full_name + " suspended", result.value.trim());
+            }
           });
         }
       });

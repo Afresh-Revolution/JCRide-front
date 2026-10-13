@@ -54,6 +54,30 @@ def format_date(value) -> str:
     return parsed.strftime("%d %b %Y")
 
 
+def format_datetime(value) -> str:
+    parsed = _parse_dt(value)
+    if not parsed:
+        return "—"
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone()
+    return parsed.strftime("%d %b %Y, %H:%M")
+
+
+def account_email(row: dict) -> str:
+    if not isinstance(row, dict):
+        return ""
+    for key in ("subscriber_email", "user_email", "email"):
+        value = row.get(key)
+        if isinstance(value, str) and "@" in value:
+            return value.strip()
+    for key in ("subscriber", "rider", "user", "profile", "data"):
+        if isinstance(row.get(key), dict):
+            found = account_email(row[key])
+            if found:
+                return found
+    return ""
+
+
 def schedule_label(schedule_type, travel_days=None) -> str:
     if schedule_type == "custom" and travel_days:
         days = sorted(int(d) for d in travel_days)
@@ -74,7 +98,11 @@ def subscriber_identity(row: dict) -> dict:
     person = next((row[key] for key in ("subscriber", "rider", "user") if isinstance(row.get(key), dict)), {})
     user_id = row.get("user_id") or row.get("rider_id") or row.get("subscriber_id") or person.get("id")
     name = row.get("subscriber_name") or row.get("user_name") or row.get("rider_name") or account_display_name(person)
-    return {"subscriber_id": user_id, "subscriber_name": name or ""}
+    return {
+        "subscriber_id": user_id,
+        "subscriber_name": name or "",
+        "subscriber_email": account_email(row),
+    }
 
 
 def fixed_route_plan_to_ui(plan: dict) -> dict:
