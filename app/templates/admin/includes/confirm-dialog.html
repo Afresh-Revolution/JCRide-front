@@ -11,6 +11,12 @@
         <input type="number" id="admin-confirm-input" min="1000" step="100" inputmode="numeric">
         <span class="admin-confirm__hint" id="admin-confirm-hint"></span>
       </label>
+      <label class="admin-confirm__field" id="admin-confirm-note-field" hidden>
+        <span id="admin-confirm-note-label">Reason for rejection</span>
+        <textarea id="admin-confirm-note" rows="3" maxlength="500" placeholder="Explain why this is being rejected"></textarea>
+        <span class="admin-confirm__hint" id="admin-confirm-note-hint">This note is sent with the rejection.</span>
+        <span class="admin-confirm__error" id="admin-confirm-note-error" hidden></span>
+      </label>
     </div>
     <div class="admin-confirm__footer">
       <button type="button" class="admin-confirm__btn admin-confirm__btn--ghost" data-admin-confirm-cancel id="admin-confirm-cancel">Cancel</button>

@@ -24,3 +24,5 @@ dist/
 .DS_Store
 Thumbs.db
 OWNER_DASHBOARD.md
+
+instance/plan_receipts/

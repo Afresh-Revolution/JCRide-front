@@ -20,6 +20,7 @@
     <table style="width:100%;border-collapse:collapse;">
       <thead>
         <tr style="text-align:left;color:var(--dash-muted,#64748b);font-size:0.8rem;">
+          <th style="padding:10px;">Subscriber</th>
           <th style="padding:10px;">Plan</th>
           <th style="padding:10px;">Type</th>
           <th style="padding:10px;">Price paid</th>
@@ -30,6 +31,7 @@
       <tbody>
         {% for row in rows %}
         <tr style="border-top:1px solid var(--dash-border,#e5e7eb);">
+          <td style="padding:10px;min-width:180px;">{% with subscriber = row %}{% include "admin/includes/landmark_subscriber.html" %}{% endwith %}</td>
           <td style="padding:10px;">{{ row.plan_summary }}</td>
           <td style="padding:10px;">{{ row.kind }}</td>
           <td style="padding:10px;">{{ row.price_display }}</td>
@@ -37,7 +39,7 @@
           <td style="padding:10px;">{{ row.started_at_display }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="5" style="padding:16px;color:var(--dash-muted,#64748b);">No subscriptions yet.</td></tr>
+        <tr><td colspan="6" style="padding:16px;color:var(--dash-muted,#64748b);">No subscriptions yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

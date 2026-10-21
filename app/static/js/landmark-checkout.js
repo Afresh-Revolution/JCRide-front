@@ -25,7 +25,7 @@
             global.location.href = data.authorization_url;
             return;
           }
-          global.location.href = data.processing_url || "/user/plans/payment/processing";
+          throw new Error("Paystack did not return a checkout link. Please contact support before retrying.");
         })
         .catch(function (err) {
           alert(err.message || "Could not start Paystack payment.");
@@ -51,11 +51,15 @@
 
       if (global.ButtonLoading) global.ButtonLoading.start(submitBtn, { text: "Submitting…" });
 
-      global.UserApi.post(payUrl, {
-        provider: "manual",
-        bank_name: bankName,
-        account_name: accountName,
-      })
+      var body = new FormData(form);
+      body.set("provider", "manual");
+      global.fetch(payUrl, { method: "POST", body: body, credentials: "same-origin" })
+        .then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok) throw new Error(data.error || "Could not submit receipt.");
+            return data;
+          });
+        })
         .then(function (data) {
           global.location.href = data.pending_url || "/user/plans";
         })

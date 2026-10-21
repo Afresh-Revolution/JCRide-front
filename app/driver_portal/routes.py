@@ -83,6 +83,7 @@ from app.services.api_client import (
     update_driver_settings,
     update_notification_preferences,
     upsert_driver_payout_account,
+    get_withdraw_options,
     withdraw_wallet,
 )
 from app.services.navigation_guard import grant_driver_entry, revoke_driver_entry
@@ -821,10 +822,16 @@ def earnings():
     transactions, tx_ok = resolve_earnings_transactions(_driver_token())
     vehicle_change, _ = resolve_vehicle_change_status(_driver_token())
     payout = None
+    manual_withdrawal_enabled = False
     token = _driver_token()
     if token:
         try:
             payout = get_driver_payout_account(token)
+        except ApiError:
+            pass
+        try:
+            options = get_withdraw_options(token) or {}
+            manual_withdrawal_enabled = bool(options.get("manual_enabled"))
         except ApiError:
             pass
     return render_template(
@@ -835,6 +842,7 @@ def earnings():
             withdrawal=page_data["withdrawal"],
             transactions=transactions,
             payout=payout,
+            manual_withdrawal_enabled=manual_withdrawal_enabled,
             api_connected=api_connected or tx_ok,
             chart_data={
                 "weekly_trend": page_data["weekly_trend"],
@@ -1056,8 +1064,25 @@ def withdraw_earnings():
         return redirect(url_for("driver_portal.earnings"))
 
     try:
-        withdraw_wallet(token, amount, bank_name, account_number, account_name)
-        flash("Paystack is sending the withdrawal to your bank.", "success")
+        method = (request.form.get("method") or "paystack").strip().lower()
+        if method not in ("paystack", "manual"):
+            method = "paystack"
+        withdraw_wallet(
+            token,
+            amount,
+            bank_name,
+            account_number,
+            account_name,
+            request.form.get("bank_code") or None,
+            method,
+        )
+        if method == "manual":
+            flash(
+                "Withdrawal submitted. An admin will transfer the money and approve it. Your wallet is charged only after approval.",
+                "success",
+            )
+        else:
+            flash("Paystack is sending the withdrawal to your bank.", "success")
     except ApiError as exc:
         flash(exc.message, "error")
 
@@ -1876,6 +1901,7 @@ def driver_api_wallet_withdraw():
                 payload.get("account_number", ""),
                 payload.get("account_name", ""),
                 payload.get("bank_code") or None,
+                payload.get("method") or None,
             )
         )
     except (TypeError, ValueError):

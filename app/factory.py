@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
-from flask import Flask
+from flask import Flask, request
 
-from app.config import SECRET_KEY, get_api_url, get_google_maps_api_key, get_support_email
+from app.config import SECRET_KEY, get_api_url, get_google_maps_api_key, get_support_email, get_landmark_payment_config
 from app.driver_portal.routes import driver_portal_bp
 from app.routes.admin import admin_bp
 from app.routes.main import main_bp
@@ -38,6 +38,7 @@ def create_app() -> Flask:
             "google_maps_api_key": maps_key,
             "has_google_maps": bool(maps_key),
             "support_email": get_support_email(),
+            "landmark_payment_config": get_landmark_payment_config() if request.path.startswith("/user/plans/") else {},
         }
 
     @app.get("/api-config-check")

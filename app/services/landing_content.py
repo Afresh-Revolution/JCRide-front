@@ -24,13 +24,13 @@ def _http_url(value) -> str:
 
 
 def overlay_mobile_apps(landing: dict) -> dict:
-    """Prefer API/env store URLs. Empty URL → Coming soon on the landing buttons."""
+    """Read fresh env overrides before API URLs, including on cache hits."""
     raw_apps = landing.get("mobile_apps")
     apps = dict(raw_apps) if isinstance(raw_apps, dict) else {}
     for field, names in _APP_STORE_ENV.items():
-        current = _http_url(apps.get(field))
+        current = _http_url(_env_value(*names, paths=(ENV_PATH, *BACKEND_ENV_PATHS)))
         if not current:
-            current = _http_url(_env_value(*names, paths=(ENV_PATH, *BACKEND_ENV_PATHS)))
+            current = _http_url(apps.get(field))
         apps[field] = current
     landing["mobile_apps"] = apps
     return landing

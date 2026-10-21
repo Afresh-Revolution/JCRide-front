@@ -1248,7 +1248,15 @@ def create_wallet_funding_request(token, amount_ngn, bank_name, account_name, pr
     )
 
 
-def withdraw_wallet(token, amount_ngn, bank_name, account_number, account_name, bank_code=None):
+def withdraw_wallet(
+    token,
+    amount_ngn,
+    bank_name,
+    account_number,
+    account_name,
+    bank_code=None,
+    method=None,
+):
     payload = {
         "amount_ngn": amount_ngn,
         "bank_name": bank_name,
@@ -1257,12 +1265,22 @@ def withdraw_wallet(token, amount_ngn, bank_name, account_number, account_name, 
     }
     if bank_code:
         payload["bank_code"] = bank_code
+    if method:
+        payload["method"] = method
     return _request(
         "POST",
         f"{API_PREFIX}/wallet/withdraw",
         token=token,
         json=payload,
     )
+
+
+def get_withdraw_options(token):
+    return _request("GET", f"{API_PREFIX}/wallet/withdraw-options", token=token)
+
+
+def list_saved_bank_accounts(token):
+    return _request("GET", f"{API_PREFIX}/wallet/bank-accounts", token=token)
 
 
 def list_paystack_banks(token):
@@ -1407,12 +1425,15 @@ def get_admin_user(token, user_id, **options):
     return _request("GET", f"{API_PREFIX}/admin/users/{user_id}", token=token, **options)
 
 
-def update_admin_user_status(token, user_id, status):
+def update_admin_user_status(token, user_id, status, reason=None):
+    payload = {"status": status}
+    if reason:
+        payload["reason"] = reason
     return _request(
         "PATCH",
         f"{API_PREFIX}/admin/users/{user_id}/status",
         token=token,
-        json={"status": status},
+        json=payload,
     )
 
 
@@ -1451,17 +1472,31 @@ def get_admin_driver(token, driver_id):
     return _request("GET", f"{API_PREFIX}/admin/drivers/{driver_id}", token=token)
 
 
-def update_admin_driver_status(token, driver_id, status):
+def update_admin_driver_status(token, driver_id, status, reason=None):
+    payload = {"status": status}
+    if reason:
+        payload["reason"] = reason
     return _request(
         "PATCH",
         f"{API_PREFIX}/admin/drivers/{driver_id}/status",
         token=token,
-        json={"status": status},
+        json=payload,
     )
 
 
 def delete_admin_driver(token, driver_id):
     return _request("DELETE", f"{API_PREFIX}/admin/drivers/{driver_id}", token=token)
+
+
+def unlock_admin_driver(token, driver_id):
+    return _request("POST", f"{API_PREFIX}/admin/drivers/{driver_id}/unlock", token=token)
+
+
+def get_admin_service_fees(token, status=None):
+    params = {}
+    if status:
+        params["status"] = status
+    return _request("GET", f"{API_PREFIX}/admin/service-fees", token=token, params=params)
 
 
 def get_admin_vehicle_changes(token, status="pending", page=1, limit=20, vehicle_category=None):
@@ -1494,6 +1529,26 @@ def reject_admin_vehicle_change(token, request_id, reason=None):
         f"{API_PREFIX}/admin/vehicle-changes/{request_id}/reject",
         token=token,
         json=payload,
+    )
+
+
+def get_admin_vehicle_inspections(token, status="pending", page=1, limit=20):
+    params = {"page": page, "limit": limit}
+    if status:
+        params["status"] = status
+    return _request("GET", f"{API_PREFIX}/admin/vehicle-inspections", token=token, params=params)
+
+
+def get_admin_vehicle_inspection(token, request_id):
+    return _request("GET", f"{API_PREFIX}/admin/vehicle-inspections/{request_id}", token=token)
+
+
+def complete_admin_vehicle_inspection(token, request_id, service_tier):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/vehicle-inspections/{request_id}/complete",
+        token=token,
+        json={"service_tier": service_tier},
     )
 
 
@@ -1556,12 +1611,15 @@ def onboard_admin_bike_rider(token, payload):
     )
 
 
-def update_admin_bike_rider_status(token, rider_id, status):
+def update_admin_bike_rider_status(token, rider_id, status, reason=None):
+    payload = {"status": status}
+    if reason:
+        payload["reason"] = reason
     return _request(
         "PATCH",
         f"{API_PREFIX}/admin/bike-delivery/riders/{rider_id}/status",
         token=token,
-        json={"status": status},
+        json=payload,
     )
 
 
@@ -1699,6 +1757,10 @@ def get_admin_ops_notifications(token, severity=None, page=1, limit=50):
 
 def mark_admin_ops_notifications_read(token):
     return _request("POST", f"{API_PREFIX}/admin/notifications/ops/mark-all-read", token=token)
+
+
+def send_admin_announcement(token, payload):
+    return _request("POST", f"{API_PREFIX}/admin/announcements", token=token, json=payload)
 
 
 def get_admin_ops_notification_settings(token):

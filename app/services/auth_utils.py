@@ -13,7 +13,7 @@ def extract_access_token(payload: dict) -> str:
         for key in ("access_token", "token", "accessToken"):
             value = data.get(key)
             if value:
-                return str(value)
+                return str(value) 
     return ""
 
 

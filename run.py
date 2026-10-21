@@ -13,4 +13,11 @@ app = create_app()
 if __name__ == "__main__":
     print(f"JosRide frontend -> API_URL={get_api_url()}")
     print(f"Env file: {Path(__file__).resolve().parent / '.env'}")
-    app.run(host=HOST, port=PORT, debug=True)
+    # Watch project files only. Changes under the Python install or venv
+    # were restarting the server and dropping in-flight page loads.
+    app.run(
+        host=HOST,
+        port=PORT,
+        debug=True,
+        exclude_patterns=["*Python314*", "*site-packages*", "*\\venv\\*"],
+    )

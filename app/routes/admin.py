@@ -44,6 +44,8 @@ from app.services.api_client import (
     get_admin_driver,
     get_admin_driver_stats,
     update_admin_driver_status,
+    unlock_admin_driver,
+    get_admin_service_fees,
     delete_admin_driver,
     get_admin_bike_delivery_stats,
     get_admin_bike_delivery_pricing,
@@ -70,6 +72,7 @@ from app.services.api_client import (
     update_admin_support_ticket,
     get_admin_ops_notifications,
     mark_admin_ops_notifications_read,
+    send_admin_announcement,
     get_admin_ops_notification_settings,
     update_admin_ops_notification_settings,
     get_admin_platform_settings,
@@ -450,6 +453,21 @@ def payments():
     return render_template("admin/payments.html", active_page="payments")
 
 
+@admin_bp.route("/service-fees")
+@admin_required
+def service_fees():
+    return render_template("admin/service_fees.html", active_page="service_fees")
+
+
+@admin_bp.route("/api/service-fees")
+@admin_required
+def api_service_fees():
+    try:
+        return jsonify(get_admin_service_fees(_admin_token(), status=request.args.get("status")))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
 @admin_bp.route("/wallets")
 @admin_required
 def wallets():
@@ -460,6 +478,22 @@ def wallets():
 @admin_required
 def support():
     return render_template("admin/support.html", active_page="support")
+
+
+@admin_bp.route("/announcements")
+@admin_required
+def announcements():
+    return render_template("admin/announcements.html", active_page="announcements")
+
+
+@admin_bp.route("/api/announcements", methods=["POST"])
+@admin_required
+def api_announcements():
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(send_admin_announcement(_admin_token(), payload))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
 
 
 @admin_bp.route("/notifications")
@@ -502,6 +536,67 @@ def settings_page():
 # Landmark booking: Fixed Routes, KM Packs, Subscriptions, Transactions.
 # ---------------------------------------------------------------------------
 
+def _landmark_subscribers(rows, token):
+    """Resolve names and emails once per unique subscriber; never use a pack/bank name."""
+    from concurrent.futures import ThreadPoolExecutor, wait
+    from app.services.landmark_transforms import account_email, subscriber_identity
+    for row in rows:
+        row.update(subscriber_identity(row))
+    missing = {
+        str(row["subscriber_id"])
+        for row in rows
+        if row.get("subscriber_id") and (not row.get("subscriber_name") or not row.get("subscriber_email"))
+    }
+
+    def lookup(user_id):
+        try:
+            account = get_admin_user(token, user_id, timeout=(2, 4), max_attempts=1)
+            return user_id, {
+                "name": account_display_name(account),
+                "email": account_email(account),
+            }
+        except ApiError:
+            return user_id, {"name": "", "email": ""}
+
+    found = {}
+    if missing:
+        executor = ThreadPoolExecutor(max_workers=4)
+        futures = [executor.submit(lookup, user_id) for user_id in missing]
+        try:
+            completed, _ = wait(futures, timeout=6)
+            found = dict(future.result() for future in completed)
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
+    for row in rows:
+        info = found.get(str(row.get("subscriber_id"))) or {}
+        row["subscriber_name"] = row.get("subscriber_name") or info.get("name") or "Name unavailable"
+        row["subscriber_email"] = row.get("subscriber_email") or info.get("email") or ""
+    return rows
+
+
+def _payment_user_ids(payments, token):
+    """Pending payments from older API builds omit user_id; the plan rows still have it."""
+    if not payments or all(row.get("user_id") or row.get("subscriber_id") for row in payments):
+        return
+    plan_users = {}
+    try:
+        for plan in get_admin_landmark_fixed_route_plans(token) or []:
+            if isinstance(plan, dict) and plan.get("id") and plan.get("user_id"):
+                plan_users[str(plan["id"])] = plan["user_id"]
+    except ApiError:
+        pass
+    try:
+        for plan in get_admin_landmark_km_bundle_subscriptions(token) or []:
+            if isinstance(plan, dict) and plan.get("id") and plan.get("user_id"):
+                plan_users[str(plan["id"])] = plan["user_id"]
+    except ApiError:
+        pass
+    for payment in payments:
+        if payment.get("user_id") or payment.get("subscriber_id"):
+            continue
+        payment["user_id"] = plan_users.get(str(payment.get("plan_id") or ""))
+
+
 @admin_bp.route("/landmark/fixed-routes", methods=["GET", "POST"])
 @admin_required
 def landmark_fixed_routes():
@@ -531,7 +626,7 @@ def landmark_fixed_routes():
     plans = []
     try:
         rows = get_admin_landmark_fixed_route_plans(token)
-        plans = [fixed_route_plan_to_ui(p) for p in (rows or [])]
+        plans = _landmark_subscribers([fixed_route_plan_to_ui(p) for p in (rows or [])], token)
     except ApiError as exc:
         flash(exc.message, "error")
 
@@ -588,8 +683,17 @@ def landmark_km_packs():
     except ApiError:
         settings_data = {}
 
+    subscriptions = []
+    try:
+        subscriptions = _landmark_subscribers([
+            km_bundle_subscription_to_ui(row)
+            for row in (get_admin_landmark_km_bundle_subscriptions(token) or [])
+        ], token)
+    except ApiError as exc:
+        flash(exc.message, "error")
     return render_template(
         "admin/landmark_km_packs.html",
+        subscriptions=subscriptions,
         active_page="landmark_km_packs",
         packs=packs,
         settings=settings_data,
@@ -633,6 +737,7 @@ def landmark_subscriptions():
     except ApiError as exc:
         flash(exc.message, "error")
 
+    _landmark_subscribers(rows, token)
     order = {"active": 0, "paused": 1, "pending_payment": 2, "expired": 3, "exhausted": 3, "cancelled": 4}
     rows.sort(key=lambda item: order.get(item["status"], 5))
 
@@ -649,7 +754,18 @@ def landmark_transactions():
     token = _admin_token()
     payments = []
     try:
+        from app.services.landmark_transforms import format_datetime
         payments = get_admin_landmark_pending_payments(token) or []
+        _payment_user_ids(payments, token)
+        payments = _landmark_subscribers(payments, token)
+        for payment in payments:
+            payment["created_at_display"] = format_datetime(payment.get("created_at"))
+        from app.services.plan_receipts import receipt_filename
+        for payment in payments:
+            receipt_id = payment.get("id")
+            if not receipt_filename(receipt_id):
+                receipt_id = payment.get("reference")
+            payment["receipt_id"] = receipt_id if receipt_filename(receipt_id) else None
     except ApiError as exc:
         flash(exc.message, "error")
     return render_template(
@@ -676,7 +792,10 @@ def landmark_transaction_approve(payment_id):
 def landmark_transaction_reject(payment_id):
     token = _admin_token()
     try:
-        reason = request.form.get("reason") or None
+        reason = (request.form.get("reason") or "").strip()
+        if len(reason) < 2:
+            flash("Enter a reason for this rejection.", "error")
+            return redirect(url_for("admin.landmark_transactions"))
         reject_admin_landmark_payment(token, payment_id, reason)
         flash("Payment rejected.", "success")
     except ApiError as exc:
@@ -1167,7 +1286,23 @@ def api_driver_detail(driver_id):
 def api_driver_status(driver_id):
     payload = request.get_json(silent=True) or {}
     try:
-        return jsonify(update_admin_driver_status(_admin_token(), driver_id, payload.get("status")))
+        return jsonify(
+            update_admin_driver_status(
+                _admin_token(),
+                driver_id,
+                payload.get("status"),
+                reason=payload.get("reason"),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/drivers/<driver_id>/unlock", methods=["POST"])
+@admin_required
+def api_driver_unlock(driver_id):
+    try:
+        return jsonify(unlock_admin_driver(_admin_token(), driver_id))
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
@@ -1235,6 +1370,53 @@ def api_reject_vehicle_change(request_id):
                 _admin_token(),
                 request_id,
                 reason=payload.get("reason"),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/vehicle-inspections")
+@admin_required
+def api_vehicle_inspections():
+    try:
+        from app.services.api_client import get_admin_vehicle_inspections
+
+        return jsonify(
+            get_admin_vehicle_inspections(
+                _admin_token(),
+                status=request.args.get("status", "pending"),
+                page=int(request.args.get("page", 1)),
+                limit=int(request.args.get("limit", 20)),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/vehicle-inspections/<request_id>")
+@admin_required
+def api_vehicle_inspection_detail(request_id):
+    try:
+        from app.services.api_client import get_admin_vehicle_inspection
+
+        return jsonify(get_admin_vehicle_inspection(_admin_token(), request_id))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/vehicle-inspections/<request_id>/complete", methods=["POST"])
+@admin_required
+def api_complete_vehicle_inspection(request_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        from app.services.api_client import complete_admin_vehicle_inspection
+
+        return jsonify(
+            complete_admin_vehicle_inspection(
+                _admin_token(),
+                request_id,
+                service_tier=payload.get("service_tier"),
             )
         )
     except ApiError as exc:
@@ -1368,7 +1550,12 @@ def api_bike_delivery_rider_status(rider_id):
     try:
         return jsonify(
             normalize_bike_rider(
-                update_admin_bike_rider_status(_admin_token(), rider_id, payload.get("status"))
+                update_admin_bike_rider_status(
+                    _admin_token(),
+                    rider_id,
+                    payload.get("status"),
+                    reason=payload.get("reason"),
+                )
             )
         )
     except ApiError as exc:
@@ -1419,7 +1606,14 @@ def api_user_detail(user_id):
 def api_user_status(user_id):
     payload = request.get_json(silent=True) or {}
     try:
-        return jsonify(update_admin_user_status(_admin_token(), user_id, payload.get("status")))
+        return jsonify(
+            update_admin_user_status(
+                _admin_token(),
+                user_id,
+                payload.get("status"),
+                reason=payload.get("reason"),
+            )
+        )
     except ApiError as exc:
         return jsonify({"message": exc.message}), exc.status_code
 
@@ -1706,6 +1900,7 @@ def logout():
     return redirect(url_for("main.home"))
 
 
+<<<<<<< HEAD
 def owner_required(view):
     @wraps(view)
     def wrapped(**kwargs):
@@ -1760,3 +1955,17 @@ def owner_call_system():
         return jsonify(result), 200, {"Cache-Control": "no-store"}
     except ApiError as exc:
         return _owner_api_error(exc)
+=======
+@admin_bp.route("/landmark/transactions/<payment_id>/receipt")
+@admin_required
+def landmark_transaction_receipt(payment_id):
+    from flask import abort, send_from_directory
+    from app.services.plan_receipts import receipt_dir, receipt_filename
+    filename = receipt_filename(payment_id)
+    if not filename:
+        abort(404)
+    response = send_from_directory(receipt_dir(), filename, as_attachment=True, download_name="transfer-receipt" + __import__("pathlib").Path(filename).suffix)
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+>>>>>>> 6909267fb91aea772990f50a3dff64d558b47fce

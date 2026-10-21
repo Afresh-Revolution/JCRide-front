@@ -66,10 +66,12 @@
       <button type="submit" name="action" value="back" class="lm-btn lm-btn--outline">Choose a different pack</button>
     </div>
     <div class="lm-btn-row">
-      <button type="submit" name="action" value="pay_paystack" class="lm-btn lm-btn--primary lm-btn--block">Pay with Paystack</button>
+      <button type="submit" name="action" value="pay_paystack" {% if not landmark_payment_config.paystack_enabled %}disabled aria-describedby="lm-paystack-help"{% endif %} class="lm-btn lm-btn--primary lm-btn--block">Pay with Paystack</button>
+      {% if not landmark_payment_config.paystack_enabled %}<p id="lm-paystack-help" class="lm-payment-help">Paystack is currently unavailable.</p>{% endif %}
     </div>
     <div class="lm-btn-row">
-      <button type="submit" name="action" value="choose_manual" class="lm-btn lm-btn--outline lm-btn--block">Manual Bank Transfer</button>
+      <a href="{{ url_for('main.user_landmark_km_bundle_manual') }}" class="lm-btn lm-btn--outline lm-btn--block">Manual Bank Transfer</a>
+      {% if not landmark_payment_config.manual_enabled %}<p class="lm-payment-help">{{ landmark_payment_config.config_error or "Bank transfer is currently unavailable. Please contact support." }}</p>{% endif %}
     </div>
   </form>
   {% endif %}
@@ -78,7 +80,7 @@
 
 {% block page_scripts %}
 {% if step == 2 %}
-<script src="{{ url_for('static', filename='js/landmark-checkout.js') }}"></script>
+<script src="{{ static_url('js/landmark-checkout.js') }}"></script>
 <script>
   LandmarkCheckout.initPayForm(document.getElementById("lm-checkout-form"));
 </script>

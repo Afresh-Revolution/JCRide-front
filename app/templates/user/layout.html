@@ -1,5 +1,5 @@
 {% extends "user/base.html" %}
-{% block title %}{% block page_title %}Dashboard{% endblock %} - JosRide NAIJA{% endblock %}
+{% block title %}{% block page_title %}Dashboard{% endblock %} - JosRide{% endblock %}
 
 {% block head %}
 {% if user_leaflet %}
@@ -39,7 +39,7 @@
 <script src="{{ url_for('static', filename='js/user-geolocation.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/user-api.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/josride-rating.js') }}" defer></script>
-<script src="{{ url_for('static', filename='js/loading.js') }}" defer></script>
+<script src="{{ static_url('js/loading.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/user-search.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}" defer></script>
 {% block page_scripts %}{% endblock %}

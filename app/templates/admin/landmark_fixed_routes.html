@@ -62,6 +62,7 @@
     <table style="width:100%;border-collapse:collapse;">
       <thead>
         <tr style="text-align:left;color:var(--dash-muted,#64748b);font-size:0.8rem;">
+          <th style="padding:10px;">Subscriber</th>
           <th style="padding:10px;">Route</th>
           <th style="padding:10px;">Vehicle</th>
           <th style="padding:10px;">Billing</th>
@@ -73,6 +74,7 @@
       <tbody>
         {% for plan in plans %}
         <tr style="border-top:1px solid var(--dash-border,#e5e7eb);">
+          <td style="padding:10px;min-width:180px;">{% with subscriber = plan %}{% include "admin/includes/landmark_subscriber.html" %}{% endwith %}</td>
           <td style="padding:10px;">{{ plan.label }}</td>
           <td style="padding:10px;">{{ plan.service_tier }}</td>
           <td style="padding:10px;">{{ plan.billing_cycle }}</td>
@@ -81,7 +83,7 @@
           <td style="padding:10px;">{{ plan.expires_at_display }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="6" style="padding:16px;color:var(--dash-muted,#64748b);">No fixed-route plans yet.</td></tr>
+        <tr><td colspan="7" style="padding:16px;color:var(--dash-muted,#64748b);">No fixed-route plans yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

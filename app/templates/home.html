@@ -415,7 +415,7 @@
 </section>
 
 {# ── Mobile app banner ── #}
-<section class="landing-mobile landing-animate" aria-labelledby="landing-mobile-heading">
+<section id="mobile-app" class="landing-mobile landing-animate" aria-labelledby="landing-mobile-heading" tabindex="-1">
   <div class="landing-container">
     <div class="landing-mobile__card">
       <div class="landing-mobile__copy">
@@ -453,4 +453,8 @@
   </div>
 </section>
 
+<a href="#mobile-app" class="landing-mobile-float">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+  <span>Mobile app</span>
+</a>
 {% endblock %}

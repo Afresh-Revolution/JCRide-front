@@ -79,6 +79,23 @@
     }).join("");
   }
 
+  function previewSrc(url) {
+    var raw = String(url || "");
+    if (!/\.hei[cf](\?|#|$)/i.test(raw) || !/res\.cloudinary\.com/i.test(raw) || /\/upload\/f_jpg\//i.test(raw)) {
+      return raw;
+    }
+    return raw.replace("/upload/", "/upload/f_jpg/");
+  }
+
+  function photoLink(url, label) {
+    var viewHref = previewSrc(url);
+    return (
+      '<a href="' + escapeHtml(viewHref) + '" target="_blank" rel="noopener">' +
+      '<img src="' + escapeHtml(viewHref) + '" alt="' + escapeHtml(label) + '">' +
+      "</a>"
+    );
+  }
+
   function renderModal(item) {
     if (!modalBody) return;
     modalBody.innerHTML =
@@ -88,9 +105,9 @@
       '<section><h3>Requested</h3><p>' + escapeHtml(vehicleLabel(item.vehicle_make, item.vehicle_model, item.vehicle_color, item.plate_number, item.service_tier)) + '</p></section>' +
       '</div>' +
       '<div class="vehicle-change-review__photos">' +
-      '<a href="' + escapeHtml(item.photo_plate_distance_url) + '" target="_blank" rel="noopener"><img src="' + escapeHtml(item.photo_plate_distance_url) + '" alt="Plate distance photo"></a>' +
-      '<a href="' + escapeHtml(item.photo_interior_url) + '" target="_blank" rel="noopener"><img src="' + escapeHtml(item.photo_interior_url) + '" alt="Interior photo"></a>' +
-      '<a href="' + escapeHtml(item.photo_driver_with_car_url) + '" target="_blank" rel="noopener"><img src="' + escapeHtml(item.photo_driver_with_car_url) + '" alt="Driver with car photo"></a>' +
+      photoLink(item.photo_plate_distance_url, "Plate distance photo") +
+      photoLink(item.photo_interior_url, "Interior photo") +
+      photoLink(item.photo_driver_with_car_url, "Driver with car photo") +
       '</div>' +
       '</div>';
   }
@@ -151,14 +168,26 @@
 
   function rejectRequest() {
     if (!activeRequestId) return;
-    var reason = window.prompt("Optional reason for the driver:");
-    if (reason === null) return;
-    if (window.ButtonLoading) window.ButtonLoading.start(rejectBtn, { text: "Rejecting…" });
-    apiRequest("/admin/api/vehicle-changes/" + encodeURIComponent(activeRequestId) + "/reject", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: reason || undefined }),
-    })
+    var ask = window.AdminConfirm && window.AdminConfirm.promptNote
+      ? window.AdminConfirm.promptNote({
+          title: "Reject vehicle change",
+          message: "The driver keeps their current vehicle. Add the reason they will see.",
+          confirmLabel: "Reject",
+          variant: "danger",
+          inputLabel: "Reason for rejection",
+          placeholder: "Explain why this vehicle change is being rejected",
+        })
+      : Promise.resolve({ confirmed: false, value: "" });
+    ask.then(function (result) {
+      if (!result || !result.confirmed) return;
+      var reason = String(result.value || "").trim();
+      if (reason.length < 2) return;
+      if (window.ButtonLoading) window.ButtonLoading.start(rejectBtn, { text: "Rejecting…" });
+      apiRequest("/admin/api/vehicle-changes/" + encodeURIComponent(activeRequestId) + "/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason }),
+      })
       .then(function () {
         showToast("Vehicle change rejected.");
         closeModal();
@@ -170,6 +199,7 @@
       .finally(function () {
         if (window.ButtonLoading) window.ButtonLoading.stop(rejectBtn);
       });
+    });
   }
 
   tbody.addEventListener("click", function (event) {

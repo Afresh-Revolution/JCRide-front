@@ -1,0 +1,126 @@
+{% extends "admin/layout.html" %}
+{% set active_page = 'announcements' %}
+
+{% block page_title %}Announcements{% endblock %}
+
+{% block dashboard_content %}
+<section class="dash-card announcement-card">
+  <h2 class="dash-card__title">Send an announcement</h2>
+  <p class="dash-card__subtitle announcement-card__lead">Send to everyone, only riders, only drivers, or the people you pick. This lands in the app inbox and as a normal notification. It does not use the ride-request sound.</p>
+  <form id="announcement-form" class="announcement-form">
+    <label class="announcement-field">
+      <span>Who receives it</span>
+      <select id="announcement-audience" name="audience">
+        <option value="all">Everyone</option>
+        <option value="riders">Riders</option>
+        <option value="drivers">Drivers</option>
+        <option value="selected">Selected people</option>
+      </select>
+    </label>
+    <label class="announcement-field" id="announcement-search-wrap" hidden>
+      <span>Find people</span>
+      <input id="announcement-search" type="search" placeholder="Name, email, or phone" autocomplete="off">
+    </label>
+    <div id="announcement-results" class="announcement-results"></div>
+    <label class="announcement-field">
+      <span>Title</span>
+      <input id="announcement-title" name="title" maxlength="120" required>
+    </label>
+    <label class="announcement-field">
+      <span>Message</span>
+      <textarea id="announcement-body" name="body" maxlength="1000" rows="5" required></textarea>
+    </label>
+    <button type="submit" class="announcement-submit">Send announcement</button>
+    <p id="announcement-status" class="announcement-status" role="status"></p>
+  </form>
+</section>
+<script>
+(function () {
+  var form = document.getElementById('announcement-form');
+  var audience = document.getElementById('announcement-audience');
+  var searchWrap = document.getElementById('announcement-search-wrap');
+  var search = document.getElementById('announcement-search');
+  var results = document.getElementById('announcement-results');
+  var status = document.getElementById('announcement-status');
+  var picked = new Map();
+
+  function renderPicked() {
+    var chips = Array.from(picked.values()).map(function (user) {
+      return '<button type="button" data-remove="' + user.user_id + '">' + user.label + ' ×</button>';
+    }).join(' ');
+    var list = results.querySelector('[data-picked]');
+    if (!list) return;
+    list.innerHTML = chips || '<span>No one selected yet.</span>';
+  }
+
+  audience.addEventListener('change', function () {
+    var selected = audience.value === 'selected';
+    searchWrap.hidden = !selected;
+    results.hidden = !selected;
+    if (selected && !results.dataset.ready) {
+      results.dataset.ready = '1';
+      results.innerHTML = '<div data-matches></div><div data-picked style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>';
+      renderPicked();
+    }
+  });
+
+  var timer = null;
+  search.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      var q = search.value.trim();
+      if (q.length < 2) return;
+      fetch('/admin/api/users?search=' + encodeURIComponent(q) + '&limit=8', { credentials: 'same-origin' })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          var people = data.users || data.data || [];
+          var box = results.querySelector('[data-matches]');
+          box.innerHTML = people.map(function (user) {
+            var id = user.id || user.user_id;
+            var label = [user.full_name || user.name, user.email, user.phone].filter(Boolean).join(' · ');
+            return '<button type="button" data-add="' + id + '" data-label="' + label.replace(/"/g, '') + '">' + label + '</button>';
+          }).join('<br>') || '<span>No matches.</span>';
+        })
+        .catch(function () {});
+    }, 250);
+  });
+
+  results.addEventListener('click', function (event) {
+    var add = event.target.getAttribute('data-add');
+    var remove = event.target.getAttribute('data-remove');
+    if (add) picked.set(add, { user_id: add, label: event.target.getAttribute('data-label') || add });
+    if (remove) picked.delete(remove);
+    renderPicked();
+  });
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var mode = audience.value;
+    var payload = {
+      title: document.getElementById('announcement-title').value.trim(),
+      body: document.getElementById('announcement-body').value.trim(),
+      audience: mode === 'selected' ? 'all' : mode,
+      user_ids: mode === 'selected' ? Array.from(picked.keys()) : undefined
+    };
+    if (mode === 'selected' && !payload.user_ids.length) {
+      status.textContent = 'Pick at least one person.';
+      return;
+    }
+    status.textContent = 'Sending…';
+    fetch('/admin/api/announcements', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+      .then(function (result) {
+        status.textContent = result.ok
+          ? 'Sent to ' + (result.data.sent || 0) + ' people.'
+          : (result.data.message || 'Could not send.');
+        if (result.ok) form.reset();
+      })
+      .catch(function () { status.textContent = 'Could not send.'; });
+  });
+})();
+</script>
+{% endblock %}

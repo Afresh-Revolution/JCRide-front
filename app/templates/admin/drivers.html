@@ -38,6 +38,13 @@
       </div>
       <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" id="vehicle-changes-scroll">Review</button>
     </article>
+    <article class="drivers-kpi-card">
+      <div class="drivers-kpi-card__body">
+        <span class="drivers-kpi-card__label">Inspections pending</span>
+        <span class="drivers-kpi-card__value" id="kpi-inspections">-</span>
+      </div>
+      <button type="button" class="drivers-kpi-card__review drivers-kpi-card__review--green" id="vehicle-inspections-scroll">Review</button>
+    </article>
   </div>
 
   <section class="drivers-card dash-card drivers-vehicle-changes" id="vehicle-changes-section" aria-label="Vehicle change requests">
@@ -65,6 +72,52 @@
     </div>
   </section>
 
+  <section class="drivers-card dash-card drivers-vehicle-changes" id="vehicle-inspections-section" aria-label="Vehicle inspections">
+    <div class="drivers-vehicle-changes__header">
+      <div>
+        <h2 class="drivers-vehicle-changes__title">Vehicle inspections</h2>
+        <p class="drivers-vehicle-changes__sub">Confirm the physical review, then assign Eco, Comfort, or Premium. That class is saved on the driver account so they can go online.</p>
+      </div>
+    </div>
+    <div class="drivers-inspection-location">
+      <div class="drivers-inspection-location__lead">
+        <span class="drivers-inspection-location__pin" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"></path>
+            <circle cx="12" cy="10" r="2.5"></circle>
+          </svg>
+        </span>
+        <div>
+          <p class="drivers-inspection-location__title">Inspection location</p>
+          <p class="drivers-inspection-location__hint">Drivers come here for the in-person account review. The wallet stays closed until you mark that review complete.</p>
+        </div>
+      </div>
+      <div class="drivers-inspection-location__controls">
+        <label class="drivers-field" for="vehicle-inspection-location">
+          <span class="sr-only">Inspection location</span>
+          <input id="vehicle-inspection-location" type="text" maxlength="200" placeholder="Afresh Center, Jos" autocomplete="off">
+        </label>
+        <button type="button" class="drivers-btn drivers-btn--primary" id="vehicle-inspection-location-save">Save location</button>
+      </div>
+    </div>
+    <div class="drivers-table-wrap">
+      <table class="drivers-table" aria-label="Vehicle inspections">
+        <thead>
+          <tr>
+            <th scope="col">Driver</th>
+            <th scope="col">Vehicle</th>
+            <th scope="col">Preferred slot</th>
+            <th scope="col">Submitted</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody id="vehicle-inspections-table-body">
+          <tr class="drivers-table__loading"><td colspan="5">Loading inspections…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <section class="drivers-card dash-card drivers-vehicle-changes" id="document-edits-section" aria-label="Document edit requests">
     <div class="drivers-vehicle-changes__header">
       <div>
@@ -79,12 +132,13 @@
           <tr>
             <th scope="col">Driver</th>
             <th scope="col">Document</th>
+            <th scope="col">Upload</th>
             <th scope="col">Submitted</th>
             <th scope="col"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody id="document-edits-table-body">
-          <tr class="drivers-table__loading"><td colspan="4">Loading document edits…</td></tr>
+          <tr class="drivers-table__loading"><td colspan="5">Loading document edits…</td></tr>
         </tbody>
       </table>
     </div>
@@ -134,7 +188,7 @@
 </section>
 
 <div class="drivers-modal-overlay" id="driver-detail-modal" hidden>
-  <div class="drivers-modal" role="dialog" aria-labelledby="driver-detail-title" aria-modal="true">
+  <div class="drivers-modal drivers-modal--wide" role="dialog" aria-labelledby="driver-detail-title" aria-modal="true">
     <div class="drivers-modal__header">
       <h2 id="driver-detail-title">Driver details</h2>
       <button type="button" class="drivers-modal__close" data-close-modal aria-label="Close">&times;</button>
@@ -161,11 +215,26 @@
   </div>
 </div>
 
+<div class="drivers-modal-overlay" id="vehicle-inspection-modal" hidden>
+  <div class="drivers-modal" role="dialog" aria-labelledby="vehicle-inspection-title" aria-modal="true">
+    <div class="drivers-modal__header">
+      <h2 id="vehicle-inspection-title">Complete account review</h2>
+      <button type="button" class="drivers-modal__close" data-close-inspection-modal aria-label="Close">&times;</button>
+    </div>
+    <div class="drivers-modal__body" id="vehicle-inspection-body"></div>
+    <div class="drivers-modal__footer">
+      <button type="button" class="drivers-btn drivers-btn--ghost" data-close-inspection-modal>Close</button>
+      <button type="button" class="drivers-btn drivers-btn--primary" id="vehicle-inspection-save-btn">Mark review complete</button>
+    </div>
+  </div>
+</div>
+
 <div class="drivers-toast" id="drivers-toast" hidden role="status"></div>
 {% endblock %}
 
 {% block page_scripts %}
 <script src="{{ url_for('static', filename='js/admin-drivers.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin-vehicle-changes.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin-vehicle-inspections.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin-document-edits.js') }}"></script>
 {% endblock %}

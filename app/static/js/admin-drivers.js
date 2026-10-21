@@ -150,7 +150,11 @@
       .map(function (driver) {
         const isPending = driver.backend_status === "pending_approval";
         const isApproved = driver.backend_status === "approved";
-        const canApprove = isPending || driver.backend_status === "suspended";
+        const isSuspended = driver.backend_status === "suspended";
+        const canApprove = isPending;
+        const positiveAction = isSuspended ? "unlock" : "approve";
+        const positiveLabel = isSuspended ? "Unlock driver" : "Approve driver";
+        const positiveDisabled = isSuspended ? false : !canApprove;
         const declineAction = isPending ? "reject" : (isApproved ? "suspend" : null);
         const declineLabel = isPending ? "Reject driver" : "Suspend driver";
         const declineDisabled = !declineAction;
@@ -170,7 +174,7 @@
           "<td class=\"drivers-table__actions\" data-label=\"Actions\"><div class=\"drivers-actions\">" +
           "<button type=\"button\" class=\"drivers-action-btn\" data-action=\"view\" data-id=\"" + escapeHtml(driver.id) + "\" aria-label=\"View driver\">" +
           "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></button>" +
-          "<button type=\"button\" class=\"drivers-action-btn drivers-action-btn--approve\" data-action=\"approve\" data-id=\"" + escapeHtml(driver.id) + "\" aria-label=\"Approve driver\"" + (canApprove ? "" : " disabled") + ">" +
+          "<button type=\"button\" class=\"drivers-action-btn drivers-action-btn--approve\" data-action=\"" + positiveAction + "\" data-id=\"" + escapeHtml(driver.id) + "\" aria-label=\"" + escapeHtml(positiveLabel) + "\"" + (positiveDisabled ? " disabled" : "") + ">" +
           "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"20 6 9 17 4 12\"/></svg></button>" +
           "<button type=\"button\" class=\"drivers-action-btn drivers-action-btn--suspend\" data-action=\"" + (declineAction || "decline") + "\" data-id=\"" + escapeHtml(driver.id) + "\" aria-label=\"" + escapeHtml(declineLabel) + "\"" + (declineDisabled ? " disabled" : "") + ">" +
           "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg></button>" +
@@ -229,12 +233,14 @@
     loadDrivers();
   }
 
-  function updateDriverStatus(driverId, status, message, driver, button) {
+  function updateDriverStatus(driverId, status, message, driver, button, reason) {
     if (button && window.ButtonLoading) window.ButtonLoading.start(button);
+    const payload = { status: status };
+    if (reason) payload.reason = reason;
     return apiRequest("/admin/api/drivers/" + encodeURIComponent(driverId) + "/status", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: status }),
+      body: JSON.stringify(payload),
     })
       .then(function (updated) {
         const normalized = normalizeDriver(updated);
@@ -285,15 +291,66 @@
     });
   }
 
+  function safeHref(url) {
+    const raw = String(url || "").trim();
+    return /^https?:\/\//i.test(raw) ? raw : "";
+  }
+
+  function isHeicUrl(url) {
+    return /\.hei[cf](\?|#|$)/i.test(url);
+  }
+
+  function isImageUrl(url) {
+    return /\.(jpe?g|png|gif|webp|bmp|hei[cf])(\?|#|$)/i.test(url) || /\/image\/upload\//i.test(url);
+  }
+
+  function previewSrc(url) {
+    if (!isHeicUrl(url) || !/res\.cloudinary\.com/i.test(url) || /\/upload\/f_jpg\//i.test(url)) return url;
+    return url.replace("/upload/", "/upload/f_jpg/");
+  }
+
+  function documentLabel(type) {
+    const labels = {
+      license: "License",
+      vehicle_papers: "Vehicle papers",
+      nin: "NIN",
+      insurance: "Insurance",
+      profile_photo: "Profile photo",
+      vehicle_photo: "Vehicle photo",
+    };
+    return labels[type] || String(type || "Document").replace(/_/g, " ");
+  }
+
+  function renderDocument(doc) {
+    const href = safeHref(doc.file_url);
+    const label = documentLabel(doc.document_type);
+    const status = String(doc.verification_status || "").replace(/_/g, " ");
+    const viewHref = previewSrc(href);
+    const preview = href
+      ? (isImageUrl(href)
+        ? '<img src="' + escapeHtml(viewHref) + '" alt="' + escapeHtml(label) + '">'
+        : '<span class="drivers-upload-file">Open file</span>')
+      : '<span class="drivers-upload-missing">No file</span>';
+    const link = href
+      ? '<a class="drivers-upload" href="' + escapeHtml(viewHref) + '" target="_blank" rel="noopener noreferrer">' + preview + "</a>"
+      : preview;
+    return (
+      '<article class="driver-document">' +
+      link +
+      "<div><strong>" + escapeHtml(label) + "</strong>" +
+      "<span>" + escapeHtml(status || "submitted") + "</span></div></article>"
+    );
+  }
+
   function viewDriver(driverId) {
     apiRequest("/admin/api/drivers/" + encodeURIComponent(driverId))
       .then(function (driver) {
         const normalized = normalizeDriver(driver);
         const docs = driver.documents && driver.documents.length
           ? driver.documents.map(function (doc) {
-              return doc.document_type + " (" + doc.verification_status + ")";
-            }).join(", ")
-          : "-";
+              return renderDocument(doc);
+            }).join("")
+          : '<p class="drivers-upload-missing">No documents uploaded.</p>';
         detailBody.innerHTML =
           "<div class=\"driver-detail-header\">" +
           "<span class=\"drivers-avatar\">" + escapeHtml(normalized.initials) + "</span>" +
@@ -307,9 +364,9 @@
           "<div><dt>Total trips</dt><dd>" + escapeHtml(normalized.trip_count) + "</dd></div>" +
           "<div><dt>Earnings</dt><dd>" + escapeHtml(normalized.earnings_display) + "</dd></div>" +
           "<div><dt>Rating</dt><dd>" + escapeHtml(normalized.rating_display) + "</dd></div>" +
-          "<div><dt>Documents</dt><dd>" + escapeHtml(docs) + "</dd></div>" +
           "<div><dt>Status</dt><dd><span class=\"" + statusClass(normalized.status) + "\">" + escapeHtml(normalized.status_label) + "</span></dd></div>" +
-          "</dl>";
+          "</dl>" +
+          "<section class=\"driver-documents\"><h3>Documents</h3><div class=\"driver-documents__grid\">" + docs + "</div></section>";
         detailModal.hidden = false;
         document.body.style.overflow = "hidden";
       })
@@ -373,25 +430,51 @@
             }
           });
         } else if (action === "reject") {
-          showConfirmDialog({
+          window.AdminConfirm.promptNote({
             title: "Reject application",
             message: "Reject " + driver.full_name + "'s driver application? This cannot be undone.",
             confirmLabel: "Reject",
             variant: "danger",
-          }).then(function (confirmed) {
-            if (confirmed) {
-              updateDriverStatus(id, "rejected", driver.full_name + " rejected", driver, btn);
+            inputLabel: "Reason for rejection",
+            placeholder: "Explain why this application is being rejected",
+            hint: "The driver sees this note in the app and by email.",
+          }).then(function (result) {
+            if (result && result.confirmed) {
+              updateDriverStatus(id, "rejected", driver.full_name + " rejected", driver, btn, result.value.trim());
             }
           });
-        } else if (action === "suspend") {
+        } else if (action === "unlock") {
           showConfirmDialog({
+            title: "Unlock driver",
+            message: "Confirm the suspension reason for " + driver.full_name + " is settled. They will be able to sign in again.",
+            confirmLabel: "Unlock",
+          }).then(function (confirmed) {
+            if (!confirmed) return;
+            if (window.ButtonLoading) window.ButtonLoading.start(btn);
+            apiRequest("/admin/api/drivers/" + encodeURIComponent(id) + "/unlock", { method: "POST" })
+              .then(function () {
+                showToast(driver.full_name + " unlocked");
+                return Promise.all([loadDrivers(), loadStats()]);
+              })
+              .catch(function (err) {
+                showToast(err.message, true);
+              })
+              .then(function () {
+                if (window.ButtonLoading) window.ButtonLoading.stop(btn);
+              });
+          });
+        } else if (action === "suspend") {
+          window.AdminConfirm.promptNote({
             title: "Suspend driver",
-            message: "Suspend " + driver.full_name + "? They will no longer be able to go online.",
+            message: "Suspend " + driver.full_name + "? They will not be able to sign in until you unlock the account.",
             confirmLabel: "Suspend",
             variant: "danger",
-          }).then(function (confirmed) {
-            if (confirmed) {
-              updateDriverStatus(id, "suspended", driver.full_name + " suspended", driver, btn);
+            inputLabel: "Reason for suspension",
+            placeholder: "Explain why this account is being suspended",
+            hint: "This reason is emailed to the driver. Only an admin can unlock the account after it is settled.",
+          }).then(function (result) {
+            if (result && result.confirmed) {
+              updateDriverStatus(id, "suspended", driver.full_name + " suspended", driver, btn, result.value.trim());
             }
           });
         } else if (action === "delete") {

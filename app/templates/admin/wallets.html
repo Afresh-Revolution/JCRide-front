@@ -93,7 +93,7 @@
     <div class="queue-card__header">
       <div>
         <h2 class="queue-card__title">Withdrawals</h2>
-        <p class="queue-card__subtitle">Paystack sends payouts automatically. Minimum ₦1,000. This list is history only.</p>
+        <p class="queue-card__subtitle">Paystack payouts are sent automatically. Manual requests stay pending until you transfer the money, then approve. Approval deducts the wallet.</p>
       </div>
       <div class="queue-card__tools">
         <label>
@@ -116,12 +116,14 @@
             <th scope="col">User</th>
             <th scope="col">Net amount</th>
             <th scope="col">Bank details</th>
+            <th scope="col">Method</th>
             <th scope="col">Status</th>
             <th scope="col">Requested</th>
+            <th scope="col">Actions</th>
           </tr>
         </thead>
         <tbody id="withdrawals-table-body">
-          <tr class="queue-table__loading"><td colspan="6">Loading withdrawals…</td></tr>
+          <tr class="queue-table__loading"><td colspan="8">Loading withdrawals…</td></tr>
         </tbody>
       </table>
     </div>

@@ -121,3 +121,45 @@ html[data-user-theme="dark"] .lm-vehicle-card:has(input:checked) { background: r
   .lm-btn-row { flex-direction: column; }
   .lm-vehicle-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Fill the dashboard column instead of shrinking to the current step's text. */
+.lm-page { box-sizing: border-box; width: 100%; min-width: 0; max-width: 1040px; padding: clamp(16px, 3vw, 32px); border: 1px solid var(--dash-border, #e5e7eb); border-radius: 20px; background: var(--dash-card, #fff); }
+.lm-page *, .lm-page *::before, .lm-page *::after { box-sizing: border-box; }
+.lm-page h2 { font-size: clamp(1.15rem, 2.5vw, 1.5rem); line-height: 1.35; margin: 24px 0 18px; }
+.lm-page p { line-height: 1.6; }
+.lm-page form, .lm-header > div { min-width: 0; width: 100%; }
+.lm-form-field input, .lm-form-field select { width: 100%; min-width: 0; min-height: 48px; font-size: 16px; }
+.lm-form-field input[type=file] { padding: 14px; border-style: dashed; }
+.lm-form-field small, .lm-payment-help { color: var(--dash-muted, #64748b); font-size: .875rem; line-height: 1.5; }
+.lm-btn { min-height: 46px; white-space: normal; text-align: center; }
+.lm-summary-row, .lm-summary-total, .lm-bank-card__row { gap: 16px; align-items: flex-start; }
+.lm-summary-row > *, .lm-bank-card__row > *, .lm-plan-card__top > * { min-width: 0; overflow-wrap: anywhere; }
+.lm-summary-row strong, .lm-bank-card__row strong { text-align: right; }
+.lm-plan-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.lm-plan-card__top, .lm-plan-card__foot { flex-wrap: wrap; gap: 12px; }
+.lm-option:has(input:focus-visible), .lm-vehicle-card:has(input:focus-visible), .lm-day-chip:has(input:focus-visible), .lm-btn:focus-visible { outline: 3px solid #10b981; outline-offset: 3px; }
+@media (max-width: 480px) {
+  .lm-page { padding: 16px; border-radius: 14px; }
+  .lm-summary, .lm-plan-card, .lm-bank-card { padding: 14px; }
+  .lm-summary-row, .lm-bank-card__row { flex-direction: column; gap: 4px; }
+  .lm-summary-row strong, .lm-bank-card__row strong { text-align: left; }
+  .lm-vehicle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lm-vehicle-card { padding: 12px; overflow-wrap: anywhere; }
+  .lm-status-hero { padding: 24px 0; }
+}
+@media (prefers-reduced-motion: reduce) { .lm-spinner { animation: none; } }
+
+.lm-google-search, .lm-google-search gmp-place-autocomplete { display: block; width: 100%; min-width: 0; }
+.lm-location-selected { margin: 4px 0; font-size: .9rem; overflow-wrap: anywhere; color: var(--dash-muted, #64748b); }
+.lm-map-picker { margin: 20px 0; padding: 16px; border: 1px solid var(--dash-border, #d1d5db); border-radius: 14px; }
+.lm-map-picker[hidden] { display: none; }
+.lm-map-frame { position: relative; }
+#lm-location-map { height: clamp(280px, 50vh, 460px); width: 100%; border-radius: 12px; }
+.lm-map-pin { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%); font-size: 36px; line-height: 1; pointer-events: none; }
+#lm-location-status { font-size: .9rem; }
+
+.lm-map-targets { display: flex; gap: 10px; margin-bottom: 12px; }
+.lm-map-targets .lm-btn { flex: 1; }
+.lm-map-targets [aria-pressed="true"] { background: var(--dash-green-dark, #065f46); color: #fff; }
+.lm-map-loading { position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; text-align: center; padding: 24px; background: var(--dash-card, #fff); border: 1px solid var(--dash-border, #d1d5db); border-radius: 12px; margin: 0; }
+.lm-map-loading[hidden] { display: none; }

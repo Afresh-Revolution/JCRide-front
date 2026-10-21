@@ -3,7 +3,7 @@
 {% block page_title %}Fixed Route{% endblock %}
 
 {% block page_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/user-landmark.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/user-landmark.css') }}">
 {% endblock %}
 
 {% block user_content %}
@@ -28,16 +28,43 @@
     <input type="hidden" name="step" value="1">
     <div class="lm-form-field">
       <label for="lm-pickup">From</label>
-      <input type="text" id="lm-pickup" name="pickup" placeholder="Search pickup location" autocomplete="off" value="{{ draft.pickup_address or '' }}" required>
-      <input type="hidden" name="pickup_lat" id="lm-pickup-lat" value="{{ draft.pickup_lat or '' }}">
-      <input type="hidden" name="pickup_lng" id="lm-pickup-lng" value="{{ draft.pickup_lng or '' }}">
+      <input type="hidden" id="lm-pickup" name="pickup" placeholder="Search pickup location" autocomplete="off" value="{{ draft.pickup_address or '' }}" required>
+      <div id="lm-pickup-search" class="lm-google-search"></div>
+      <p id="lm-pickup-selected" class="lm-location-selected" aria-live="polite"></p>
+      <button type="button" class="lm-btn lm-btn--outline" data-map-field="pickup" disabled>Choose pickup on map</button>
+      <input type="hidden" name="pickup_lat" id="lm-pickup-lat" value="{{ draft.pickup_lat if draft.pickup_lat is defined and draft.pickup_lat is not none else '' }}">
+      <input type="hidden" name="pickup_lng" id="lm-pickup-lng" value="{{ draft.pickup_lng if draft.pickup_lng is defined and draft.pickup_lng is not none else '' }}">
     </div>
     <div class="lm-form-field">
       <label for="lm-dropoff">To</label>
-      <input type="text" id="lm-dropoff" name="dropoff" placeholder="Search destination" autocomplete="off" value="{{ draft.destination_address or '' }}" required>
-      <input type="hidden" name="destination_lat" id="lm-dest-lat" value="{{ draft.destination_lat or '' }}">
-      <input type="hidden" name="destination_lng" id="lm-dest-lng" value="{{ draft.destination_lng or '' }}">
+      <input type="hidden" id="lm-dropoff" name="dropoff" placeholder="Search destination" autocomplete="off" value="{{ draft.destination_address or '' }}" required>
+      <div id="lm-dropoff-search" class="lm-google-search"></div>
+      <p id="lm-dropoff-selected" class="lm-location-selected" aria-live="polite"></p>
+      <button type="button" class="lm-btn lm-btn--outline" data-map-field="dropoff" disabled>Choose destination on map</button>
+      <input type="hidden" name="destination_lat" id="lm-dest-lat" value="{{ draft.destination_lat if draft.destination_lat is defined and draft.destination_lat is not none else '' }}">
+      <input type="hidden" name="destination_lng" id="lm-dest-lng" value="{{ draft.destination_lng if draft.destination_lng is defined and draft.destination_lng is not none else '' }}">
     </div>
+    <p id="lm-location-status" role="status">Loading Google Maps search...</p>
+    <div id="lm-map-picker" class="lm-map-picker">
+      <h3 id="lm-map-title" tabindex="-1">Choose pickup on the map</h3>
+      <p>Tap the map or move it until the pin marks your exact location. You can select places without a name.</p>
+      <div class="lm-map-targets" role="group" aria-label="Location to select">
+        <button type="button" class="lm-btn lm-btn--outline" data-map-field="pickup" aria-pressed="true" disabled>Pickup</button>
+        <button type="button" class="lm-btn lm-btn--outline" data-map-field="dropoff" aria-pressed="false" disabled>Destination</button>
+      </div>
+      <button type="button" id="lm-use-device-location" class="lm-btn lm-btn--outline" disabled>Use my current location</button>
+      <p id="lm-device-location-status" class="lm-location-selected" role="status">Nigeria is the default map area. Allow location access to see places near you.</p>
+      <div class="lm-map-frame">
+        <p id="lm-map-loading" class="lm-map-loading" role="status">Loading map...</p>
+        <div id="lm-location-map" aria-label="Location picker map"></div>
+        <span class="lm-map-pin" aria-hidden="true">&#128205;</span>
+      </div>
+      <p id="lm-map-coordinates" aria-live="polite"></p>
+      <div class="lm-btn-row">
+        <button type="button" id="lm-map-confirm" class="lm-btn lm-btn--primary" disabled>Use pin as pickup</button>
+      </div>
+    </div>
+    <noscript>Enable JavaScript to search Google Maps and choose locations.</noscript>
     {% if draft.pickup_address and draft.destination_address %}
     <div class="lm-summary" style="margin-bottom:16px;">
       <div class="lm-summary-row"><span>{{ draft.pickup_address }}</span></div>
@@ -154,10 +181,12 @@
       <button type="submit" name="action" value="back" class="lm-btn lm-btn--outline">Edit plan</button>
     </div>
     <div class="lm-btn-row">
-      <button type="submit" name="action" value="pay_paystack" class="lm-btn lm-btn--primary lm-btn--block">Pay with Paystack</button>
+      <button type="submit" name="action" value="pay_paystack" {% if not landmark_payment_config.paystack_enabled %}disabled aria-describedby="lm-paystack-help"{% endif %} class="lm-btn lm-btn--primary lm-btn--block">Pay with Paystack</button>
+      {% if not landmark_payment_config.paystack_enabled %}<p id="lm-paystack-help" class="lm-payment-help">Paystack is currently unavailable.</p>{% endif %}
     </div>
     <div class="lm-btn-row">
-      <button type="submit" name="action" value="choose_manual" class="lm-btn lm-btn--outline lm-btn--block">Manual Bank Transfer</button>
+      <a href="{{ url_for('main.user_landmark_fixed_route_manual') }}" class="lm-btn lm-btn--outline lm-btn--block">Manual Bank Transfer</a>
+      {% if not landmark_payment_config.manual_enabled %}<p class="lm-payment-help">{{ landmark_payment_config.config_error or "Bank transfer is currently unavailable. Please contact support." }}</p>{% endif %}
     </div>
   </form>
   {% endif %}
@@ -167,44 +196,11 @@
 
 {% block page_scripts %}
 {% if step == 1 %}
-<script src="{{ url_for('static', filename='js/user-location-search.js') }}"></script>
-<script>
-(function () {
-  if (!window.RiderLocationSearch) return;
-  var pickup = document.getElementById("lm-pickup");
-  var dest = document.getElementById("lm-dropoff");
-  var form = document.getElementById("lm-route-form");
-  if (pickup) {
-    RiderLocationSearch.attach(pickup, function (item) {
-      document.getElementById("lm-pickup-lat").value = item.lat;
-      document.getElementById("lm-pickup-lng").value = item.lng;
-    });
-  }
-  if (dest) {
-    RiderLocationSearch.attach(dest, function (item) {
-      document.getElementById("lm-dest-lat").value = item.lat;
-      document.getElementById("lm-dest-lng").value = item.lng;
-    });
-  }
-  if (form) {
-    form.addEventListener("submit", function () {
-      var p = RiderLocationSearch.readCoords(pickup);
-      var d = RiderLocationSearch.readCoords(dest);
-      if (p) {
-        document.getElementById("lm-pickup-lat").value = p.lat;
-        document.getElementById("lm-pickup-lng").value = p.lng;
-      }
-      if (d) {
-        document.getElementById("lm-dest-lat").value = d.lat;
-        document.getElementById("lm-dest-lng").value = d.lng;
-      }
-    });
-  }
-})();
-</script>
+{% include "includes/maps_config.html" %}
+<script src="{{ static_url('js/landmark-locations.js') }}" defer></script>
 {% endif %}
 {% if step == 5 %}
-<script src="{{ url_for('static', filename='js/landmark-checkout.js') }}"></script>
+<script src="{{ static_url('js/landmark-checkout.js') }}"></script>
 <script>
   LandmarkCheckout.initPayForm(document.getElementById("lm-checkout-form"));
 </script>
