@@ -1900,7 +1900,6 @@ def logout():
     return redirect(url_for("main.home"))
 
 
-<<<<<<< HEAD
 def owner_required(view):
     @wraps(view)
     def wrapped(**kwargs):
@@ -1955,7 +1954,8 @@ def owner_call_system():
         return jsonify(result), 200, {"Cache-Control": "no-store"}
     except ApiError as exc:
         return _owner_api_error(exc)
-=======
+
+
 @admin_bp.route("/landmark/transactions/<payment_id>/receipt")
 @admin_required
 def landmark_transaction_receipt(payment_id):
@@ -1968,4 +1968,3 @@ def landmark_transaction_receipt(payment_id):
     response.headers["Cache-Control"] = "private, no-store"
     response.headers["X-Content-Type-Options"] = "nosniff"
     return response
->>>>>>> 6909267fb91aea772990f50a3dff64d558b47fce
