@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% block title %}Owner Overview - JosRide NAIJA{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-owner.css') }}">
+{% endblock %}
+{% block body %}
+<div class="owner-shell">
+  <header class="owner-header">
+    {% from "includes/brand_assets.html" import brand_mark %}
+    <a class="owner-brand" href="{{ url_for('admin.owner_dashboard') }}">{{ brand_mark('', 42) }} <span>JosRide <small>OWNER DASHBOARD</small></span></a>
+    <a class="owner-signout" href="{{ url_for('admin.logout') }}">Sign out</a>
+  </header>
+  <main>
+    <div class="owner-heading"><div><p class="owner-eyebrow">SYSTEM OVERVIEW</p><h1>Your platform at a glance</h1><p>Live totals, performance, and your calling controls.</p></div><button id="owner-refresh" type="button">Refresh overview</button></div>
+    <p id="owner-message" role="status" aria-live="polite">Loading system overview...</p>
+    <section class="owner-call-card" aria-labelledby="calling-title">
+      <div><span class="owner-eyebrow">OWNER CONTROL</span><h2 id="calling-title">In-app voice calling</h2><p id="owner-call-description">Checking calling status...</p><small id="owner-call-updated"></small></div>
+      <div class="owner-call-action"><strong id="owner-call-state" class="owner-badge">Checking</strong><button type="button" id="owner-toggle-calls" disabled>Checking status...</button></div>
+    </section>
+    <section class="kpi-grid owner-kpis" id="owner-kpis" aria-label="System numbers" aria-busy="true"></section>
+    <section class="owner-charts" aria-label="System graphs">
+      <article class="owner-chart"><h2>Trip activity</h2><p>Completed and cancelled trips over the last 30 days</p><div><canvas id="owner-trips-chart" role="img" aria-label="Daily completed and cancelled trips"></canvas></div></article>
+      <article class="owner-chart"><h2>Trip fares (NGN)</h2><p>Daily total fares from completed trips</p><div><canvas id="owner-revenue-chart" role="img" aria-label="Daily completed trip fares in naira"></canvas></div></article>
+      <article class="owner-chart"><h2>Trip outcomes</h2><p>All-time trip totals</p><div><canvas id="owner-outcomes-chart" role="img" aria-label="Completed, cancelled, active, and other trips"></canvas></div></article>
+      <article class="owner-chart"><h2>Calling activity</h2><p>All-time call totals</p><div><canvas id="owner-calls-chart" role="img" aria-label="Completed, missed, failed, active, and other calls"></canvas></div></article>
+    </section>
+    <p class="owner-footer" id="owner-updated">Overview refreshes every 30 seconds.</p>
+  </main>
+</div>
+<script type="application/json" id="owner-config">{{ {"overviewUrl": url_for('admin.owner_overview'), "callsUrl": url_for('admin.owner_call_system'), "loginUrl": url_for('admin.login_page'), "csrf": owner_csrf}|tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/admin-owner.js') }}"></script>
+{% endblock %}

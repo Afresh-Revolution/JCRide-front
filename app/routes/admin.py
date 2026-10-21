@@ -11,12 +11,17 @@ from app.admin_bike_delivery_defaults import (
 )
 from datetime import datetime, timedelta, timezone
 from functools import wraps
+import secrets
+import hmac
 
 from flask import Blueprint, flash, get_flashed_messages, jsonify, redirect, render_template, request, session, url_for
 
 from app.services.api_client import (
     ApiError,
     admin_login,
+    get_owner_overview,
+    get_owner_call_system,
+    set_owner_call_system,
     approve_admin_landmark_payment,
     create_admin_landmark_km_bundle_pack,
     delete_admin_landmark_km_bundle_pack,
@@ -336,6 +341,8 @@ def _login_flash_messages():
 @admin_bp.route("/enter", methods=["POST"])
 def enter_portal():
     grant_admin_entry()
+    if session.get("owner_token"):
+        return redirect(url_for("admin.owner_dashboard"))
     if session.get("admin_token"):
         return redirect(url_for("admin.dashboard"))
     return redirect(url_for("admin.login_page"))
@@ -344,6 +351,8 @@ def enter_portal():
 @admin_bp.route("/login", methods=["GET", "POST"])
 @admin_entry_required
 def login_page():
+    if session.get("owner_token"):
+        return redirect(url_for("admin.owner_dashboard"))
     if session.get("admin_token"):
         return redirect(url_for("admin.dashboard"))
 
@@ -358,6 +367,17 @@ def login_page():
 
         try:
             result = admin_login(email, password)
+            if result.get("role") == "owner" or (result.get("user") or {}).get("role") == "owner":
+                session.pop("admin_token", None)
+                session.pop("admin_email", None)
+                session["owner_token"] = result["access_token"]
+                session["owner_email"] = email
+                session["owner_csrf"] = secrets.token_urlsafe(32)
+                grant_admin_entry()
+                return redirect(url_for("admin.owner_dashboard"))
+            session.pop("owner_token", None)
+            session.pop("owner_email", None)
+            session.pop("owner_csrf", None)
             session["admin_token"] = result.get("access_token")
             session["admin_email"] = email
             grant_admin_entry()
@@ -1676,8 +1696,67 @@ def api_landing_page_settings_update():
 
 @admin_bp.route("/logout")
 def logout():
+    session.pop("owner_token", None)
+    session.pop("owner_email", None)
+    session.pop("owner_csrf", None)
     session.pop("admin_token", None)
     session.pop("admin_email", None)
     revoke_admin_entry()
     flash("Signed out of admin portal.", "success")
     return redirect(url_for("main.home"))
+
+
+def owner_required(view):
+    @wraps(view)
+    def wrapped(**kwargs):
+        if not session.get("owner_token") or not has_admin_entry():
+            if "/api/" in request.path:
+                return jsonify({"message": "Owner sign-in required."}), 401
+            return redirect(url_for("admin.login_page"))
+        return view(**kwargs)
+    return wrapped
+
+
+def _owner_api_error(exc):
+    if exc.status_code in {401, 403}:
+        session.pop("owner_token", None)
+        session.pop("owner_email", None)
+        session.pop("owner_csrf", None)
+    return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/owner")
+@owner_required
+def owner_dashboard():
+    session.setdefault("owner_csrf", secrets.token_urlsafe(32))
+    response = render_template("admin/owner.html", owner_csrf=session["owner_csrf"])
+    return response, 200, {"Cache-Control": "no-store"}
+
+
+@admin_bp.route("/owner/api/overview")
+@owner_required
+def owner_overview():
+    try:
+        return jsonify(get_owner_overview(session["owner_token"])), 200, {"Cache-Control": "no-store"}
+    except ApiError as exc:
+        return _owner_api_error(exc)
+
+
+@admin_bp.route("/owner/api/call-system", methods=["GET", "PUT"])
+@owner_required
+def owner_call_system():
+    try:
+        if request.method == "GET":
+            result = get_owner_call_system(session["owner_token"])
+        else:
+            supplied = request.headers.get("X-Owner-CSRF", "")
+            expected = session.get("owner_csrf", "")
+            if not expected or not hmac.compare_digest(supplied, expected):
+                return jsonify({"message": "Refresh the dashboard and try again."}), 403
+            payload = request.get_json(silent=True) or {}
+            if type(payload.get("paused")) is not bool or set(payload) != {"paused"}:
+                return jsonify({"message": "paused must be true or false."}), 422
+            result = set_owner_call_system(session["owner_token"], payload["paused"])
+        return jsonify(result), 200, {"Cache-Control": "no-store"}
+    except ApiError as exc:
+        return _owner_api_error(exc)

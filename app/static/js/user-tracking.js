@@ -1028,6 +1028,10 @@
       peerLabel: driverNameEl ? driverNameEl.textContent.trim() : "Driver",
       peerPhone: config.driverPhone || "",
       apiBase: "/user/api/rides",
+      sendSignal: function (message) {
+        if (!socket || socket.readyState !== 1) return false;
+        socket.send(JSON.stringify(message)); return true;
+      },
       apiPost: UserApi.post,
       apiGet: UserApi.request,
       callButton: document.getElementById("tracking-call-driver"),

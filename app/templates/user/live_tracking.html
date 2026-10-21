@@ -286,7 +286,6 @@
 
 {% block page_scripts %}
 <script type="application/json" id="rider-route-map-data">{{ route_map | tojson }}</script>
-<script src="https://cdn.jsdelivr.net/npm/livekit-client@2.9.9/dist/livekit-client.umd.min.js" defer></script>
 <script src="{{ url_for('static', filename='js/ride-realtime-events.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/ride-chat.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/ride-voice-call.js') }}" defer></script>

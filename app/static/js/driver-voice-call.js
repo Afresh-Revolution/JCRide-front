@@ -39,6 +39,9 @@
       peerLabel: peerLabel,
       peerPhone: config.riderPhone || "",
       apiBase: DriverApi.base + "/rides",
+      sendSignal: function (message) {
+        return !!(window.DriverRealtime && window.DriverRealtime.sendCallSignal(message));
+      },
       apiPost: DriverApi.post,
       apiGet: DriverApi.request,
       callButton: callButton,

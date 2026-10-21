@@ -328,6 +328,10 @@
 
   window.DriverRealtime = {
     sendLocationUpdate: sendLocationUpdate,
+    sendCallSignal: function (message) {
+      if (!socket || socket.readyState !== 1) return false;
+      socket.send(JSON.stringify(message)); return true;
+    },
     isConnected: function () {
       return !!(socket && socket.readyState === 1);
     },

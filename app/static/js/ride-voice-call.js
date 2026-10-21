@@ -4,7 +4,12 @@
   var CALL_ALLOWED_STATUSES = ["accepted", "driver_arrived", "in_progress"];
   var CALL_EVENTS = [
     "incoming_call",
-    "call_answered",
+    "call_accepted",
+    "call_failed",
+    "call_system_status",
+    "webrtc_offer",
+    "webrtc_answer",
+    "ice_candidate",
     "call_rejected",
     "call_cancelled",
     "call_ended",
@@ -47,6 +52,13 @@
   var methodLead = null;
 
   var room = null;
+  var localStream = null;
+  var peerPromise = null;
+  var peerGeneration = 0;
+  var pendingIce = [];
+  var signalChain = Promise.resolve();
+  var callsPaused = true;
+  var syncPending = false;
   var activeCall = null;
   var phase = "idle";
   var muted = false;
@@ -80,23 +92,6 @@
     } catch (err) {
       return {};
     }
-  }
-
-  function getLiveKit() {
-    return global.LivekitClient || global.LiveKit || global.livekit || null;
-  }
-
-  function waitForLiveKit(attempt) {
-    attempt = attempt || 0;
-    if (getLiveKit()) return Promise.resolve(getLiveKit());
-    if (attempt >= 80) {
-      return Promise.reject(new Error("LiveKit client failed to load. Check your network and refresh."));
-    }
-    return new Promise(function (resolve, reject) {
-      global.setTimeout(function () {
-        waitForLiveKit(attempt + 1).then(resolve).catch(reject);
-      }, 50);
-    });
   }
 
   function normalizeId(value) {
@@ -133,16 +128,6 @@
 
   function updateAvatar() {
     if (avatarEl) avatarEl.textContent = initialsFromName(peerLabel);
-  }
-
-  function isAudioTrack(track) {
-    if (!track) return false;
-    var LivekitClient = getLiveKit();
-    var audioKind =
-      LivekitClient && LivekitClient.Track && LivekitClient.Track.Kind
-        ? LivekitClient.Track.Kind.Audio
-        : "audio";
-    return track.kind === audioKind || track.kind === "audio";
   }
 
   function isReceiver(call) {
@@ -313,7 +298,8 @@
     var allowed = canPlaceCall(rideStatus);
     var inCall = phase !== "idle";
     callButton.hidden = !allowed;
-    callButton.disabled = !allowed || inCall || busy;
+    callButton.disabled = callsPaused || !allowed || inCall || busy;
+    callButton.title = callsPaused ? "In-app calling is temporarily paused or unavailable." : "Call";
     callButton.setAttribute("aria-disabled", callButton.disabled ? "true" : "false");
   }
 
@@ -390,7 +376,6 @@
     if (cancelBtn) cancelBtn.disabled = false;
     if (muteBtn) {
       muteBtn.disabled = false;
-      muteBtn.textContent = "Mute";
       muteBtn.setAttribute("aria-pressed", "false");
       var muteLabel = muteBtn.querySelector(".ride-voice-call__action-label");
       if (muteLabel) muteLabel.textContent = "Mute";
@@ -405,15 +390,14 @@
   }
 
   function disconnectRoom() {
-    clearAudio();
-    if (!room) return;
-    try {
-      room.removeAllListeners();
-      room.disconnect();
-    } catch (err) {
-      /* ignore disconnect errors */
-    }
+    peerGeneration++;
+    peerPromise = null;
+    pendingIce = [];
+    if (localStream) localStream.getTracks().forEach(function (track) { track.stop(); });
+    localStream = null;
+    if (room) { room.onconnectionstatechange = null; room.onicecandidate = null; room.close(); }
     room = null;
+    clearAudio();
   }
 
   function resetUi(message) {
@@ -451,91 +435,100 @@
     });
   }
 
-  function attachRemoteAudio(track) {
-    if (!audioHost || !isAudioTrack(track)) return;
-    var element = track.attach();
-    element.setAttribute("data-ride-voice-call", "remote");
-    element.autoplay = true;
-    element.playsInline = true;
-    audioHost.appendChild(element);
-    if (typeof element.play === "function") {
-      element.play().catch(function () {});
-    }
-  }
-
-  function subscribeParticipantAudio(participant) {
-    if (!participant || !participant.audioTrackPublications) return;
-    participant.audioTrackPublications.forEach(function (publication) {
-      if (publication.track) attachRemoteAudio(publication.track);
-    });
-  }
-
-  function connectLiveKit(tokenPayload) {
-    if (!tokenPayload || !tokenPayload.livekit_url || !tokenPayload.access_token) {
-      return Promise.reject(new Error("Invalid LiveKit token response."));
-    }
-
-    return waitForLiveKit().then(function (LivekitClient) {
-      disconnectRoom();
-      room = new LivekitClient.Room({
-        adaptiveStream: true,
-        dynacast: true,
-        audioCaptureDefaults: {
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
-
-      room.on(LivekitClient.RoomEvent.TrackSubscribed, function (track) {
-        attachRemoteAudio(track);
-      });
-
-      room.on(LivekitClient.RoomEvent.TrackUnsubscribed, function (track) {
-        if (track && typeof track.detach === "function") {
-          track.detach().forEach(function (element) {
-            if (element && element.parentNode) element.parentNode.removeChild(element);
-          });
+  function connectPeer(config) {
+    if (room) return Promise.resolve(room);
+    if (peerPromise) return peerPromise;
+    if (callsPaused || !activeCall) return Promise.reject(new Error("In-app calling is paused."));
+    var generation = peerGeneration;
+    var callId = activeCall.call_id;
+    peerPromise = navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+      .then(function (stream) {
+        if (generation !== peerGeneration || callsPaused || !activeCall || activeCall.call_id !== callId) {
+          stream.getTracks().forEach(function (track) { track.stop(); });
+          throw new Error("Call ended.");
         }
-      });
+        localStream = stream;
+        var peer = new RTCPeerConnection({ iceServers: config.ice_servers || [] });
+        room = peer;
+        stream.getTracks().forEach(function (track) { peer.addTrack(track, stream); });
+        peer.onicecandidate = function (event) {
+          if (event.candidate && activeCall && activeCall.call_id === callId) {
+            try { sendSignal("ice_candidate", event.candidate.toJSON()); }
+            catch (error) { endActiveCall(); notifyError(error); }
+          }
+        };
+        peer.ontrack = function (event) {
+          clearAudio();
+          var audio = document.createElement("audio");
+          audio.autoplay = true; audio.playsInline = true;
+          audio.srcObject = event.streams[0] || new MediaStream([event.track]);
+          if (audioHost) audioHost.appendChild(audio);
+          audio.play().catch(function () {});
+        };
+        peer.onconnectionstatechange = function () {
+          if (peer !== room) return;
+          if (peer.connectionState === "connected") markConnected();
+          if (peer.connectionState === "failed") { endActiveCall(); notifyError(null, "Call connection failed."); }
+        };
+        return peer;
+      }).catch(function (error) { peerPromise = null; throw error; });
+    return peerPromise;
+  }
 
-      room.on(LivekitClient.RoomEvent.ParticipantConnected, function (participant) {
-        subscribeParticipantAudio(participant);
-      });
+  function sendSignal(type, data) {
+    if (!activeCall || callsPaused || typeof options.sendSignal !== "function" ||
+      !options.sendSignal({ type: type, call_id: activeCall.call_id, data: data })) {
+      throw new Error("Calling connection is unavailable. Please reconnect.");
+    }
+  }
 
-      room.on(LivekitClient.RoomEvent.Disconnected, function () {
-        clearAudio();
-      });
+  function ensurePeer() {
+    if (room) return Promise.resolve(room);
+    if (peerPromise) return peerPromise;
+    return fetchRtcConfig().then(connectPeer);
+  }
 
-      return room
-        .connect(tokenPayload.livekit_url, tokenPayload.access_token, {
-          autoSubscribe: true,
-        })
-        .then(function () {
-          return room.localParticipant.setMicrophoneEnabled(true);
-        })
-        .then(function () {
-          muted = false;
-          if (muteBtn) muteBtn.setAttribute("aria-pressed", "false");
-          room.remoteParticipants.forEach(function (participant) {
-            subscribeParticipantAudio(participant);
-          });
-        });
+  function makeOffer() {
+    return ensurePeer().then(async function (peer) {
+      if (peer.signalingState !== "stable") return;
+      var offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+      sendSignal("webrtc_offer", { type: peer.localDescription.type, sdp: peer.localDescription.sdp });
     });
   }
 
-  function fetchToken() {
+  async function receiveSignal(type, message) {
+    if (!activeCall || callsPaused || String(message.call_id) !== String(activeCall.call_id)) return;
+    var callId = activeCall.call_id;
+    var data = message.data || (message.payload && message.payload.data) || {};
+    var peer = await ensurePeer();
+    if (!activeCall || activeCall.call_id !== callId || peer !== room) return;
+    if (type === "ice_candidate") {
+      if (!data.candidate) return;
+      var candidate = typeof data.candidate === "string" ? data : data.candidate;
+      if (peer.remoteDescription) await peer.addIceCandidate(candidate);
+      else pendingIce.push(candidate);
+      return;
+    }
+    if (!data.sdp) return;
+    await peer.setRemoteDescription(typeof data.sdp === "string" ? { type: type === "webrtc_offer" ? "offer" : "answer", sdp: data.sdp } : data.sdp);
+    while (pendingIce.length) await peer.addIceCandidate(pendingIce.shift());
+    if (type === "webrtc_offer") {
+      var answer = await peer.createAnswer();
+      await peer.setLocalDescription(answer);
+      sendSignal("webrtc_answer", { type: peer.localDescription.type, sdp: peer.localDescription.sdp });
+    }
+  }
+
+  function fetchRtcConfig() {
     return apiPost(callUrl("/call/token"), {});
   }
 
   function fetchCallHistory() {
     if (typeof apiGet !== "function") return Promise.resolve([]);
-    return apiGet(callsUrl())
-      .then(function (data) {
-        return (data && data.calls) || [];
-      })
-      .catch(function () {
-        return [];
-      });
+    return apiGet(callsUrl()).then(function (data) {
+      return (data && data.calls) || [];
+    });
   }
 
   function findOpenCall(calls) {
@@ -543,7 +536,7 @@
     for (var i = calls.length - 1; i >= 0; i -= 1) {
       var call = calls[i];
       var status = String(call.status || "").toLowerCase();
-      if (status === "ringing" || status === "answered") {
+      if (status === "ringing" || status === "accepted") {
         return call;
       }
     }
@@ -567,8 +560,8 @@
     showOverlay(true);
     startRingtone();
     if (!connectRoom) return Promise.resolve();
-    return fetchToken().then(function (tokenPayload) {
-      return connectLiveKit(tokenPayload);
+    return fetchRtcConfig().then(function (tokenPayload) {
+      return connectPeer(tokenPayload);
     });
   }
 
@@ -582,15 +575,12 @@
 
   function handleAnswered(payload) {
     var call = unwrapCall(payload);
-    activeCall = call || activeCall;
+    if (!call || callsPaused || String(call.ride_id) !== String(rideId)) return;
+    if (activeCall && String(activeCall.call_id) !== String(call.call_id)) return;
+    activeCall = call;
     if (phase === "active") return;
-    stopRingtone();
-    if (isCaller(activeCall)) {
-      markConnected();
-      return;
-    }
-    if (phase === "incoming") return;
-    markConnected();
+    stopRingtone(); setPhase("connecting"); setStatus("Connecting..."); showOverlay(true);
+    if (isCaller(call)) makeOffer().catch(function (error) { resetUi(); notifyError(error); });
   }
 
   function handleTerminalEvent(statusText) {
@@ -612,25 +602,23 @@
   function handleRealtimeEvent(type, message) {
     if (CALL_EVENTS.indexOf(type) < 0) return false;
     var payload = unwrapPayload(message);
-
-    if (type === "incoming_call") {
-      handleIncoming(payload);
+    if (type === "call_system_status") {
+      callsPaused = !!payload.paused;
+      if (callsPaused) { closeCallMethodChooser(); resetUi("In-app calling is paused."); }
+      updateCallButton(); return true;
+    }
+    if (["webrtc_offer", "webrtc_answer", "ice_candidate"].indexOf(type) >= 0) {
+      signalChain = signalChain.then(function () { return receiveSignal(type, message); })
+        .catch(function (error) { resetUi(); notifyError(error, "Call connection failed."); });
       return true;
     }
-    if (type === "call_answered") {
-      handleAnswered(payload);
-      return true;
-    }
-    if (type === "call_rejected") {
-      handleTerminalEvent("Call declined.");
-      return true;
-    }
-    if (type === "call_cancelled") {
-      handleTerminalEvent("Call missed.");
-      return true;
-    }
-    if (type === "call_ended") {
-      handleTerminalEvent("Call ended.");
+    var call = unwrapCall(payload);
+    if (call && call.ride_id && String(call.ride_id) !== String(rideId)) return true;
+    if (type === "incoming_call") { if (!callsPaused) handleIncoming(payload); return true; }
+    if (type === "call_accepted") { handleAnswered(payload); return true; }
+    if (!activeCall || (call && call.call_id && String(call.call_id) !== String(activeCall.call_id))) return true;
+    if (["call_rejected", "call_cancelled", "call_ended", "call_failed"].indexOf(type) >= 0) {
+      handleTerminalEvent(call.failure_reason === "system_paused" ? "In-app calling is paused." : "Call ended.");
       return true;
     }
     return false;
@@ -642,71 +630,43 @@
   }
 
   function syncActiveCallFromServer() {
-    if (!rideId || typeof apiGet !== "function") return Promise.resolve(false);
-    return fetchCallHistory().then(function (calls) {
+    if (!rideId || typeof apiGet !== "function" || syncPending) return Promise.resolve(false);
+    syncPending = true;
+    return apiGet(callUrl("/communication")).then(function (state) {
+      callsPaused = !!state.calls_paused;
+      updateCallButton();
+      if (callsPaused) { resetUi("In-app calling is paused."); return []; }
+      return fetchCallHistory();
+    }).then(function (calls) {
       var openCall = findOpenCall(calls);
-      if (!openCall) return false;
-
+      if (!openCall) {
+        if (activeCall) resetUi("Call ended.");
+        return false;
+      }
       if (openCall.status === "ringing") {
-        if (isReceiver(openCall)) {
-          if (phase === "idle" || phase === "incoming") {
-            presentIncomingCall(openCall);
-          }
-          return true;
-        }
-        if (isCaller(openCall)) {
-          if (phase === "idle" || phase === "outgoing" || phase === "connecting") {
-            busy = true;
-            return presentOutgoingCall(openCall, !room)
-              .then(function () {
-                busy = false;
-                updateCallButton();
-              })
-              .catch(function () {
-                busy = false;
-                updateCallButton();
-              })
-              .then(function () {
-                return true;
-              });
-          }
-          return true;
-        }
+        if (isReceiver(openCall) && phase === "idle") presentIncomingCall(openCall);
+        if (isCaller(openCall) && phase === "idle") presentOutgoingCall(openCall, false);
+      } else if (openCall.status === "accepted" && phase === "idle") {
+        activeCall = openCall; setPhase("connecting"); showOverlay(true);
+        if (isCaller(openCall)) return makeOffer().then(function () { return true; });
       }
-
-      if (openCall.status === "answered" && phase !== "active") {
-        activeCall = openCall;
-        if (!room) {
-          return fetchToken()
-            .then(function (tokenPayload) {
-              return connectLiveKit(tokenPayload);
-            })
-            .then(function () {
-              markConnected();
-              return true;
-            })
-            .catch(function () {
-              return false;
-            });
-        }
-        markConnected();
-        return true;
-      }
-
-      return false;
-    });
+      return true;
+    }).catch(function () {
+      callsPaused = true;
+      if (activeCall) resetUi("Calling status unavailable.");
+      updateCallButton(); return false;
+    }).finally(function () { syncPending = false; });
   }
 
   function startSyncPolling() {
     if (syncTimer) return;
     syncTimer = global.setInterval(function () {
-      if (phase !== "idle" || !canPlaceCall(rideStatus) || busy || ending) return;
-      syncActiveCallFromServer();
-    }, 4000);
+      if (!busy && !ending) syncActiveCallFromServer();
+    }, 2000);
   }
 
   function startOutgoingCall() {
-    if (!rideId || !canPlaceCall(rideStatus) || busy || ending || phase !== "idle") return;
+    if (callsPaused || !rideId || !canPlaceCall(rideStatus) || busy || ending || phase !== "idle") return;
     busy = true;
     updateCallButton();
 
@@ -723,10 +683,10 @@
         activeCall = call;
         setPhase("connecting");
         setStatus("Connecting…");
-        return fetchToken();
+        return fetchRtcConfig();
       })
       .then(function (tokenPayload) {
-        return connectLiveKit(tokenPayload);
+        return connectPeer(tokenPayload);
       })
       .then(function () {
         busy = false;
@@ -758,22 +718,23 @@
       .then(function () {
         setPhase("connecting");
         setStatus("Connecting…");
-        return apiPost(callUrl("/call/accept"), {});
+        return apiPost(callUrl("/call/accept"), { call_id: activeCall && activeCall.call_id });
       })
       .then(function (call) {
+        if (callsPaused || !activeCall) throw new Error("Call ended or calling is paused.");
         activeCall = call || activeCall;
-        return fetchToken();
+        return fetchRtcConfig();
       })
       .then(function (tokenPayload) {
-        return connectLiveKit(tokenPayload);
+        return connectPeer(tokenPayload);
       })
       .then(function () {
         busy = false;
-        markConnected();
+        updateCallButton();
       })
       .catch(function (err) {
         busy = false;
-        resetActionButtons();
+        resetUi();
         notifyError(err, "Could not accept call.");
       });
   }
@@ -783,7 +744,7 @@
     ending = true;
     busy = true;
     stopRingtone();
-    apiPost(callUrl("/call/reject"), {})
+    apiPost(callUrl("/call/reject"), { call_id: activeCall && activeCall.call_id })
       .catch(function () {})
       .finally(function () {
         resetUi("Call declined.");
@@ -795,10 +756,11 @@
     ending = true;
     busy = true;
     stopRingtone();
+    disconnectRoom();
     if (endBtn) endBtn.disabled = true;
     if (cancelBtn) cancelBtn.disabled = true;
 
-    apiPost(callUrl("/call/end"), {})
+    apiPost(callUrl("/call/end"), { call_id: activeCall && activeCall.call_id, cancel: !!(activeCall && activeCall.status === "ringing" && isCaller(activeCall)) })
       .catch(function () {})
       .finally(function () {
         var message = phase === "active" ? "Call ended." : "";
@@ -807,21 +769,14 @@
   }
 
   function toggleMute() {
-    if (!room || phase !== "active") return;
+    if (!localStream || phase !== "active") return;
     muted = !muted;
-    room.localParticipant
-      .setMicrophoneEnabled(!muted)
-      .then(function () {
-        if (muteBtn) {
-          muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
-          var muteLabel = muteBtn.querySelector(".ride-voice-call__action-label");
-          if (muteLabel) muteLabel.textContent = muted ? "Unmute" : "Mute";
-        }
-      })
-      .catch(function (err) {
-        muted = !muted;
-        notifyError(err, "Could not change microphone state.");
-      });
+    localStream.getAudioTracks().forEach(function (track) { track.enabled = !muted; });
+    if (muteBtn) {
+      muteBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      var label = muteBtn.querySelector(".ride-voice-call__action-label");
+      if (label) label.textContent = muted ? "Unmute" : "Mute";
+    }
   }
 
   function bindDom() {
@@ -1003,7 +958,6 @@
     startOutgoingCall: startOutgoingCall,
     syncActiveCall: syncActiveCallFromServer,
     canPlaceCall: canPlaceCall,
-    waitForLiveKit: waitForLiveKit,
     CALL_ALLOWED_STATUSES: CALL_ALLOWED_STATUSES.slice(),
   };
 })(window);

@@ -98,6 +98,7 @@ from app.services.api_client import (
     ride_call_reject,
     ride_call_start,
     ride_call_token,
+    ride_communication,
     ride_calls,
     set_availability,
     start_ride,
@@ -2795,7 +2796,7 @@ def user_api_ride_call_accept(ride_id):
     if guard:
         return guard
     try:
-        return jsonify(ride_call_accept(_rider_token(), ride_id))
+        return jsonify(ride_call_accept(_rider_token(), ride_id, (request.get_json(silent=True) or {}).get("call_id")))
     except ApiError as exc:
         return _user_api_error(exc)
 
@@ -2806,7 +2807,7 @@ def user_api_ride_call_reject(ride_id):
     if guard:
         return guard
     try:
-        return jsonify(ride_call_reject(_rider_token(), ride_id))
+        return jsonify(ride_call_reject(_rider_token(), ride_id, (request.get_json(silent=True) or {}).get("call_id")))
     except ApiError as exc:
         return _user_api_error(exc)
 
@@ -2817,7 +2818,7 @@ def user_api_ride_call_end(ride_id):
     if guard:
         return guard
     try:
-        return jsonify(ride_call_end(_rider_token(), ride_id))
+        return jsonify(ride_call_end(_rider_token(), ride_id, (request.get_json(silent=True) or {}).get("call_id"), (request.get_json(silent=True) or {}).get("cancel") is True))
     except ApiError as exc:
         return _user_api_error(exc)
 
@@ -4120,3 +4121,14 @@ def logout():
     session.clear()
     flash("Signed out.", "success")
     return redirect(url_for("main.home"))
+
+
+@main_bp.route("/user/api/rides/<ride_id>/communication")
+def owner_control_ride_communication(ride_id):
+    guard = _require_rider_api()
+    if guard:
+        return guard
+    try:
+        return jsonify(ride_communication(_rider_token(), ride_id))
+    except ApiError as exc:
+        return _user_api_error(exc)

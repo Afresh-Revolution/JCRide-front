@@ -105,7 +105,7 @@ def is_authenticated_driver() -> bool:
 
 
 def is_authenticated_admin() -> bool:
-    return bool(session.get("admin_token"))
+    return bool(session.get("admin_token") or session.get("owner_token"))
 
 
 def _redirect_home():

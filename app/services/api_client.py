@@ -1145,48 +1145,42 @@ def ride_call_intent(token, ride_id, target="driver"):
 
 
 def ride_call_token(token, ride_id):
-    return _request(
-        "POST",
-        f"{API_PREFIX}/rides/{ride_id}/call/token",
-        token=token,
-        json={},
-    )
+    # Kept as a frontend compatibility URL; custom WebRTC uses ICE config.
+    return _request("GET", f"{API_PREFIX}/config/webrtc", token=token)
+
+
+def ride_communication(token, ride_id):
+    return _request("GET", f"{API_PREFIX}/rides/{ride_id}/communication", token=token)
 
 
 def ride_call_start(token, ride_id):
-    return _request(
-        "POST",
-        f"{API_PREFIX}/rides/{ride_id}/call/start",
-        token=token,
-        json={},
-    )
+    return _request("POST", f"{API_PREFIX}/rides/{ride_id}/calls/start", token=token, json={})
 
 
-def ride_call_accept(token, ride_id):
-    return _request(
-        "POST",
-        f"{API_PREFIX}/rides/{ride_id}/call/accept",
-        token=token,
-        json={},
-    )
+def _ride_call_action(token, ride_id, action, call_id):
+    import uuid
+    try:
+        uuid.UUID(str(call_id))
+    except (ValueError, TypeError):
+        raise ApiError("A valid call_id is required.", 422)
+    # Confirm the call belongs to this ride before forwarding the action.
+    calls = ride_calls(token, ride_id).get("calls", [])
+    call = next((item for item in calls if str(item.get("call_id")) == str(call_id)), None)
+    if not call:
+        raise ApiError("Call not found for this ride.", 404)
+    return _request("POST", f"{API_PREFIX}/calls/{call_id}/{action}", token=token, json={})
 
 
-def ride_call_reject(token, ride_id):
-    return _request(
-        "POST",
-        f"{API_PREFIX}/rides/{ride_id}/call/reject",
-        token=token,
-        json={},
-    )
+def ride_call_accept(token, ride_id, call_id=None):
+    return _ride_call_action(token, ride_id, "accept", call_id)
 
 
-def ride_call_end(token, ride_id):
-    return _request(
-        "POST",
-        f"{API_PREFIX}/rides/{ride_id}/call/end",
-        token=token,
-        json={},
-    )
+def ride_call_reject(token, ride_id, call_id=None):
+    return _ride_call_action(token, ride_id, "reject", call_id)
+
+
+def ride_call_end(token, ride_id, call_id=None, cancel=False):
+    return _ride_call_action(token, ride_id, "cancel" if cancel else "end", call_id)
 
 
 def ride_calls(token, ride_id):
@@ -2100,3 +2094,16 @@ def reject_admin_landmark_payment(token, payment_id, reason=None):
         token=token,
         json={"rejection_reason": reason} if reason else {},
     )
+
+
+def get_owner_overview(token):
+    return _request("GET", f"{API_PREFIX}/owner/overview", token=token)
+
+
+def get_owner_call_system(token):
+    return _request("GET", f"{API_PREFIX}/owner/call-system", token=token)
+
+
+def set_owner_call_system(token, paused):
+    return _request("PUT", f"{API_PREFIX}/owner/call-system", token=token,
+                    json={"paused": paused}, max_attempts=1)
