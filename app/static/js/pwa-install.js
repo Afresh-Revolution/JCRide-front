@@ -76,6 +76,7 @@
       '  <h2 class="pwa-install-card__title" id="pwa-install-title">Install JosRide</h2>' +
       '  <p class="pwa-install-card__desc">Add JosRide to your home screen for one-tap rides, faster loading, and an app-like experience.</p>' +
       '  <button type="button" class="pwa-install-card__cta" id="pwa-install-cta">Install app</button>' +
+      '  <a href="#mobile-app" class="pwa-install-card__secondary" id="pwa-install-mobile">Get the mobile app</a>' +
       '  <button type="button" class="pwa-install-card__ghost" id="pwa-install-later">Not now</button>' +
       "</section>" +
       '<section class="pwa-ios-sheet" id="pwa-ios-sheet" role="dialog" aria-labelledby="pwa-ios-title" aria-modal="true" hidden>' +
@@ -91,6 +92,7 @@
       '    <li><span class="pwa-ios-step__num">2</span><span class="pwa-ios-step__body"><strong>Add to Home Screen</strong> <span class="pwa-ios-step__icon" aria-hidden="true">⊞</span></span></li>' +
       '    <li><span class="pwa-ios-step__num">3</span><span class="pwa-ios-step__body"><strong>Tap Add</strong> in the top right</span></li>' +
       "  </ol>" +
+      '  <a href="#mobile-app" class="pwa-ios-sheet__mobile" id="pwa-ios-mobile">Or get the mobile app</a>' +
       '  <div class="pwa-ios-sheet__arrow" aria-hidden="true"></div>' +
       '  <button type="button" class="pwa-ios-sheet__dismiss" id="pwa-ios-dismiss">Got it</button>' +
       "</section>";
@@ -101,9 +103,30 @@
     document.getElementById("pwa-install-later").addEventListener("click", dismissInstallCard);
     document.getElementById("pwa-install-backdrop").addEventListener("click", dismissInstallCard);
     document.getElementById("pwa-install-cta").addEventListener("click", triggerInstall);
+    document.getElementById("pwa-install-mobile").addEventListener("click", goToMobileSection);
 
     document.getElementById("pwa-ios-close").addEventListener("click", dismissIOSSheet);
     document.getElementById("pwa-ios-dismiss").addEventListener("click", dismissIOSSheet);
+    document.getElementById("pwa-ios-mobile").addEventListener("click", goToMobileSection);
+  }
+
+  function goToMobileSection(event) {
+    if (event) event.preventDefault();
+    dismissInstallCard();
+    dismissIOSSheet();
+    var mobile = document.getElementById("mobile-app");
+    if (mobile) {
+      window.setTimeout(function () {
+        mobile.scrollIntoView({ behavior: "smooth", block: "start" });
+        try {
+          mobile.focus({ preventScroll: true });
+        } catch (e) {
+          mobile.focus();
+        }
+      }, 120);
+      return;
+    }
+    global.location.href = "/#mobile-app";
   }
 
   function showInstallCard() {

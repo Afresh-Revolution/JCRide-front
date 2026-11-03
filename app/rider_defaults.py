@@ -9,7 +9,7 @@ RIDER_STATS = {
 
 LIVE_AREA = {
     "title": "Your area - Live",
-    "subtitle": "12 drivers within 2 km · Avg pickup 4 min",
+    "subtitle": "Nearby drivers update when you are signed in",
 }
 
 # Known area centroids for map fallback when geolocation is unavailable.
@@ -270,7 +270,7 @@ BIKE_DELIVERY_DEFAULTS = {
     "fare": "₦2,200",
     "fare_num": 2200,
     "insurance_cap": "₦50,000",
-    "pickup_eta": "6 min",
+    "pickup_eta": "-",
 }
 
 RIDE_TIERS = [
@@ -280,7 +280,7 @@ RIDE_TIERS = [
         "badge": "Most popular",
         "description": "Affordable everyday rides",
         "seats": 4,
-        "eta": "4 min",
+        "eta": "-",
         "fare": "₦2,850",
         "fare_num": 2850,
         "icon": "economy",
@@ -292,7 +292,7 @@ RIDE_TIERS = [
         "badge": None,
         "description": "Newer cars with extra space",
         "seats": 4,
-        "eta": "6 min",
+        "eta": "-",
         "fare": "₦4,200",
         "fare_num": 4200,
         "icon": "comfort",
@@ -304,7 +304,7 @@ RIDE_TIERS = [
         "badge": None,
         "description": "Luxury sedans, top-rated drivers",
         "seats": 4,
-        "eta": "9 min",
+        "eta": "-",
         "fare": "₦7,800",
         "fare_num": 7800,
         "icon": "premium",

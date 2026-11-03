@@ -228,10 +228,10 @@
       var descEl = card.querySelector(".ride-tier__desc-dynamic");
       if (descEl && durationMin) descEl.textContent = "~" + durationMin + " min trip";
       var etaEl = card.querySelector(".ride-tier__eta");
-      if (etaEl) {
+      if (etaEl && durationMin) {
         etaEl.innerHTML =
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ' +
-          Math.max(3, Math.round(durationMin / 5)) +
+          Math.round(durationMin) +
           " min";
       }
     });
@@ -273,7 +273,7 @@
     window.RiderRouteMap.update(config);
   }
 
-  function applyTricycleEstimate(estimate) {
+  function applyTricycleEstimate(estimate, durationMin) {
     if (!estimate || estimate.estimated_fare_ngn == null) return;
     var fare = formatNgn(estimate.estimated_fare_ngn);
     var tricycleInput = tiers ? tiers.querySelector('input[data-category="tricycle"]') : null;
@@ -283,8 +283,8 @@
     }
     if (tricycleFareAmount) tricycleFareAmount.textContent = fare + " est.";
     if (tricycleFareEta) {
-      var mins = estimate.estimated_duration_minutes;
-      tricycleFareEta.textContent = mins ? "~" + mins + " min trip" : "Distance fare";
+      var mins = durationMin || estimate.estimated_duration_minutes;
+      tricycleFareEta.textContent = mins ? "~" + Math.round(mins) + " min trip" : "Distance fare";
     }
   }
 
@@ -295,9 +295,12 @@
     }
     if (estimate && estimate.estimated_fare_ngn != null) {
       if (estimate.vehicle_category === "tricycle") {
-        applyTricycleEstimate(estimate);
+        applyTricycleEstimate(estimate, routeData && routeData.duration_min);
       } else {
-        updateTierPrices(estimate.estimated_fare_ngn, estimate.estimated_duration_minutes || (routeData && routeData.duration_min));
+        updateTierPrices(
+          estimate.estimated_fare_ngn,
+          (routeData && routeData.duration_min) || estimate.estimated_duration_minutes
+        );
       }
       refreshSelectedFare();
     }

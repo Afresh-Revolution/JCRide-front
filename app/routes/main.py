@@ -990,8 +990,12 @@ def _submit_driver_application(signup: dict, token: str) -> dict:
         "vehicle_papers_url": papers_url,
         "nin_document_url": nin_url,
         "vehicle_category": vehicle_category,
+        # Signup collects license/papers/NIN only. Some API builds still require a
+        # vehicle photo URL, so reuse papers until that field is optional.
+        "vehicle_photo_url": documents.get("vehicle_photo_url") or papers_url,
     }
     if vehicle_category == "bike":
+        register_payload["service_kind"] = "dispatch"
         register_payload["service_tier"] = "economy"
     register_driver(token, register_payload)
     # Ensure category sticks even if an older API ignores it on register.
@@ -1181,6 +1185,7 @@ def driver_register_page():
                         email,
                         password,
                         confirm_password=confirm_password,
+                        signup_as="driver",
                     )
                     signup = {
                         "step": 2,
@@ -1584,7 +1589,6 @@ def user_dashboard():
     map_config = live_area_map_for_location(display_location)
     map_config["location_label"] = display_location
     map_config["live_drivers_api"] = True
-    map_config["avg_pickup_minutes"] = 4
     rider_ctx = _rider_context()
     return render_template(
         "user/dashboard.html",

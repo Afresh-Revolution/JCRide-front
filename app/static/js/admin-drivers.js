@@ -97,9 +97,11 @@
     const name = raw.full_name || "Driver";
     const parts = name.trim().split(/\s+/);
     const initials = ((parts[0] || "D").charAt(0) + (parts[1] || parts[0] || "R").charAt(0)).toUpperCase();
-    const vehicleMake = raw.vehicle_make || "";
-    const vehicleModel = raw.vehicle_model || "";
-    const vehicleDisplay = [vehicleMake, vehicleModel].filter(Boolean).join(" ").trim() || "-";
+    const category = String(raw.vehicle_category || "").toLowerCase();
+    const vehicleKind = category === "tricycle" ? "Keke" : category === "bike" ? "Bike" : "Car";
+    const work = raw.service_kind === "dispatch" || category === "bike" ? "Dispatch" : "Passenger";
+    const vehicleName = [raw.vehicle_make, raw.vehicle_model].filter(Boolean).join(" ").trim();
+    const vehicleDisplay = [work, vehicleKind, vehicleName].filter(Boolean).join(" · ");
 
     return {
       id: raw.id,
@@ -142,7 +144,11 @@
 
     if (!state.drivers.length) {
       tbody.innerHTML =
-        '<tr class="drivers-table__empty"><td colspan="8">No drivers match your search.</td></tr>';
+        '<tr class="drivers-table__empty"><td colspan="8">' +
+        (state.status === "pending"
+          ? "No submitted applications waiting for review."
+          : "No drivers match your search.") +
+        "</td></tr>";
       return;
     }
 

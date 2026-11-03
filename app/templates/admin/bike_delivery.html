@@ -4,8 +4,8 @@
 {% block page_title %}Bike Delivery{% endblock %}
 
 {% block page_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-bike-delivery.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/admin-bike-delivery.css') }}">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -134,7 +134,7 @@
         <thead>
           <tr>
             <th scope="col">Rider</th>
-            <th scope="col">Bike</th>
+            <th scope="col">Vehicle</th>
             <th scope="col">Plate</th>
             <th scope="col">Zone</th>
             <th scope="col">Deliveries</th>
@@ -156,6 +156,221 @@
         <button type="button" class="bike-delivery-pagination__btn" id="bike-riders-next-btn" disabled>Next</button>
       </div>
     </div>
+  </div>
+</section>
+
+<section class="bike-delivery-page dispatch-admin" id="dispatch-admin">
+  <header class="bike-delivery-header">
+    <div class="bike-delivery-header__lead">
+      <div>
+        <h2 class="bike-delivery-header__title">Multi-dispatch</h2>
+        <p class="bike-delivery-header__subtitle">Configure stacking rules, vehicle capacity, and package limits. Active deliveries stay assigned when a limit changes.</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="dispatch-admin__layout">
+    <article class="dash-card dispatch-admin__panel">
+      <header class="dispatch-admin__panel-head">
+        <div>
+          <h3 class="dispatch-admin__panel-title">Dispatch settings</h3>
+          <p class="dispatch-admin__panel-desc">Master switch and matching behaviour for stacked deliveries.</p>
+        </div>
+      </header>
+
+      <div class="dispatch-admin__rows">
+        <div class="dispatch-admin__row">
+          <div class="dispatch-admin__row-copy">
+            <strong>Enable multi-dispatch</strong>
+            <span id="dispatch-mode">Loading operating mode…</span>
+          </div>
+          <label class="dispatch-admin__switch">
+            <input type="checkbox" id="dispatch-enabled">
+            <span class="dispatch-admin__switch-ui" aria-hidden="true"></span>
+            <span class="sr-only">Enable multi-dispatch</span>
+          </label>
+        </div>
+
+        <div class="dispatch-admin__row">
+          <div class="dispatch-admin__row-copy">
+            <strong>Route compatibility</strong>
+            <span>Only stack jobs that fit a sensible shared route.</span>
+          </div>
+          <label class="dispatch-admin__switch">
+            <input type="checkbox" id="dispatch-route">
+            <span class="dispatch-admin__switch-ui" aria-hidden="true"></span>
+            <span class="sr-only">Route compatibility</span>
+          </label>
+        </div>
+
+        <div class="dispatch-admin__row">
+          <div class="dispatch-admin__row-copy">
+            <strong>Capacity validation</strong>
+            <span>Block assignments that would exceed vehicle capacity points.</span>
+          </div>
+          <label class="dispatch-admin__switch">
+            <input type="checkbox" id="dispatch-capacity">
+            <span class="dispatch-admin__switch-ui" aria-hidden="true"></span>
+            <span class="sr-only">Capacity validation</span>
+          </label>
+        </div>
+
+        <div class="dispatch-admin__row">
+          <div class="dispatch-admin__row-copy">
+            <strong>Route optimization</strong>
+            <span>Reorder stops to reduce total travel time when stacking.</span>
+          </div>
+          <label class="dispatch-admin__switch">
+            <input type="checkbox" id="dispatch-optimize">
+            <span class="dispatch-admin__switch-ui" aria-hidden="true"></span>
+            <span class="sr-only">Route optimization</span>
+          </label>
+        </div>
+
+        <div class="dispatch-admin__row">
+          <div class="dispatch-admin__row-copy">
+            <strong>Capacity notifications</strong>
+            <span>Alert drivers when they are near or at capacity.</span>
+          </div>
+          <label class="dispatch-admin__switch">
+            <input type="checkbox" id="dispatch-notices">
+            <span class="dispatch-admin__switch-ui" aria-hidden="true"></span>
+            <span class="sr-only">Capacity notifications</span>
+          </label>
+        </div>
+
+        <div class="dispatch-admin__row">
+          <div class="dispatch-admin__row-copy">
+            <strong>Shared-route customer status</strong>
+            <span>Show customers when their delivery is on a shared route.</span>
+          </div>
+          <label class="dispatch-admin__switch">
+            <input type="checkbox" id="dispatch-shared">
+            <span class="dispatch-admin__switch-ui" aria-hidden="true"></span>
+            <span class="sr-only">Shared-route customer status</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="dispatch-admin__panel-body">
+        <h4 class="dispatch-admin__eyebrow">Thresholds</h4>
+        <div class="dispatch-admin__fields">
+          <label class="dispatch-admin__field">
+            <span class="dispatch-admin__field-label">Max extra detour</span>
+            <div class="dispatch-admin__input">
+              <input type="number" id="dispatch-detour" min="0" max="120" step="1" inputmode="numeric">
+              <span>min</span>
+            </div>
+          </label>
+          <label class="dispatch-admin__field">
+            <span class="dispatch-admin__field-label">Max lateness beyond ETA</span>
+            <div class="dispatch-admin__input">
+              <input type="number" id="dispatch-lateness" min="0" max="180" step="1" inputmode="numeric">
+              <span>min</span>
+            </div>
+          </label>
+          <label class="dispatch-admin__field">
+            <span class="dispatch-admin__field-label">Pickup eligibility radius</span>
+            <div class="dispatch-admin__input">
+              <input type="number" id="dispatch-radius" min="1" max="50" step="1" inputmode="numeric">
+              <span>km</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </article>
+
+    <article class="dash-card dispatch-admin__panel">
+      <header class="dispatch-admin__panel-head">
+        <div>
+          <h3 class="dispatch-admin__panel-title">Vehicle capacity</h3>
+          <p class="dispatch-admin__panel-desc">How many active jobs and capacity points each vehicle type can carry.</p>
+        </div>
+      </header>
+      <div class="dispatch-admin__vehicle-grid" id="dispatch-vehicle-body">
+        <p class="dispatch-admin__empty">Loading vehicle limits…</p>
+      </div>
+    </article>
+
+    <article class="dash-card dispatch-admin__panel">
+      <header class="dispatch-admin__panel-head">
+        <div>
+          <h3 class="dispatch-admin__panel-title">Package configuration</h3>
+          <p class="dispatch-admin__panel-desc">Points, size limits, and which vehicle types can carry each package size.</p>
+        </div>
+      </header>
+      <div class="dispatch-admin__package-list" id="dispatch-package-body">
+        <p class="dispatch-admin__empty">Loading packages…</p>
+      </div>
+      <footer class="dispatch-admin__footer">
+        <p class="bike-delivery-form-error" id="dispatch-error" hidden></p>
+        <div class="dispatch-admin__footer-actions">
+          <button type="button" class="bike-delivery-btn bike-delivery-btn--ghost" id="dispatch-reset">Reset to defaults</button>
+          <button type="button" class="bike-delivery-btn bike-delivery-btn--primary" id="dispatch-save">Save changes</button>
+        </div>
+      </footer>
+    </article>
+
+    <article class="dash-card dispatch-admin__panel">
+      <header class="dispatch-admin__panel-head">
+        <div>
+          <h3 class="dispatch-admin__panel-title">Live workloads</h3>
+          <p class="dispatch-admin__panel-desc">Drivers currently carrying deliveries, with capacity and restriction controls.</p>
+        </div>
+      </header>
+      <div class="dispatch-admin__table-wrap">
+        <table class="dispatch-admin__data-table">
+          <thead>
+            <tr>
+              <th>Driver</th>
+              <th>Vehicle</th>
+              <th>Active</th>
+              <th>Capacity</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="dispatch-monitor-body">
+            <tr><td colspan="6"><p class="dispatch-admin__empty">Loading workloads…</p></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="dash-card dispatch-admin__panel">
+      <header class="dispatch-admin__panel-head dispatch-admin__panel-head--split">
+        <div>
+          <h3 class="dispatch-admin__panel-title">Delivery analytics</h3>
+          <p class="dispatch-admin__panel-desc">Stacked deliveries, completion, and delay metrics for a date range.</p>
+        </div>
+        <form id="dispatch-analytics-form" class="dispatch-admin__date-range">
+          <label>
+            <span>From</span>
+            <input type="date" id="dispatch-from">
+          </label>
+          <label>
+            <span>To</span>
+            <input type="date" id="dispatch-to">
+          </label>
+          <button type="submit" class="bike-delivery-btn bike-delivery-btn--ghost">Apply</button>
+        </form>
+      </header>
+      <div id="dispatch-analytics" class="dispatch-admin__metrics">
+        <p class="dispatch-admin__empty">Loading analytics…</p>
+      </div>
+    </article>
+
+    <article class="dash-card dispatch-admin__panel">
+      <header class="dispatch-admin__panel-head">
+        <div>
+          <h3 class="dispatch-admin__panel-title">Audit history</h3>
+          <p class="dispatch-admin__panel-desc">Recent changes to dispatch settings and reassignments.</p>
+        </div>
+      </header>
+      <ul class="dispatch-admin__audit" id="dispatch-audit">
+        <li class="dispatch-admin__empty">Loading audit history…</li>
+      </ul>
+    </article>
   </div>
 </section>
 
@@ -191,7 +406,7 @@
       </label>
       <label class="bike-delivery-field">
         <span>Email</span>
-        <input type="email" name="email" placeholder="rider@example.com" autocomplete="email">
+        <input type="email" name="email" required placeholder="rider@example.com" autocomplete="email">
       </label>
       <label class="bike-delivery-field">
         <span>Bike model</span>
@@ -207,7 +422,7 @@
           <option value="">Select zone</option>
         </select>
       </label>
-          <p class="bike-delivery-form-hint" id="bike-onboard-hint">Creates a pending bike courier account. The rider can sign in after approval.</p>
+          <p class="bike-delivery-form-hint" id="bike-onboard-hint">We email this address a temporary password. The driver signs in to the driver app, then changes the password under Me, then Security. An existing account with this email or phone is switched to a dispatch rider and its previous password is replaced.</p>
       <p class="bike-delivery-form-error" id="bike-onboard-error" hidden></p>
       <div class="bike-delivery-modal__footer bike-delivery-modal__footer--inline">
         <button type="button" class="bike-delivery-btn bike-delivery-btn--ghost" data-close-modal>Cancel</button>
@@ -221,5 +436,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/admin-bike-delivery.js') }}"></script>
+<script src="{{ static_url('js/admin-bike-delivery.js') }}"></script>
 {% endblock %}

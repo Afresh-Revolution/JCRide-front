@@ -231,7 +231,7 @@ def ride_requests_from_api(requests: list[dict], *, is_bike: bool = False) -> li
                 ),
                 "distance_km": distance,
                 "duration_min": duration,
-                "pickup_eta": f"~{max(3, duration // 4)} min" if duration else "-",
+                "pickup_eta": "",
                 "pickup": item.get("pickup_address") or "",
                 "destination": item.get("destination_address") or "",
                 "earnings": _fmt_ngn(fare),

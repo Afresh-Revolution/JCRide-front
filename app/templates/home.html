@@ -1,6 +1,6 @@
 {% extends "landing_base.html" %}
 {% from "includes/landing_icons.html" import feature_icon, step_icon, stat_icon %}
-{% from "includes/landing_store_buttons.html" import store_btn %}
+{% from "includes/landing_store_buttons.html" import store_btn, smart_store_btn %}
 {% set h = landing.hero %}
 {% set p = landing.partners %}
 {% set fs = landing.features_section %}
@@ -427,8 +427,7 @@
         <p class="landing-mobile__text">Access JosRide through a complete mobile app experience designed for fast, simple, and convenient use — riding, driving, and dispatching, all reimagined for touch.</p>
         <div class="landing-mobile__actions">
           <div class="landing-mobile__store-group">
-            {{ store_btn(apps.josride_android_url, 'android', 'JosRide', 'Android') }}
-            {{ store_btn(apps.josride_ios_url, 'ios', 'JosRide', 'iOS') }}
+            {{ smart_store_btn(apps.josride_android_url, apps.josride_ios_url, 'android', 'JosRide') }}
           </div>
           <div class="landing-mobile__store-group">
             {{ store_btn(apps.josride_driver_android_url, 'driver-android', 'JosRide Driver', 'Android') }}

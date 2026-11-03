@@ -93,9 +93,9 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ' +
       escapeHtml(request.duration_min) +
       " min</span>" +
-      '<span class="ride-request-card__badge">' +
-      escapeHtml(request.pickup_eta) +
-      "</span>" +
+      (request.pickup_eta
+        ? '<span class="ride-request-card__badge">' + escapeHtml(request.pickup_eta) + "</span>"
+        : "") +
       "</div>" +
       packageHtml +
       "</div></div>" +

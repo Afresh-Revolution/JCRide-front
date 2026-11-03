@@ -462,7 +462,7 @@ def admin_login(email, password):
     )
 
 
-def register(full_name, phone, email, password, confirm_password=None, referral_code=None):
+def register(full_name, phone, email, password, confirm_password=None, referral_code=None, signup_as=None):
     if confirm_password is None:
         confirm_password = password
     payload = {
@@ -474,6 +474,8 @@ def register(full_name, phone, email, password, confirm_password=None, referral_
     }
     if referral_code:
         payload["referral_code"] = referral_code
+    if signup_as:
+        payload["signup_as"] = signup_as
     return _request("POST", f"{API_PREFIX}/auth/register", json=payload)
 
 
@@ -1820,6 +1822,55 @@ def update_admin_bike_delivery_settings(token, payload):
         f"{API_PREFIX}/admin/settings/bike-delivery",
         token=token,
         json=payload,
+    )
+
+
+def get_admin_dispatch_config(token):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/dispatch/config", token=token)
+
+
+def update_admin_dispatch_config(token, payload):
+    return _request(
+        "PUT",
+        f"{API_PREFIX}/admin/bike-delivery/dispatch/config",
+        token=token,
+        json=payload,
+    )
+
+
+def get_admin_dispatch_monitor(token):
+    return _request("GET", f"{API_PREFIX}/admin/bike-delivery/dispatch/monitor", token=token)
+
+
+def get_admin_dispatch_analytics(token, date_from=None, date_to=None):
+    params = {}
+    if date_from:
+        params["from"] = date_from
+    if date_to:
+        params["to"] = date_to
+    return _request(
+        "GET",
+        f"{API_PREFIX}/admin/bike-delivery/dispatch/analytics",
+        token=token,
+        params=params or None,
+    )
+
+
+def restrict_admin_dispatch_driver(token, driver_id, restricted):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/bike-delivery/dispatch/drivers/{driver_id}/restriction",
+        token=token,
+        json={"restricted": bool(restricted)},
+    )
+
+
+def reassign_admin_dispatch(token, ride_id, driver_id):
+    return _request(
+        "POST",
+        f"{API_PREFIX}/admin/bike-delivery/dispatch/reassign",
+        token=token,
+        json={"ride_id": ride_id, "driver_id": driver_id},
     )
 
 

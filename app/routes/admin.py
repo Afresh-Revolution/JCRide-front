@@ -79,6 +79,12 @@ from app.services.api_client import (
     update_admin_platform_settings,
     get_admin_bike_delivery_settings,
     update_admin_bike_delivery_settings,
+    get_admin_dispatch_config,
+    update_admin_dispatch_config,
+    get_admin_dispatch_monitor,
+    get_admin_dispatch_analytics,
+    restrict_admin_dispatch_driver,
+    reassign_admin_dispatch,
     get_admin_landing_page,
     update_admin_landing_page,
     get_admin_funding_requests,
@@ -1556,6 +1562,81 @@ def api_bike_delivery_rider_status(rider_id):
                     payload.get("status"),
                     reason=payload.get("reason"),
                 )
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/dispatch/config")
+@admin_required
+def api_bike_delivery_dispatch_config():
+    try:
+        return jsonify(get_admin_dispatch_config(_admin_token()))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/dispatch/config", methods=["PUT"])
+@admin_required
+def api_bike_delivery_dispatch_config_update():
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(update_admin_dispatch_config(_admin_token(), payload))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/dispatch/monitor")
+@admin_required
+def api_bike_delivery_dispatch_monitor():
+    try:
+        return jsonify(get_admin_dispatch_monitor(_admin_token()))
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/dispatch/analytics")
+@admin_required
+def api_bike_delivery_dispatch_analytics():
+    try:
+        return jsonify(
+            get_admin_dispatch_analytics(
+                _admin_token(),
+                date_from=request.args.get("from"),
+                date_to=request.args.get("to"),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/dispatch/drivers/<driver_id>/restriction", methods=["POST"])
+@admin_required
+def api_bike_delivery_dispatch_restriction(driver_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            restrict_admin_dispatch_driver(
+                _admin_token(),
+                driver_id,
+                bool(payload.get("restricted")),
+            )
+        )
+    except ApiError as exc:
+        return jsonify({"message": exc.message}), exc.status_code
+
+
+@admin_bp.route("/api/bike-delivery/dispatch/reassign", methods=["POST"])
+@admin_required
+def api_bike_delivery_dispatch_reassign():
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(
+            reassign_admin_dispatch(
+                _admin_token(),
+                payload.get("ride_id"),
+                payload.get("driver_id"),
             )
         )
     except ApiError as exc:

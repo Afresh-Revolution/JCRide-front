@@ -1533,6 +1533,15 @@ a { color: inherit; text-decoration: none; }
   flex-shrink: 0;
 }
 
+.landing-mobile__btn-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.landing-mobile__btn-icon[hidden] {
+  display: none;
+}
+
 .landing-mobile__btn-copy {
   display: flex;
   flex-direction: column;

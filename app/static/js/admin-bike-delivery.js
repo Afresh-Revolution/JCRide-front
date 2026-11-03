@@ -13,7 +13,38 @@
       return "/admin/api/bike-delivery/riders/" + encodeURIComponent(id) + "/status";
     },
     onboard: "/admin/api/bike-delivery/riders",
+    dispatchConfig: "/admin/api/bike-delivery/dispatch/config",
+    dispatchMonitor: "/admin/api/bike-delivery/dispatch/monitor",
+    dispatchAnalytics: "/admin/api/bike-delivery/dispatch/analytics",
+    dispatchReassign: "/admin/api/bike-delivery/dispatch/reassign",
+    dispatchRestrict: function (id) {
+      return "/admin/api/bike-delivery/dispatch/drivers/" + encodeURIComponent(id) + "/restriction";
+    },
   };
+
+  const DISPATCH_DEFAULTS = {
+    multiDispatchEnabled: true,
+    routeCompatibilityEnabled: true,
+    capacityValidationEnabled: true,
+    routeOptimizationEnabled: true,
+    capacityNotificationsEnabled: true,
+    combinedStatusEnabled: true,
+    maxDetourMinutes: 10,
+    maxLatenessMinutes: 0,
+    maxPickupRadiusKm: 15,
+    vehicleLimits: [
+      { name: "Bike", max: 3, capacity: 3, enabled: true },
+      { name: "Keke", max: 5, capacity: 6, enabled: true },
+      { name: "Car", max: 7, capacity: 10, enabled: true },
+    ],
+    packages: [
+      { name: "Small", points: 1, weightKg: 2, maxLengthCm: 40, maxWidthCm: 30, maxHeightCm: 20, bike: true, keke: true, car: true, dedicated: false },
+      { name: "Medium", points: 2, weightKg: 5, maxLengthCm: 60, maxWidthCm: 40, maxHeightCm: 40, bike: true, keke: true, car: true, dedicated: false },
+      { name: "Large", points: 3, weightKg: 15, maxLengthCm: 90, maxWidthCm: 60, maxHeightCm: 60, bike: false, keke: true, car: true, dedicated: false },
+    ],
+  };
+
+  let dispatchConfig = null;
 
   const state = {
     search: "",
@@ -527,11 +558,20 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         })
-          .then(function () {
+          .then(function (rider) {
             closeAllModals();
-            showToast("Rider onboarded");
             loadStats();
             loadRiders();
+            if (rider && rider.login_email_sent) {
+              showToast("Login details emailed to " + (rider.email || "the driver"));
+            } else if (rider && rider.temporary_password) {
+              window.alert(
+                "The rider was added, but the login email did not send. Share this temporary password so they can sign in and change it:\n\n" +
+                  rider.temporary_password
+              );
+            } else {
+              showToast("Rider onboarded, but login details were not emailed.", true);
+            }
           })
           .catch(function (err) {
             if (onboardError) {
@@ -583,6 +623,387 @@
     }
   }
 
+  function dispatchChecked(id) {
+    const node = document.getElementById(id);
+    return Boolean(node && node.checked);
+  }
+
+  function setDispatchChecked(id, value) {
+    const node = document.getElementById(id);
+    if (node) node.checked = Boolean(value);
+  }
+
+  function mergeDispatchConfig(config) {
+    const base = JSON.parse(JSON.stringify(DISPATCH_DEFAULTS));
+    if (!config || typeof config !== "object") return base;
+    return {
+      multiDispatchEnabled: config.multiDispatchEnabled != null ? config.multiDispatchEnabled : base.multiDispatchEnabled,
+      routeCompatibilityEnabled: config.routeCompatibilityEnabled != null ? config.routeCompatibilityEnabled : base.routeCompatibilityEnabled,
+      capacityValidationEnabled: config.capacityValidationEnabled != null ? config.capacityValidationEnabled : base.capacityValidationEnabled,
+      routeOptimizationEnabled: config.routeOptimizationEnabled != null ? config.routeOptimizationEnabled : base.routeOptimizationEnabled,
+      capacityNotificationsEnabled: config.capacityNotificationsEnabled != null ? config.capacityNotificationsEnabled : base.capacityNotificationsEnabled,
+      combinedStatusEnabled: config.combinedStatusEnabled != null ? config.combinedStatusEnabled : base.combinedStatusEnabled,
+      maxDetourMinutes: config.maxDetourMinutes != null ? config.maxDetourMinutes : base.maxDetourMinutes,
+      maxLatenessMinutes: config.maxLatenessMinutes != null ? config.maxLatenessMinutes : base.maxLatenessMinutes,
+      maxPickupRadiusKm: config.maxPickupRadiusKm != null ? config.maxPickupRadiusKm : base.maxPickupRadiusKm,
+      vehicleLimits: Array.isArray(config.vehicleLimits) && config.vehicleLimits.length ? config.vehicleLimits : base.vehicleLimits,
+      packages: Array.isArray(config.packages) && config.packages.length ? config.packages : base.packages,
+    };
+  }
+
+  function renderDispatchConfig(config) {
+    config = mergeDispatchConfig(config);
+    dispatchConfig = config;
+    setDispatchChecked("dispatch-enabled", config.multiDispatchEnabled);
+    setDispatchChecked("dispatch-route", config.routeCompatibilityEnabled);
+    setDispatchChecked("dispatch-capacity", config.capacityValidationEnabled);
+    setDispatchChecked("dispatch-optimize", config.routeOptimizationEnabled);
+    setDispatchChecked("dispatch-notices", config.capacityNotificationsEnabled);
+    setDispatchChecked("dispatch-shared", config.combinedStatusEnabled);
+    const detour = document.getElementById("dispatch-detour");
+    const lateness = document.getElementById("dispatch-lateness");
+    const radius = document.getElementById("dispatch-radius");
+    const mode = document.getElementById("dispatch-mode");
+    if (detour) detour.value = config.maxDetourMinutes;
+    if (lateness) lateness.value = config.maxLatenessMinutes;
+    if (radius) radius.value = config.maxPickupRadiusKm;
+    if (mode) {
+      mode.textContent = config.multiDispatchEnabled
+        ? "Drivers can accept another delivery while one is already active."
+        : "Drivers finish the current delivery before accepting another. Jobs already accepted stay active.";
+    }
+    const vehicles = document.getElementById("dispatch-vehicle-body");
+    if (vehicles) {
+      const rows = config.vehicleLimits || [];
+      vehicles.innerHTML = rows.length
+        ? rows.map(function (item, index) {
+            return (
+              '<article class="dispatch-admin__vehicle-card">' +
+              '<div class="dispatch-admin__vehicle-card-top">' +
+              '<h4 class="dispatch-admin__vehicle-name">' + escapeHtml(item.name) + "</h4>" +
+              '<label class="dispatch-admin__switch">' +
+              '<input type="checkbox" data-vehicle-enabled="' + index + '"' + (item.enabled ? " checked" : "") + ">" +
+              '<span class="dispatch-admin__switch-ui" aria-hidden="true"></span>' +
+              '<span class="sr-only">Enable ' + escapeHtml(item.name) + "</span>" +
+              "</label>" +
+              "</div>" +
+              '<div class="dispatch-admin__vehicle-fields">' +
+              "<label><span class=\"dispatch-admin__field-label\">Max dispatches</span>" +
+              '<input type="number" min="1" max="20" data-vehicle-max="' + index + '" value="' + item.max + '"></label>' +
+              "<label><span class=\"dispatch-admin__field-label\">Capacity points</span>" +
+              '<input type="number" min="1" max="50" data-vehicle-capacity="' + index + '" value="' + item.capacity + '"></label>' +
+              "</div>" +
+              "</article>"
+            );
+          }).join("")
+        : '<p class="dispatch-admin__empty">No vehicle limits configured.</p>';
+    }
+    const packages = document.getElementById("dispatch-package-body");
+    if (packages) {
+      const rows = config.packages || [];
+      packages.innerHTML = rows.length
+        ? rows.map(function (item, index) {
+            function chip(key, label) {
+              return (
+                '<label class="dispatch-admin__chip">' +
+                '<input type="checkbox" data-package-' + key + '="' + index + '"' + (item[key] ? " checked" : "") + ">" +
+                "<span>" + label + "</span></label>"
+              );
+            }
+            return (
+              '<article class="dispatch-admin__package-card">' +
+              '<div class="dispatch-admin__package-head">' +
+              '<h4 class="dispatch-admin__package-name">' + escapeHtml(item.name) + "</h4>" +
+              '<span class="dispatch-admin__package-badge">' + item.points + " pts</span>" +
+              "</div>" +
+              '<div class="dispatch-admin__package-grid">' +
+              "<label><span class=\"dispatch-admin__field-label\">Points</span>" +
+              '<input type="number" min="1" max="20" data-package-points="' + index + '" value="' + item.points + '"></label>' +
+              "<label><span class=\"dispatch-admin__field-label\">Weight (kg)</span>" +
+              '<input type="number" min="1" max="200" data-package-weight="' + index + '" value="' + item.weightKg + '"></label>' +
+              "<label><span class=\"dispatch-admin__field-label\">Length (cm)</span>" +
+              '<input type="number" min="1" max="400" data-package-length="' + index + '" value="' + item.maxLengthCm + '"></label>' +
+              "<label><span class=\"dispatch-admin__field-label\">Width (cm)</span>" +
+              '<input type="number" min="1" max="400" data-package-width="' + index + '" value="' + item.maxWidthCm + '"></label>' +
+              "<label><span class=\"dispatch-admin__field-label\">Height (cm)</span>" +
+              '<input type="number" min="1" max="400" data-package-height="' + index + '" value="' + item.maxHeightCm + '"></label>' +
+              "</div>" +
+              '<div class="dispatch-admin__package-vehicles">' +
+              chip("bike", "Bike") +
+              chip("keke", "Keke") +
+              chip("car", "Car") +
+              chip("dedicated", "Dedicated") +
+              "</div>" +
+              "</article>"
+            );
+          }).join("")
+        : '<p class="dispatch-admin__empty">No packages configured.</p>';
+    }
+  }
+
+  function readDispatchForm() {
+    const source = dispatchConfig || DISPATCH_DEFAULTS;
+    function numberValue(selector, fallback) {
+      const node = document.querySelector(selector);
+      const value = Number(node && node.value);
+      return Number.isFinite(value) ? value : fallback;
+    }
+    function checked(selector) {
+      const node = document.querySelector(selector);
+      return Boolean(node && node.checked);
+    }
+    return {
+      multiDispatchEnabled: dispatchChecked("dispatch-enabled"),
+      routeCompatibilityEnabled: dispatchChecked("dispatch-route"),
+      capacityValidationEnabled: dispatchChecked("dispatch-capacity"),
+      routeOptimizationEnabled: dispatchChecked("dispatch-optimize"),
+      capacityNotificationsEnabled: dispatchChecked("dispatch-notices"),
+      combinedStatusEnabled: dispatchChecked("dispatch-shared"),
+      maxDetourMinutes: numberValue("#dispatch-detour", source.maxDetourMinutes),
+      maxLatenessMinutes: numberValue("#dispatch-lateness", source.maxLatenessMinutes),
+      maxPickupRadiusKm: numberValue("#dispatch-radius", source.maxPickupRadiusKm),
+      vehicleLimits: (source.vehicleLimits || []).map(function (item, index) {
+        return {
+          name: item.name,
+          max: numberValue('[data-vehicle-max="' + index + '"]', item.max),
+          capacity: numberValue('[data-vehicle-capacity="' + index + '"]', item.capacity),
+          enabled: checked('[data-vehicle-enabled="' + index + '"]'),
+        };
+      }),
+      packages: (source.packages || []).map(function (item, index) {
+        return {
+          name: item.name,
+          points: numberValue('[data-package-points="' + index + '"]', item.points),
+          weightKg: numberValue('[data-package-weight="' + index + '"]', item.weightKg),
+          maxLengthCm: numberValue('[data-package-length="' + index + '"]', item.maxLengthCm),
+          maxWidthCm: numberValue('[data-package-width="' + index + '"]', item.maxWidthCm),
+          maxHeightCm: numberValue('[data-package-height="' + index + '"]', item.maxHeightCm),
+          bike: checked('[data-package-bike="' + index + '"]'),
+          keke: checked('[data-package-keke="' + index + '"]'),
+          car: checked('[data-package-car="' + index + '"]'),
+          dedicated: checked('[data-package-dedicated="' + index + '"]'),
+        };
+      }),
+    };
+  }
+
+  function limitsWereLowered(previous, next) {
+    return (next.vehicleLimits || []).some(function (item) {
+      const before = (previous.vehicleLimits || []).find(function (row) { return row.name === item.name; });
+      return before && (item.max < before.max || item.capacity < before.capacity || (before.enabled && !item.enabled));
+    }) || (previous.multiDispatchEnabled && !next.multiDispatchEnabled);
+  }
+
+  function renderAudits(audits) {
+    const list = document.getElementById("dispatch-audit");
+    if (!list) return;
+    if (!audits || !audits.length) {
+      list.innerHTML = '<li class="dispatch-admin__empty">No dispatch setting changes yet.</li>';
+      return;
+    }
+    list.innerHTML = audits.map(function (row) {
+      const when = row.created_at ? new Date(row.created_at).toLocaleString() : "Unknown time";
+      const action = row.next && row.next.action === "reassign"
+        ? "Reassigned delivery " + escapeHtml(row.next.ride_id || "")
+        : "Updated dispatch settings";
+      return "<li><strong>" + action + '</strong><span class="dispatch-admin__audit-meta">' + escapeHtml(when) + "</span></li>";
+    }).join("");
+  }
+
+  function renderMonitor(payload) {
+    const body = document.getElementById("dispatch-monitor-body");
+    if (!body) return;
+    const drivers = payload && payload.drivers ? payload.drivers : [];
+    if (!drivers.length) {
+      body.innerHTML = '<tr><td colspan="6"><p class="dispatch-admin__empty">No driver is carrying an active delivery.</p></td></tr>';
+      return;
+    }
+    body.innerHTML = drivers.map(function (driver) {
+      const jobs = (driver.dispatches || []).map(function (job) {
+        const late = job.late ? " · late" : "";
+        return "<li><strong>" + escapeHtml(job.booking_id || job.id) + "</strong> · " + escapeHtml(job.status) + escapeHtml(late) +
+          "<br>" + escapeHtml(job.pickup_address || "") + " → " + escapeHtml(job.destination_address || "") +
+          '<br><button type="button" class="bike-delivery-btn bike-delivery-btn--ghost" data-reassign="' + escapeHtml(job.id) + '">Reassign</button></li>';
+      }).join("");
+      const restricted = driver.status === "Restricted";
+      const statusClass = restricted ? "dispatch-admin__status dispatch-admin__status--restricted" : "dispatch-admin__status";
+      return (
+        "<tr>" +
+        "<td>" + escapeHtml(driver.name) + (jobs ? '<ul class="dispatch-admin__jobs">' + jobs + "</ul>" : "") + "</td>" +
+        "<td>" + escapeHtml(driver.vehicle || "—") + "</td>" +
+        "<td>" + escapeHtml(driver.active + "/" + driver.max) + "</td>" +
+        "<td>" + escapeHtml(driver.points + "/" + driver.capacity) + "</td>" +
+        '<td><span class="' + statusClass + '">' + escapeHtml(driver.status) + "</span></td>" +
+        '<td><button type="button" class="bike-delivery-btn bike-delivery-btn--ghost" data-restrict="' + escapeHtml(driver.driver_id) + '" data-restricted="' + (restricted ? "0" : "1") + '">' +
+        (restricted ? "Allow more" : "Restrict") + "</button></td>" +
+        "</tr>"
+      );
+    }).join("");
+  }
+
+  function metric(label, value) {
+    const shown = value == null || value === "" ? "—" : value;
+    return '<div class="dispatch-admin__metric"><span>' + label + '</span><strong>' + shown + "</strong></div>";
+  }
+
+  function renderAnalytics(data) {
+    const node = document.getElementById("dispatch-analytics");
+    if (!node) return;
+    if (!data) {
+      node.innerHTML = '<p class="dispatch-admin__empty">No analytics available for this range.</p>';
+      return;
+    }
+    function rate(value) {
+      return value == null ? null : Math.round(Number(value) * 100) + "%";
+    }
+    node.innerHTML = [
+      metric("Stacked deliveries", data.stacked_deliveries),
+      metric("Drivers with a stacked delivery", data.stacked_drivers),
+      metric("Deliveries in range", data.deliveries),
+      metric("Completion rate", rate(data.completion_rate)),
+      metric("Cancellation rate", rate(data.cancellation_rate)),
+      metric("On-time rate", rate(data.on_time_rate)),
+      metric("Drivers with an active delivery", data.active_multi_drivers),
+      metric("Average active dispatches", data.average_active_dispatches == null ? null : Number(data.average_active_dispatches).toFixed(1)),
+      metric("Customer complaints", data.customer_complaints),
+      metric("Average pickup delay (min)", data.average_pickup_delay_minutes),
+      metric("Average delivery delay (min)", data.average_delivery_delay_minutes),
+      metric("Earnings per active hour", data.earnings_per_active_hour_ngn),
+      metric("Route detour impact (min)", data.route_detour_impact_minutes),
+      metric("Failed multi-dispatch assignments", data.failed_assignments),
+    ].join("");
+  }
+
+  function loadDispatch() {
+    if (!document.getElementById("dispatch-admin")) return;
+    renderDispatchConfig(DISPATCH_DEFAULTS);
+    renderAudits([]);
+    apiRequest(API.dispatchConfig)
+      .then(function (data) {
+        renderDispatchConfig(data.config || DISPATCH_DEFAULTS);
+        renderAudits(data.audits || []);
+      })
+      .catch(function (err) {
+        renderDispatchConfig(DISPATCH_DEFAULTS);
+        renderAudits([]);
+        showToast(err.message || "Could not load dispatch settings", true);
+      });
+    apiRequest(API.dispatchMonitor)
+      .then(renderMonitor)
+      .catch(function (err) {
+        renderMonitor({ drivers: [] });
+        showToast(err.message || "Could not load workloads", true);
+      });
+    const from = document.getElementById("dispatch-from");
+    const to = document.getElementById("dispatch-to");
+    const today = new Date();
+    const weekAgo = new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000);
+    if (to && !to.value) to.value = today.toISOString().slice(0, 10);
+    if (from && !from.value) from.value = weekAgo.toISOString().slice(0, 10);
+    loadDispatchAnalytics();
+  }
+
+  function loadDispatchAnalytics() {
+    const from = document.getElementById("dispatch-from");
+    const to = document.getElementById("dispatch-to");
+    const node = document.getElementById("dispatch-analytics");
+    if (node) node.innerHTML = '<p class="dispatch-admin__empty">Loading analytics…</p>';
+    const params = new URLSearchParams();
+    if (from && from.value) params.set("from", from.value);
+    if (to && to.value) params.set("to", to.value);
+    apiRequest(API.dispatchAnalytics + (params.toString() ? "?" + params.toString() : ""))
+      .then(renderAnalytics)
+      .catch(function (err) {
+        if (node) node.innerHTML = '<p class="dispatch-admin__empty">Could not load analytics.</p>';
+        showToast(err.message || "Could not load analytics", true);
+      });
+  }
+
+  function bindDispatch() {
+    const save = document.getElementById("dispatch-save");
+    const reset = document.getElementById("dispatch-reset");
+    const error = document.getElementById("dispatch-error");
+    const analyticsForm = document.getElementById("dispatch-analytics-form");
+    const monitor = document.getElementById("dispatch-monitor-body");
+    if (save) {
+      save.addEventListener("click", function () {
+        const next = readDispatchForm();
+        const previous = dispatchConfig || DISPATCH_DEFAULTS;
+        if (limitsWereLowered(previous, next)) {
+          const confirmed = window.confirm("Lowering a limit does not cancel deliveries already accepted. Drivers above the new limit are flagged and cannot accept more until they finish a job. Save anyway?");
+          if (!confirmed) return;
+        }
+        if (error) error.hidden = true;
+        apiRequest(API.dispatchConfig, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(next),
+        })
+          .then(function (data) {
+            renderDispatchConfig(data.config || next);
+            renderAudits(data.audits || []);
+            showToast("Dispatch settings saved");
+            apiRequest(API.dispatchMonitor).then(renderMonitor).catch(function () {});
+          })
+          .catch(function (err) {
+            if (error) {
+              error.textContent = err.message;
+              error.hidden = false;
+            } else {
+              showToast(err.message, true);
+            }
+          });
+      });
+    }
+    if (reset) {
+      reset.addEventListener("click", function () {
+        renderDispatchConfig(JSON.parse(JSON.stringify(DISPATCH_DEFAULTS)));
+        showToast("Defaults restored in the form. Save to apply them.");
+      });
+    }
+    if (analyticsForm) {
+      analyticsForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        loadDispatchAnalytics();
+      });
+    }
+    if (monitor) {
+      monitor.addEventListener("click", function (event) {
+        const restrict = event.target.closest("[data-restrict]");
+        const reassign = event.target.closest("[data-reassign]");
+        if (restrict) {
+          const driverId = restrict.getAttribute("data-restrict");
+          const restricted = restrict.getAttribute("data-restricted") === "1";
+          apiRequest(API.dispatchRestrict(driverId), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ restricted: restricted }),
+          })
+            .then(function () {
+              showToast(restricted ? "Driver restricted from additional deliveries" : "Driver can accept additional deliveries");
+              return apiRequest(API.dispatchMonitor).then(renderMonitor);
+            })
+            .catch(function (err) { showToast(err.message, true); });
+        }
+        if (reassign) {
+          const rideId = reassign.getAttribute("data-reassign");
+          const driverId = window.prompt("Destination driver id. The server checks that driver's capacity and route before moving this delivery.");
+          if (!driverId) return;
+          apiRequest(API.dispatchReassign, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ride_id: rideId, driver_id: driverId.trim() }),
+          })
+            .then(function () {
+              showToast("Delivery reassigned");
+              return apiRequest(API.dispatchMonitor).then(renderMonitor);
+            })
+            .catch(function (err) { showToast(err.message, true); });
+        }
+      });
+    }
+  }
+
   function init() {
     if (!document.querySelector(".bike-delivery-page")) return;
     bindEvents();
@@ -590,6 +1011,8 @@
     loadPricing();
     loadZones();
     loadRiders();
+    bindDispatch();
+    loadDispatch();
   }
 
   if (document.readyState === "loading") {
