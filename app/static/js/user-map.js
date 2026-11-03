@@ -234,13 +234,13 @@
                 });
                 var subtitle = document.querySelector(".rider-panel--map .rider-panel__subtitle");
                 if (subtitle && data.driver_count != null) {
+                  var pickupMinutes = Number(data.avg_pickup_minutes);
                   subtitle.textContent =
                     data.driver_count +
                     " drivers within " +
                     (data.radius_km || 2) +
-                    " km · Avg pickup " +
-                    (data.avg_pickup_minutes || 4) +
-                    " min";
+                    " km" +
+                    (pickupMinutes > 0 ? " · Avg pickup " + pickupMinutes + " min" : "");
                 }
                 drawMap(merged);
               })

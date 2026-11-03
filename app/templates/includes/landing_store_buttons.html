@@ -25,3 +25,35 @@
   </span>
   {% endif %}
 {% endmacro %}
+
+{# One button: opens Play Store or App Store based on the visitor's device. #}
+{% macro smart_store_btn(android_url, ios_url, variant, app_name) %}
+  {% set has_android = android_url and android_url.startswith('http') %}
+  {% set has_ios = ios_url and ios_url.startswith('http') %}
+  {% if has_android or has_ios %}
+  <a
+    href="{{ android_url if has_android else ios_url }}"
+    class="landing-mobile__btn landing-mobile__btn--{{ variant }} landing-mobile__btn--smart"
+    target="_blank"
+    rel="noopener noreferrer"
+    data-store-android="{{ android_url if has_android else '' }}"
+    data-store-ios="{{ ios_url if has_ios else '' }}"
+    data-app-name="{{ app_name }}"
+  >
+    <span class="landing-mobile__btn-icon landing-mobile__btn-icon--android" hidden>{{ android_icon() }}</span>
+    <span class="landing-mobile__btn-icon landing-mobile__btn-icon--ios" hidden>{{ ios_icon() }}</span>
+    <span class="landing-mobile__btn-copy">
+      <strong>{{ app_name }}</strong>
+      <small class="landing-mobile__btn-platform">Download the app</small>
+    </span>
+  </a>
+  {% else %}
+  <span class="landing-mobile__btn landing-mobile__btn--{{ variant }} landing-mobile__btn--soon" aria-disabled="true">
+    {{ android_icon() }}
+    <span class="landing-mobile__btn-copy">
+      <strong>{{ app_name }}</strong>
+      <small>Coming soon</small>
+    </span>
+  </span>
+  {% endif %}
+{% endmacro %}

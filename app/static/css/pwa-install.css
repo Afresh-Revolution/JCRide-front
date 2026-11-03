@@ -93,6 +93,28 @@
   box-shadow: 0 8px 20px rgba(6, 95, 70, 0.35);
 }
 
+.pwa-install-card__secondary {
+  display: block;
+  width: 100%;
+  margin-top: 0.625rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(6, 95, 70, 0.28);
+  border-radius: 12px;
+  background: rgba(6, 95, 70, 0.08);
+  color: #065f46;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.pwa-install-card__secondary:hover {
+  background: rgba(6, 95, 70, 0.14);
+}
+
 .pwa-install-card__ghost {
   display: block;
   width: 100%;
@@ -104,6 +126,27 @@
   font-size: 0.875rem;
   font-family: inherit;
   cursor: pointer;
+}
+
+.pwa-ios-sheet__mobile {
+  display: block;
+  width: 100%;
+  margin: 0.25rem 0 0.875rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(6, 95, 70, 0.28);
+  border-radius: 12px;
+  background: rgba(6, 95, 70, 0.08);
+  color: #065f46;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.pwa-ios-sheet__mobile:hover {
+  background: rgba(6, 95, 70, 0.14);
 }
 
 /* iOS bottom sheet */

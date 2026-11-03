@@ -606,7 +606,7 @@ def estimate_to_tiers(estimate: dict, selected_tier: str = "economy") -> list[di
                 "badge": "Most popular" if tier_id == "economy" else None,
                 "description": f"~{duration} min trip",
                 "seats": 4,
-                "eta": f"{max(3, duration // 5)} min",
+                "eta": f"{duration} min" if duration else "—",
                 "fare": format_ngn(round(fare * multiplier)),
                 "fare_num": round(fare * multiplier),
                 "icon": tier_id,
@@ -626,7 +626,7 @@ def delivery_estimate_to_defaults(estimate: dict, pickup: str, dropoff: str) -> 
         "eta": f"{duration} min",
         "fare": format_ngn(fare),
         "fare_num": round(fare),
-        "pickup_eta": f"{max(4, duration // 4)} min",
+        "pickup_eta": f"{duration} min" if duration else "—",
     }
 
 

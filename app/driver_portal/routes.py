@@ -341,7 +341,7 @@ def register_page():
         password = request.form.get("password", "driver123").strip() or "driver123"
 
         try:
-            register(name, phone, email or f"{phone}@josride.local", password)
+            register(name, phone, email or f"{phone}@josride.local", password, signup_as="driver")
             flash("Application submitted. Sign in when approved.", "success")
             return redirect(url_for("driver_portal.login"))
         except ApiError as exc:

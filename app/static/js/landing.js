@@ -98,4 +98,52 @@
     heroVisual.classList.add("landing-animate");
     reveal(heroVisual, 420);
   }
+
+  function isIOSDevice() {
+    var ua = navigator.userAgent || "";
+    return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  function isAndroidDevice() {
+    return /Android/i.test(navigator.userAgent || "");
+  }
+
+  document.querySelectorAll(".landing-mobile__btn--smart").forEach(function (btn) {
+    var androidUrl = (btn.getAttribute("data-store-android") || "").trim();
+    var iosUrl = (btn.getAttribute("data-store-ios") || "").trim();
+    var preferIos = isIOSDevice();
+    var preferAndroid = isAndroidDevice();
+    var href = "";
+    var platform = "App Store";
+
+    if (preferIos && iosUrl) {
+      href = iosUrl;
+      platform = "App Store";
+    } else if (preferAndroid && androidUrl) {
+      href = androidUrl;
+      platform = "Google Play";
+    } else if (iosUrl) {
+      href = iosUrl;
+      platform = "App Store";
+    } else if (androidUrl) {
+      href = androidUrl;
+      platform = "Google Play";
+    }
+
+    if (!href) return;
+    btn.setAttribute("href", href);
+
+    var label = btn.querySelector(".landing-mobile__btn-platform");
+    if (label) label.textContent = "Download on " + platform;
+
+    var androidIcon = btn.querySelector(".landing-mobile__btn-icon--android");
+    var iosIcon = btn.querySelector(".landing-mobile__btn-icon--ios");
+    if (platform === "App Store") {
+      if (iosIcon) iosIcon.hidden = false;
+      if (androidIcon) androidIcon.hidden = true;
+    } else {
+      if (androidIcon) androidIcon.hidden = false;
+      if (iosIcon) iosIcon.hidden = true;
+    }
+  });
 })();
