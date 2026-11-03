@@ -2,7 +2,7 @@
 {% block title %}{% block page_title %}Dashboard{% endblock %} - JosRide Admin{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-dashboard.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/admin-dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin-confirm.css') }}">
 {% block page_head %}{% endblock %}
 {% if dashboard_map or admin_leaflet %}
@@ -39,7 +39,7 @@
 {% if dashboard_charts or dashboard_map %}
 <script src="{{ url_for('static', filename='js/admin-dashboard.js') }}"></script>
 {% endif %}
-<script src="{{ url_for('static', filename='js/admin-safety-nav.js') }}"></script>
+<script src="{{ static_url('js/admin-safety-nav.js') }}"></script>
 {% block page_scripts %}{% endblock %}
 <script src="{{ url_for('static', filename='js/portal-layout.js') }}"></script>
 <script src="{{ url_for('static', filename='js/flash-dismiss.js') }}"></script>

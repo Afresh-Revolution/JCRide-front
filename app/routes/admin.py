@@ -1055,30 +1055,170 @@ def api_sos_list():
         return jsonify({"message": exc.message}), exc.status_code
 
 
+def _nav_count(value):
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _nav_total(payload):
+    if isinstance(payload, dict):
+        if payload.get("total") is not None:
+            return _nav_count(payload.get("total"))
+        if payload.get("pending_count") is not None:
+            return _nav_count(payload.get("pending_count"))
+        if isinstance(payload.get("requests"), list):
+            return len(payload.get("requests") or [])
+        if isinstance(payload.get("items"), list):
+            return len(payload.get("items") or [])
+    if isinstance(payload, list):
+        return len(payload)
+    return 0
+
+
 @admin_bp.route("/api/safety-alerts/summary")
 @admin_required
 def api_safety_alerts_summary():
-    """Pending SOS + accident counts for sidebar alert styling."""
-    token = _admin_token()
-    sos_pending = 0
-    accident_pending = 0
-    try:
-        sos_pending = int(normalize_sos_list(get_admin_sos_alerts(token)).get("pending_count") or 0)
-    except ApiError:
-        sos_pending = 0
-    try:
-        accident_pending = int(
-            normalize_accident_list(get_admin_accident_reports(token)).get("pending_count") or 0
-        )
-    except ApiError:
-        accident_pending = 0
+    """Backward-compatible SOS/accident counts (also included in /api/nav-summary)."""
+    data = _build_nav_summary(_admin_token())
     return jsonify(
         {
-            "sos_pending": sos_pending,
-            "accident_pending": accident_pending,
-            "has_alerts": bool(sos_pending or accident_pending),
+            "sos_pending": data["sos_pending"],
+            "accident_pending": data["accident_pending"],
+            "has_alerts": bool(data["sos_pending"] or data["accident_pending"]),
         }
     )
+
+
+@admin_bp.route("/api/nav-summary")
+@admin_required
+def api_nav_summary():
+    """Sidebar badge counts for pending reviews and queues."""
+    return jsonify(_build_nav_summary(_admin_token()))
+
+
+def _build_nav_summary(token):
+    sos_pending = 0
+    accident_pending = 0
+    drivers_pending = 0
+    bike_delivery_pending = 0
+    tricycle_pending = 0
+    subscriptions_pending = 0
+    transactions_pending = 0
+    wallets_pending = 0
+    payments_pending = 0
+    support_pending = 0
+
+    try:
+        sos_pending = _nav_count(normalize_sos_list(get_admin_sos_alerts(token)).get("pending_count"))
+    except ApiError:
+        pass
+    try:
+        accident_pending = _nav_count(
+            normalize_accident_list(get_admin_accident_reports(token)).get("pending_count")
+        )
+    except ApiError:
+        pass
+
+    try:
+        car_stats = get_admin_driver_stats(token, vehicle_category="car") or {}
+        drivers_pending += _nav_count(car_stats.get("pending_approval"))
+    except ApiError:
+        pass
+    try:
+        from app.services.api_client import get_admin_vehicle_inspections
+
+        drivers_pending += _nav_total(
+            get_admin_vehicle_inspections(token, status="pending", page=1, limit=1)
+        )
+    except ApiError:
+        pass
+    try:
+        from app.services.api_client import get_admin_vehicle_changes
+
+        drivers_pending += _nav_total(
+            get_admin_vehicle_changes(
+                token, status="pending", page=1, limit=1, vehicle_category="car"
+            )
+        )
+    except ApiError:
+        pass
+    try:
+        from app.services.api_client import get_admin_document_edits
+
+        drivers_pending += _nav_total(
+            get_admin_document_edits(
+                token, status="pending_review", page=1, limit=1, vehicle_category="car"
+            )
+        )
+    except ApiError:
+        pass
+
+    try:
+        bike_delivery_pending = _nav_total(
+            get_admin_bike_delivery_riders(token, status="pending", page=1, limit=1)
+        )
+    except ApiError:
+        pass
+
+    try:
+        trike_stats = get_admin_driver_stats(token, vehicle_category="tricycle") or {}
+        tricycle_pending += _nav_count(trike_stats.get("pending_approval"))
+    except ApiError:
+        pass
+    try:
+        from app.services.api_client import get_admin_document_edits
+
+        tricycle_pending += _nav_total(
+            get_admin_document_edits(
+                token, status="pending_review", page=1, limit=1, vehicle_category="tricycle"
+            )
+        )
+    except ApiError:
+        pass
+
+    try:
+        pending_payments = get_admin_landmark_pending_payments(token) or []
+        transactions_pending = _nav_total(pending_payments)
+        subscriptions_pending = transactions_pending
+    except ApiError:
+        pass
+
+    try:
+        funding = get_admin_funding_requests(token, status="pending", page=1, limit=1) or {}
+        payments_pending = _nav_total(funding)
+        wallets_pending = payments_pending
+    except ApiError:
+        pass
+    try:
+        withdrawals = get_admin_withdrawals(token, status="pending", page=1, limit=1) or {}
+        wallets_pending += _nav_total(withdrawals)
+    except (ApiError, TypeError):
+        pass
+
+    try:
+        tickets = get_admin_support_tickets(token, status="open", page=1, limit=1) or {}
+        support_pending = _nav_total(tickets)
+        if support_pending == 0:
+            tickets = get_admin_support_tickets(token, status="pending", page=1, limit=1) or {}
+            support_pending = _nav_total(tickets)
+    except ApiError:
+        pass
+
+    return {
+        "sos_pending": sos_pending,
+        "accident_pending": accident_pending,
+        "drivers_pending": drivers_pending,
+        "bike_delivery_pending": bike_delivery_pending,
+        "tricycle_pending": tricycle_pending,
+        "subscriptions_pending": subscriptions_pending,
+        "transactions_pending": transactions_pending,
+        "payments_pending": payments_pending,
+        "wallets_pending": wallets_pending,
+        "support_pending": support_pending,
+        "has_alerts": bool(sos_pending or accident_pending),
+    }
 
 
 @admin_bp.route("/api/sos/<sos_id>/acknowledge", methods=["POST"])
