@@ -19,33 +19,42 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Users
     </a>
-    <a href="{{ url_for('admin.drivers') }}" class="admin-nav-item{% if active_page == 'drivers' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+    <a href="{{ url_for('admin.drivers') }}" id="admin-nav-drivers" class="admin-nav-item{% if active_page == 'drivers' %} is-active{% endif %}" data-nav-key="drivers">
+      <span class="admin-nav-item__icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M7 17h10M5 11l1.5-4h11L19 11"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>
+        <span class="notification-badge admin-nav-item__badge" data-nav-badge="drivers" hidden aria-hidden="true">0</span>
+      </span>
       Drivers
     </a>
-    <a href="{{ url_for('admin.bike_delivery') }}" class="admin-nav-item{% if active_page == 'bike_delivery' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M15 6a1 1 0 0 0-1-1H9l-2 4h11l-2-5Z"/><path d="M8 17.5h8"/></svg>
+    <a href="{{ url_for('admin.bike_delivery') }}" id="admin-nav-bike-delivery" class="admin-nav-item{% if active_page == 'bike_delivery' %} is-active{% endif %}" data-nav-key="bike_delivery">
+      <span class="admin-nav-item__icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M15 6a1 1 0 0 0-1-1H9l-2 4h11l-2-5Z"/><path d="M8 17.5h8"/></svg>
+        <span class="notification-badge admin-nav-item__badge" data-nav-badge="bike_delivery" hidden aria-hidden="true">0</span>
+      </span>
       Bike Delivery
     </a>
-    <a href="{{ url_for('admin.tricycle') }}" class="admin-nav-item{% if active_page == 'tricycle' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h7l3-7H9l-3 7Z"/><path d="M13 10h4"/></svg>
+    <a href="{{ url_for('admin.tricycle') }}" id="admin-nav-tricycle" class="admin-nav-item{% if active_page == 'tricycle' %} is-active{% endif %}" data-nav-key="tricycle">
+      <span class="admin-nav-item__icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h7l3-7H9l-3 7Z"/><path d="M13 10h4"/></svg>
+        <span class="notification-badge admin-nav-item__badge" data-nav-badge="tricycle" hidden aria-hidden="true">0</span>
+      </span>
       Tricycle
     </a>
     <a href="{{ url_for('admin.trips') }}" class="admin-nav-item{% if active_page == 'trips' %} is-active{% endif %}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Trips
     </a>
-    <a href="{{ url_for('admin.sos_page') }}" id="admin-nav-sos" class="admin-nav-item{% if active_page == 'sos' %} is-active{% endif %}" data-safety-nav="sos">
+    <a href="{{ url_for('admin.sos_page') }}" id="admin-nav-sos" class="admin-nav-item{% if active_page == 'sos' %} is-active{% endif %}" data-safety-nav="sos" data-nav-key="sos">
       <span class="admin-nav-item__icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span class="notification-badge admin-nav-item__badge" data-safety-badge="sos" hidden aria-hidden="true">0</span>
+        <span class="notification-badge admin-nav-item__badge" data-safety-badge="sos" data-nav-badge="sos" hidden aria-hidden="true">0</span>
       </span>
       SOS Alerts
     </a>
-    <a href="{{ url_for('admin.accidents_page') }}" id="admin-nav-accidents" class="admin-nav-item{% if active_page == 'accidents' %} is-active{% endif %}" data-safety-nav="accidents">
+    <a href="{{ url_for('admin.accidents_page') }}" id="admin-nav-accidents" class="admin-nav-item{% if active_page == 'accidents' %} is-active{% endif %}" data-safety-nav="accidents" data-nav-key="accidents">
       <span class="admin-nav-item__icon-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
-        <span class="notification-badge admin-nav-item__badge" data-safety-badge="accidents" hidden aria-hidden="true">0</span>
+        <span class="notification-badge admin-nav-item__badge" data-safety-badge="accidents" data-nav-badge="accidents" hidden aria-hidden="true">0</span>
       </span>
       Accidents
     </a>
@@ -57,28 +66,43 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
       KM Packs
     </a>
-    <a href="{{ url_for('admin.landmark_subscriptions') }}" class="admin-nav-item{% if active_page == 'landmark_subscriptions' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <a href="{{ url_for('admin.landmark_subscriptions') }}" id="admin-nav-subscriptions" class="admin-nav-item{% if active_page == 'landmark_subscriptions' %} is-active{% endif %}" data-nav-key="subscriptions">
+      <span class="admin-nav-item__icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="notification-badge admin-nav-item__badge" data-nav-badge="subscriptions" hidden aria-hidden="true">0</span>
+      </span>
       Subscriptions
     </a>
-    <a href="{{ url_for('admin.landmark_transactions') }}" class="admin-nav-item{% if active_page == 'landmark_transactions' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    <a href="{{ url_for('admin.landmark_transactions') }}" id="admin-nav-transactions" class="admin-nav-item{% if active_page == 'landmark_transactions' %} is-active{% endif %}" data-nav-key="transactions">
+      <span class="admin-nav-item__icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        <span class="notification-badge admin-nav-item__badge" data-nav-badge="transactions" hidden aria-hidden="true">0</span>
+      </span>
       Transactions
     </a>
-    <a href="{{ url_for('admin.payments') }}" class="admin-nav-item{% if active_page == 'payments' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    <a href="{{ url_for('admin.payments') }}" id="admin-nav-payments" class="admin-nav-item{% if active_page == 'payments' %} is-active{% endif %}" data-nav-key="payments">
+      <span class="admin-nav-item__icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        <span class="notification-badge admin-nav-item__badge" data-nav-badge="payments" hidden aria-hidden="true">0</span>
+      </span>
       Payments
     </a>
     <a href="{{ url_for('admin.service_fees') }}" class="admin-nav-item{% if active_page == 'service_fees' %} is-active{% endif %}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Service fees
     </a>
-    <a href="{{ url_for('admin.wallets') }}" class="admin-nav-item{% if active_page == 'wallets' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+    <a href="{{ url_for('admin.wallets') }}" id="admin-nav-wallets" class="admin-nav-item{% if active_page == 'wallets' %} is-active{% endif %}" data-nav-key="wallets">
+      <span class="admin-nav-item__icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+        <span class="notification-badge admin-nav-item__badge" data-nav-badge="wallets" hidden aria-hidden="true">0</span>
+      </span>
       Wallets
     </a>
-    <a href="{{ url_for('admin.support') }}" class="admin-nav-item{% if active_page == 'support' %} is-active{% endif %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <a href="{{ url_for('admin.support') }}" id="admin-nav-support" class="admin-nav-item{% if active_page == 'support' %} is-active{% endif %}" data-nav-key="support">
+      <span class="admin-nav-item__icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="notification-badge admin-nav-item__badge" data-nav-badge="support" hidden aria-hidden="true">0</span>
+      </span>
       Support
     </a>
     <a href="{{ url_for('admin.announcements') }}" class="admin-nav-item{% if active_page == 'announcements' %} is-active{% endif %}">

@@ -346,6 +346,16 @@ body.admin-body a {
   display: inline-flex;
 }
 
+.admin-nav-item.has-badge .admin-nav-item__badge {
+  display: inline-flex;
+  background: #ea580c;
+  border-color: var(--dash-card, #fff);
+}
+
+.admin-nav-item.has-badge.is-active .admin-nav-item__badge {
+  border-color: var(--dash-green-active, #0a4f2a);
+}
+
 .admin-nav-item--soon {
   opacity: 0.55;
   cursor: not-allowed;

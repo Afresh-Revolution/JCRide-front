@@ -44,7 +44,32 @@
     return div.innerHTML;
   }
 
-  function vehicleLabel(item) {
+  function normalizeCategory(value) {
+    var category = String(value || "").toLowerCase().trim();
+    if (category === "keke" || category === "tricycle") return "tricycle";
+    if (category === "bike" || category === "bicycle" || category === "motorcycle") return "bike";
+    if (category === "car" || category === "vehicle") return "car";
+    return category;
+  }
+
+  function typeLabel(item) {
+    var category = normalizeCategory(item.vehicle_category || item.category || item.vehicle_type);
+    if (category === "bike") return "Bike";
+    if (category === "tricycle") return "Keke";
+    if (category === "car") return "Car";
+    return "Unknown";
+  }
+
+  function serviceLabel(item) {
+    var category = normalizeCategory(item.vehicle_category || item.category || item.vehicle_type);
+    var kind = String(item.service_kind || item.serviceKind || "").toLowerCase().trim();
+    if (kind === "dispatch" || category === "bike") return "Dispatch";
+    if (kind === "ride" || kind === "passenger" || kind === "normal") return "Normal";
+    if (category === "car" || category === "tricycle") return "Normal";
+    return "Unknown";
+  }
+
+  function vehicleDetails(item) {
     return [item.vehicle_make, item.vehicle_model, item.vehicle_color, item.plate_number]
       .filter(Boolean)
       .join(" · ") || "-";
@@ -61,19 +86,35 @@
     return [item.preferred_date, item.preferred_time].filter(Boolean).join(" ") || "Not specified";
   }
 
+  function serviceBadge(item) {
+    var label = serviceLabel(item);
+    var isDispatch = label === "Dispatch";
+    return (
+      '<span class="drivers-pill' + (isDispatch ? " drivers-pill--dispatch" : " drivers-pill--normal") + '">' +
+      escapeHtml(label) +
+      "</span>"
+    );
+  }
+
+  function typeBadge(item) {
+    return '<span class="drivers-pill drivers-pill--type">' + escapeHtml(typeLabel(item)) + "</span>";
+  }
+
   function renderTable(requests) {
     if (!requests.length) {
-      tbody.innerHTML = '<tr class="drivers-table__empty"><td colspan="5">No pending vehicle inspections.</td></tr>';
+      tbody.innerHTML = '<tr class="drivers-table__empty"><td colspan="7">No pending vehicle inspections.</td></tr>';
       return;
     }
     tbody.innerHTML = requests.map(function (item) {
       return (
         "<tr>" +
         '<td data-label="Driver"><strong>' + escapeHtml(item.driver_name || "Driver") + "</strong><br><span class=\"drivers-table__meta\">" + escapeHtml(item.driver_email || item.driver_phone || "") + "</span></td>" +
-        '<td data-label="Vehicle">' + escapeHtml(vehicleLabel(item)) + "</td>" +
+        '<td data-label="Service">' + serviceBadge(item) + "</td>" +
+        '<td data-label="Type">' + typeBadge(item) + "</td>" +
+        '<td data-label="Vehicle"><span class="drivers-table__vehicle">' + escapeHtml(vehicleDetails(item)) + "</span></td>" +
         '<td data-label="Preferred slot">' + escapeHtml(slotLabel(item)) + "</td>" +
         '<td data-label="Submitted">' + escapeHtml(formatDate(item.submitted_at)) + "</td>" +
-        '<td class="drivers-table__actions" data-label="Actions"><button type="button" class="drivers-btn drivers-btn--ghost" data-inspect-id="' + escapeHtml(item.id) + '">Review account</button></td>' +
+        '<td class="drivers-table__actions" data-label="Actions"><button type="button" class="drivers-btn drivers-btn--ghost drivers-btn--review" data-inspect-id="' + escapeHtml(item.id) + '" aria-pressed="false">Review account</button></td>' +
         "</tr>"
       );
     }).join("");
@@ -82,22 +123,38 @@
   function renderModal(item) {
     if (!modalBody) return;
     modalBody.innerHTML =
+      '<div class="drivers-inspection-summary">' +
       "<p><strong>" + escapeHtml(item.driver_name || "Driver") + "</strong><br>" +
       escapeHtml(item.driver_email || "") + (item.driver_phone ? "<br>" + escapeHtml(item.driver_phone) : "") + "</p>" +
-      "<p>" + escapeHtml(vehicleLabel(item)) + "</p>" +
-      "<p>Preferred: " + escapeHtml(slotLabel(item)) + "</p>" +
-      "<p>Location: " + escapeHtml(item.location || inspectionLocation) + "</p>" +
-      (item.notes ? "<p>Notes: " + escapeHtml(item.notes) + "</p>" : "") +
-      "<p>Completing this review opens the driver's wallet. It does not assign a car class.</p>";
+      '<dl class="drivers-inspection-summary__grid">' +
+      "<div><dt>Service</dt><dd>" + serviceBadge(item) + "</dd></div>" +
+      "<div><dt>Vehicle type</dt><dd>" + typeBadge(item) + "</dd></div>" +
+      "<div><dt>Vehicle</dt><dd>" + escapeHtml(vehicleDetails(item)) + "</dd></div>" +
+      "<div><dt>Preferred</dt><dd>" + escapeHtml(slotLabel(item)) + "</dd></div>" +
+      "<div><dt>Location</dt><dd>" + escapeHtml(item.location || inspectionLocation) + "</dd></div>" +
+      (item.notes ? "<div><dt>Notes</dt><dd>" + escapeHtml(item.notes) + "</dd></div>" : "") +
+      "</dl>" +
+      "<p class=\"drivers-table__meta\">Completing this review opens the driver's wallet. It does not assign a car class.</p>" +
+      "</div>";
+  }
+
+  function setReviewButtonActive(requestId) {
+    tbody.querySelectorAll("[data-inspect-id]").forEach(function (btn) {
+      var active = Boolean(requestId) && btn.getAttribute("data-inspect-id") === String(requestId);
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
   }
 
   function openModal() {
     if (modal) modal.hidden = false;
+    setReviewButtonActive(activeRequestId);
   }
 
   function closeModal() {
     if (modal) modal.hidden = true;
     activeRequestId = null;
+    setReviewButtonActive(null);
   }
 
   function setLocationInput(value) {
@@ -116,7 +173,7 @@
         renderTable(requests);
       })
       .catch(function (err) {
-        tbody.innerHTML = '<tr class="drivers-table__empty"><td colspan="5">' + escapeHtml(err.message) + "</td></tr>";
+        tbody.innerHTML = '<tr class="drivers-table__empty"><td colspan="7">' + escapeHtml(err.message) + "</td></tr>";
       });
   }
 
@@ -145,6 +202,7 @@
   }
 
   function reviewRequest(requestId) {
+    setReviewButtonActive(requestId);
     apiRequest("/admin/api/vehicle-inspections/" + encodeURIComponent(requestId))
       .then(function (item) {
         activeRequestId = requestId;
@@ -152,6 +210,7 @@
         openModal();
       })
       .catch(function (err) {
+        setReviewButtonActive(activeRequestId);
         showToast(err.message, true);
       });
   }

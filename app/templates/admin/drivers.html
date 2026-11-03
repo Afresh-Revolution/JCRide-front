@@ -4,7 +4,7 @@
 {% block page_title %}Drivers{% endblock %}
 
 {% block page_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin-drivers.css') }}">
+<link rel="stylesheet" href="{{ static_url('css/admin-drivers.css') }}">
 {% endblock %}
 
 {% block dashboard_content %}
@@ -105,6 +105,8 @@
         <thead>
           <tr>
             <th scope="col">Driver</th>
+            <th scope="col">Service</th>
+            <th scope="col">Type</th>
             <th scope="col">Vehicle</th>
             <th scope="col">Preferred slot</th>
             <th scope="col">Submitted</th>
@@ -112,7 +114,7 @@
           </tr>
         </thead>
         <tbody id="vehicle-inspections-table-body">
-          <tr class="drivers-table__loading"><td colspan="5">Loading inspections…</td></tr>
+          <tr class="drivers-table__loading"><td colspan="7">Loading inspections…</td></tr>
         </tbody>
       </table>
     </div>
@@ -233,8 +235,8 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', filename='js/admin-drivers.js') }}"></script>
-<script src="{{ url_for('static', filename='js/admin-vehicle-changes.js') }}"></script>
-<script src="{{ url_for('static', filename='js/admin-vehicle-inspections.js') }}"></script>
-<script src="{{ url_for('static', filename='js/admin-document-edits.js') }}"></script>
+<script src="{{ static_url('js/admin-drivers.js') }}"></script>
+<script src="{{ static_url('js/admin-vehicle-changes.js') }}"></script>
+<script src="{{ static_url('js/admin-vehicle-inspections.js') }}"></script>
+<script src="{{ static_url('js/admin-document-edits.js') }}"></script>
 {% endblock %}

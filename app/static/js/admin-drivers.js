@@ -82,9 +82,23 @@
     return Number(n || 0).toLocaleString();
   }
 
+  function driverCategoryLabel(category) {
+    const value = String(category || "").toLowerCase();
+    if (value === "tricycle" || value === "keke") return "Keke";
+    if (value === "bike") return "Bike";
+    if (value === "car") return "Car";
+    return "Unknown";
+  }
+
+  function driverServiceLabel(raw) {
+    const category = String(raw.vehicle_category || "").toLowerCase();
+    const kind = String(raw.service_kind || "").toLowerCase();
+    if (kind === "dispatch" || category === "bike") return "Dispatch";
+    return "Normal";
+  }
+
   function normalizeDriver(raw) {
     if (!raw) return null;
-    if (raw.public_id && raw.vehicle_display) return raw;
 
     const backendStatus = raw.status || "pending_approval";
     const uiStatus = backendStatus === "pending_approval" ? "pending" : backendStatus;
@@ -97,11 +111,12 @@
     const name = raw.full_name || "Driver";
     const parts = name.trim().split(/\s+/);
     const initials = ((parts[0] || "D").charAt(0) + (parts[1] || parts[0] || "R").charAt(0)).toUpperCase();
-    const category = String(raw.vehicle_category || "").toLowerCase();
-    const vehicleKind = category === "tricycle" ? "Keke" : category === "bike" ? "Bike" : "Car";
-    const work = raw.service_kind === "dispatch" || category === "bike" ? "Dispatch" : "Passenger";
+    const vehicleKind = driverCategoryLabel(raw.vehicle_category);
+    const work = driverServiceLabel(raw);
     const vehicleName = [raw.vehicle_make, raw.vehicle_model].filter(Boolean).join(" ").trim();
-    const vehicleDisplay = [work, vehicleKind, vehicleName].filter(Boolean).join(" · ");
+    const vehicleDisplay =
+      raw.vehicle_display ||
+      [work, vehicleKind, vehicleName].filter(Boolean).join(" · ");
 
     return {
       id: raw.id,
@@ -110,6 +125,8 @@
       initials: raw.initials || initials,
       email: raw.email || "",
       phone: raw.phone || "",
+      service_label: raw.service_label || work,
+      vehicle_type_label: raw.vehicle_type_label || vehicleKind,
       vehicle_display: vehicleDisplay,
       license_plate: raw.license_plate || raw.plate_number || "-",
       trip_count: raw.trip_count != null ? raw.trip_count : (raw.total_completed_trips || 0),
@@ -365,6 +382,8 @@
           "<dl class=\"driver-detail-grid\">" +
           "<div><dt>Email</dt><dd>" + escapeHtml(normalized.email || "-") + "</dd></div>" +
           "<div><dt>Phone</dt><dd>" + escapeHtml(normalized.phone || "-") + "</dd></div>" +
+          "<div><dt>Service</dt><dd>" + escapeHtml(normalized.service_label || "-") + "</dd></div>" +
+          "<div><dt>Vehicle type</dt><dd>" + escapeHtml(normalized.vehicle_type_label || "-") + "</dd></div>" +
           "<div><dt>Vehicle</dt><dd>" + escapeHtml(normalized.vehicle_display) + "</dd></div>" +
           "<div><dt>Plate</dt><dd>" + escapeHtml(normalized.license_plate) + "</dd></div>" +
           "<div><dt>Total trips</dt><dd>" + escapeHtml(normalized.trip_count) + "</dd></div>" +

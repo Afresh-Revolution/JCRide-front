@@ -1,19 +1,59 @@
 (function () {
   "use strict";
 
-  var POLL_MS = 15000;
-  var sosLink = document.getElementById("admin-nav-sos");
-  var accidentLink = document.getElementById("admin-nav-accidents");
-  if (!sosLink && !accidentLink) return;
+  var POLL_MS = 20000;
+  var BADGE_MAP = {
+    sos: { key: "sos_pending", label: "SOS Alerts", alert: true },
+    accidents: { key: "accident_pending", label: "Accidents", alert: true },
+    drivers: { key: "drivers_pending", label: "Drivers", alert: false },
+    bike_delivery: { key: "bike_delivery_pending", label: "Bike Delivery", alert: false },
+    tricycle: { key: "tricycle_pending", label: "Tricycle", alert: false },
+    subscriptions: { key: "subscriptions_pending", label: "Subscriptions", alert: false },
+    transactions: { key: "transactions_pending", label: "Transactions", alert: false },
+    payments: { key: "payments_pending", label: "Payments", alert: false },
+    wallets: { key: "wallets_pending", label: "Wallets", alert: false },
+    support: { key: "support_pending", label: "Support", alert: false },
+  };
 
-  function setNavAlert(link, badge, count, label) {
-    if (!link) return;
+  var lastSummary = {
+    sos_pending: 0,
+    accident_pending: 0,
+    drivers_pending: 0,
+    bike_delivery_pending: 0,
+    tricycle_pending: 0,
+    subscriptions_pending: 0,
+    transactions_pending: 0,
+    payments_pending: 0,
+    wallets_pending: 0,
+    support_pending: 0,
+  };
+
+  function setNavBadge(navKey, count, label, asAlert) {
+    var link =
+      document.querySelector('[data-nav-key="' + navKey + '"]') ||
+      document.querySelector('[data-safety-nav="' + navKey + '"]');
+    var badge =
+      document.querySelector('[data-nav-badge="' + navKey + '"]') ||
+      document.querySelector('[data-safety-badge="' + navKey + '"]');
+    if (!link && !badge) return;
+
     var pending = Math.max(0, Number(count) || 0);
-    var hasAlert = pending > 0;
-    link.classList.toggle("is-alert", hasAlert);
-    link.setAttribute("aria-label", hasAlert ? label + " (" + pending + " new)" : label);
+    var hasCount = pending > 0;
+
+    if (link) {
+      if (asAlert) {
+        link.classList.toggle("is-alert", hasCount);
+      } else {
+        link.classList.toggle("has-badge", hasCount);
+      }
+      link.setAttribute(
+        "aria-label",
+        hasCount ? label + " (" + pending + " pending)" : label
+      );
+    }
+
     if (!badge) return;
-    if (hasAlert) {
+    if (hasCount) {
       badge.hidden = false;
       badge.setAttribute("aria-hidden", "false");
       badge.textContent = pending > 99 ? "99+" : String(pending);
@@ -26,32 +66,22 @@
     }
   }
 
-  var lastSummary = { sos_pending: 0, accident_pending: 0 };
-
   function applySummary(data) {
     data = data || {};
-    if (typeof data.sos_pending !== "undefined") {
-      lastSummary.sos_pending = data.sos_pending;
-    }
-    if (typeof data.accident_pending !== "undefined") {
-      lastSummary.accident_pending = data.accident_pending;
-    }
-    setNavAlert(
-      sosLink,
-      document.querySelector('[data-safety-badge="sos"]'),
-      lastSummary.sos_pending,
-      "SOS Alerts"
-    );
-    setNavAlert(
-      accidentLink,
-      document.querySelector('[data-safety-badge="accidents"]'),
-      lastSummary.accident_pending,
-      "Accidents"
-    );
+    Object.keys(lastSummary).forEach(function (key) {
+      if (typeof data[key] !== "undefined") {
+        lastSummary[key] = data[key];
+      }
+    });
+
+    Object.keys(BADGE_MAP).forEach(function (navKey) {
+      var meta = BADGE_MAP[navKey];
+      setNavBadge(navKey, lastSummary[meta.key], meta.label, meta.alert);
+    });
   }
 
   function refresh() {
-    return fetch("/admin/api/safety-alerts/summary", {
+    return fetch("/admin/api/nav-summary", {
       headers: { Accept: "application/json" },
       credentials: "same-origin",
     })
@@ -61,7 +91,18 @@
       })
       .then(applySummary)
       .catch(function () {
-        /* keep last known state */
+        return fetch("/admin/api/safety-alerts/summary", {
+          headers: { Accept: "application/json" },
+          credentials: "same-origin",
+        })
+          .then(function (res) {
+            if (!res.ok) throw new Error("summary failed");
+            return res.json();
+          })
+          .then(applySummary)
+          .catch(function () {
+            /* keep last known state */
+          });
       });
   }
 
@@ -71,6 +112,14 @@
   };
 
   window.addEventListener("admin-safety-alerts-changed", function (event) {
+    if (event && event.detail) {
+      applySummary(event.detail);
+      return;
+    }
+    refresh();
+  });
+
+  window.addEventListener("admin-nav-summary-changed", function (event) {
     if (event && event.detail) {
       applySummary(event.detail);
       return;
