@@ -288,24 +288,26 @@
 
       return (
         "<tr data-rider-id=\"" + escapeHtml(rider.id) + "\">" +
-        "<td><div class=\"bike-delivery-cell-rider\">" +
+        "<td data-label=\"Rider\"><div class=\"bike-delivery-cell-rider\">" +
         "<span class=\"bike-delivery-avatar\">" + escapeHtml(rider.initials) + "</span>" +
-        "<div><span class=\"bike-delivery-cell-rider__name\">" + escapeHtml(rider.full_name) + "</span>" +
+        "<div class=\"bike-delivery-cell-rider__text\"><span class=\"bike-delivery-cell-rider__name\">" + escapeHtml(rider.full_name) + "</span>" +
         "<span class=\"bike-delivery-cell-rider__id\">" + escapeHtml(rider.public_id) + "</span></div></div></td>" +
-        "<td>" + escapeHtml(rider.bike_model) + "</td>" +
-        "<td>" + escapeHtml(rider.plate_number) + "</td>" +
-        "<td>" + escapeHtml(rider.zone) + "</td>" +
-        "<td>" + escapeHtml(formatCount(rider.delivery_count)) + "</td>" +
-        "<td>" + escapeHtml(rider.earnings_display) + "</td>" +
-        "<td><span class=\"bike-delivery-cell-rating\">" + starSvg + escapeHtml(rider.rating_display) + "</span></td>" +
-        "<td><span class=\"" + statusClass(rider.status) + "\">" + escapeHtml(rider.status_label) + "</span></td>" +
-        "<td><div class=\"bike-delivery-actions\">" +
+        "<td data-label=\"Vehicle\">" + escapeHtml(rider.bike_model) + "</td>" +
+        "<td data-label=\"Plate\">" + escapeHtml(rider.plate_number) + "</td>" +
+        "<td data-label=\"Zone\">" + escapeHtml(rider.zone) + "</td>" +
+        "<td data-label=\"Deliveries\">" + escapeHtml(formatCount(rider.delivery_count)) + "</td>" +
+        "<td data-label=\"Earnings\">" + escapeHtml(rider.earnings_display) + "</td>" +
+        "<td data-label=\"Rating\"><span class=\"bike-delivery-cell-rating\">" + starSvg + escapeHtml(rider.rating_display) + "</span></td>" +
+        "<td data-label=\"Status\"><span class=\"" + statusClass(rider.status) + "\">" + escapeHtml(rider.status_label) + "</span></td>" +
+        "<td data-label=\"Actions\"><div class=\"bike-delivery-actions\">" +
         "<button type=\"button\" class=\"bike-delivery-action-btn\" data-action=\"view\" data-id=\"" + escapeHtml(rider.id) + "\" aria-label=\"View rider\">" +
         "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><path d=\"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></button>" +
         "<button type=\"button\" class=\"bike-delivery-action-btn bike-delivery-action-btn--approve\" data-action=\"" + positiveAction + "\" data-id=\"" + escapeHtml(rider.id) + "\" aria-label=\"" + escapeHtml(positiveLabel) + "\"" + ((isSuspended || canApprove) ? "" : " disabled") + ">" +
         "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"20 6 9 17 4 12\"/></svg></button>" +
         "<button type=\"button\" class=\"bike-delivery-action-btn bike-delivery-action-btn--reject\" data-action=\"" + (declineAction || "decline") + "\" data-id=\"" + escapeHtml(rider.id) + "\" aria-label=\"" + escapeHtml(declineLabel) + "\"" + (declineDisabled ? " disabled" : "") + ">" +
         "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg></button>" +
+        "<button type=\"button\" class=\"bike-delivery-action-btn bike-delivery-action-btn--delete\" data-action=\"delete\" data-id=\"" + escapeHtml(rider.id) + "\" aria-label=\"Delete account\">" +
+        "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\"><polyline points=\"3 6 5 6 21 6\"/><path d=\"M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6\"/><path d=\"M10 11v6M14 11v6\"/><path d=\"M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2\"/></svg></button>" +
         "</div></td></tr>"
       );
     }).join("");
@@ -406,14 +408,40 @@
       });
   }
 
+  let detailRiderId = null;
+
+  function deleteRiderAccount(riderId, riderName) {
+    window.AdminConfirm.show({
+      title: "Delete account",
+      message: "Permanently delete " + riderName + "? This is a hard delete. Their email, phone, and JosCity id will be freed and this cannot be undone.",
+      confirmLabel: "Delete account",
+      variant: "danger",
+    }).then(function (confirmed) {
+      if (!confirmed) return;
+      return apiRequest("/admin/api/drivers/" + encodeURIComponent(riderId), {
+        method: "DELETE",
+      })
+        .then(function () {
+          showToast(riderName + " deleted");
+          closeAllModals();
+          loadStats();
+          return loadRiders();
+        })
+        .catch(function (err) {
+          showToast(err.message, true);
+        });
+    });
+  }
+
   function viewRider(riderId) {
     apiRequest(API.rider(riderId))
       .then(function (raw) {
         const rider = normalizeRider(raw);
+        detailRiderId = rider.id;
         detailBody.innerHTML =
           "<div class=\"bike-delivery-cell-rider\" style=\"margin-bottom:1.25rem\">" +
           "<span class=\"bike-delivery-avatar\">" + escapeHtml(rider.initials) + "</span>" +
-          "<div><p class=\"bike-delivery-cell-rider__name\">" + escapeHtml(rider.full_name) + "</p>" +
+          "<div class=\"bike-delivery-cell-rider__text\"><p class=\"bike-delivery-cell-rider__name\">" + escapeHtml(rider.full_name) + "</p>" +
           "<p class=\"bike-delivery-cell-rider__id\">" + escapeHtml(rider.public_id) + " · " + escapeHtml(rider.status_label) + "</p></div></div>" +
           "<dl class=\"bike-delivery-detail-grid\">" +
           "<div><dt>Email</dt><dd>" + escapeHtml(rider.email || "-") + "</dd></div>" +
@@ -425,6 +453,12 @@
           "<div><dt>Earnings</dt><dd>" + escapeHtml(rider.earnings_display) + "</dd></div>" +
           "<div><dt>Rating</dt><dd>" + escapeHtml(rider.rating_display) + "</dd></div>" +
           "</dl>";
+        const deleteBtn = document.getElementById("bike-rider-delete-btn");
+        if (deleteBtn) {
+          deleteBtn.hidden = false;
+          deleteBtn.dataset.id = String(rider.id);
+          deleteBtn.dataset.name = rider.full_name || "this rider";
+        }
         openModal(detailModal);
       })
       .catch(function (err) {
@@ -441,6 +475,15 @@
   function closeModal(modal) {
     if (!modal) return;
     modal.hidden = true;
+    if (modal === detailModal) {
+      detailRiderId = null;
+      const deleteBtn = document.getElementById("bike-rider-delete-btn");
+      if (deleteBtn) {
+        deleteBtn.hidden = true;
+        deleteBtn.removeAttribute("data-id");
+        deleteBtn.removeAttribute("data-name");
+      }
+    }
     if (!window.AdminConfirm || !window.AdminConfirm.isOpen()) {
       document.body.style.overflow = "";
     }
@@ -541,7 +584,19 @@
               updateRiderStatus(id, "suspended", rider.full_name + " suspended", result.value.trim());
             }
           });
+        } else if (action === "delete") {
+          deleteRiderAccount(id, rider.full_name);
         }
+      });
+    }
+
+    const detailDeleteBtn = document.getElementById("bike-rider-delete-btn");
+    if (detailDeleteBtn) {
+      detailDeleteBtn.addEventListener("click", function () {
+        const id = detailDeleteBtn.dataset.id || detailRiderId;
+        const name = detailDeleteBtn.dataset.name || "this rider";
+        if (!id) return;
+        deleteRiderAccount(id, name);
       });
     }
 
@@ -829,12 +884,13 @@
       const statusClass = restricted ? "dispatch-admin__status dispatch-admin__status--restricted" : "dispatch-admin__status";
       return (
         "<tr>" +
-        "<td>" + escapeHtml(driver.name) + (jobs ? '<ul class="dispatch-admin__jobs">' + jobs + "</ul>" : "") + "</td>" +
-        "<td>" + escapeHtml(driver.vehicle || "—") + "</td>" +
-        "<td>" + escapeHtml(driver.active + "/" + driver.max) + "</td>" +
-        "<td>" + escapeHtml(driver.points + "/" + driver.capacity) + "</td>" +
-        '<td><span class="' + statusClass + '">' + escapeHtml(driver.status) + "</span></td>" +
-        '<td><button type="button" class="bike-delivery-btn bike-delivery-btn--ghost" data-restrict="' + escapeHtml(driver.driver_id) + '" data-restricted="' + (restricted ? "0" : "1") + '">' +
+        '<td data-label="Driver"><div class="dispatch-admin__driver"><span class="dispatch-admin__driver-name">' + escapeHtml(driver.name) + "</span>" +
+        (jobs ? '<ul class="dispatch-admin__jobs">' + jobs + "</ul>" : "") + "</div></td>" +
+        '<td data-label="Vehicle">' + escapeHtml(driver.vehicle || "—") + "</td>" +
+        '<td data-label="Active">' + escapeHtml(driver.active + "/" + driver.max) + "</td>" +
+        '<td data-label="Capacity">' + escapeHtml(driver.points + "/" + driver.capacity) + "</td>" +
+        '<td data-label="Status"><span class="' + statusClass + '">' + escapeHtml(driver.status) + "</span></td>" +
+        '<td data-label="Actions"><button type="button" class="bike-delivery-btn bike-delivery-btn--ghost" data-restrict="' + escapeHtml(driver.driver_id) + '" data-restricted="' + (restricted ? "0" : "1") + '">' +
         (restricted ? "Allow more" : "Restrict") + "</button></td>" +
         "</tr>"
       );
