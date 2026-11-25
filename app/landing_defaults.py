@@ -174,9 +174,9 @@ DEFAULT_LANDING_PAGE: dict = {
         ],
     },
     "mobile_apps": {
-        "josride_android_url": "",
-        "josride_ios_url": "",
-        "josride_driver_android_url": "",
-        "josride_driver_ios_url": "",
+        "josride_android_url": "https://play.google.com/store/apps/details?id=ng.josride.app&pcampaignid=web_share",
+        "josride_ios_url": "https://apps.apple.com/app/josride/id6805468513",
+        "josride_driver_android_url": "https://play.google.com/store/apps/details?id=com.josride.drive",
+        "josride_driver_ios_url": "https://apps.apple.com/app/josride-driver/id6805659224",
     },
 }
