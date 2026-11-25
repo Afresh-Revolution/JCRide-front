@@ -31,6 +31,8 @@ def overlay_mobile_apps(landing: dict) -> dict:
         current = _http_url(_env_value(*names, paths=(ENV_PATH, *BACKEND_ENV_PATHS)))
         if not current:
             current = _http_url(apps.get(field))
+        if not current:
+            current = _http_url(DEFAULT_LANDING_PAGE["mobile_apps"].get(field))
         apps[field] = current
     landing["mobile_apps"] = apps
     return landing

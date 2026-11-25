@@ -34,8 +34,6 @@
   <a
     href="{{ android_url if has_android else ios_url }}"
     class="landing-mobile__btn landing-mobile__btn--{{ variant }} landing-mobile__btn--smart"
-    target="_blank"
-    rel="noopener noreferrer"
     data-store-android="{{ android_url if has_android else '' }}"
     data-store-ios="{{ ios_url if has_ios else '' }}"
     data-app-name="{{ app_name }}"

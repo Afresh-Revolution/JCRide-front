@@ -1,6 +1,6 @@
 {% extends "landing_base.html" %}
 {% from "includes/landing_icons.html" import feature_icon, step_icon, stat_icon %}
-{% from "includes/landing_store_buttons.html" import store_btn, smart_store_btn %}
+{% from "includes/landing_store_buttons.html" import smart_store_btn %}
 {% set h = landing.hero %}
 {% set p = landing.partners %}
 {% set fs = landing.features_section %}
@@ -427,13 +427,11 @@
         <p class="landing-mobile__text">Access JosRide through a complete mobile app experience designed for fast, simple, and convenient use — riding, driving, and dispatching, all reimagined for touch.</p>
         <div class="landing-mobile__actions">
           <div class="landing-mobile__store-group">
-            {{ smart_store_btn(apps.josride_android_url, apps.josride_ios_url, 'android', 'JosRide') }}
+            {{ smart_store_btn(apps.josride_android_url, apps.josride_ios_url, 'android', 'Josride User') }}
           </div>
           <div class="landing-mobile__store-group">
-            {{ store_btn(apps.josride_driver_android_url, 'driver-android', 'JosRide Driver', 'Android') }}
-            {{ store_btn(apps.josride_driver_ios_url, 'driver-ios', 'JosRide Driver', 'iOS') }}
+            {{ smart_store_btn(apps.josride_driver_android_url, apps.josride_driver_ios_url, 'driver-android', 'Josride Driver') }}
           </div>
-          <a href="#features" class="landing-mobile__btn landing-mobile__btn--ghost">Explore features</a>
         </div>
       </div>
       <div class="landing-mobile__visual" aria-hidden="true">
